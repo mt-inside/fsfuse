@@ -17,9 +17,10 @@
 #include "trace.h"
 
 
-#define FSFUSE_NAME    "fsfuse"
-#define FSFUSE_VERSION "0.2.0"
-#define FSFUSE_DATE    "(beta)"
+#define FSFUSE_NAME      "fsfuse"
+#define FSFUSE_VERSION   "0.2.0"
+#define FSFUSE_DATE      "(beta)"
+#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2009\n"
 
 /* Greatest protocol version that we know we support */
 #define PROTO_GREATEST 0.5f

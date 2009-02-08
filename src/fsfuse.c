@@ -367,28 +367,22 @@ static void fsfuse_splash (void)
 {
     printf("%s - FragSoc Filesystem in USErspace\n"
            "Version %s - %s\n"
-           "Copyright (C) Matthew Turner 2008\n"
+           "%s\n"
            "\n",
            FSFUSE_NAME,
            FSFUSE_VERSION,
-           FSFUSE_DATE
+           FSFUSE_DATE,
+           FSFUSE_COPYRIGHT
           );
 }
 
 static void fsfuse_version (void)
 {
-    printf("%s - FragSoc Filesystem in USErspace\n"
-           "Version %s - %s\n"
-           "Copyright (C) Matthew Turner 2008\n"
-           "\n"
-           "Using FUSE features up to version %d (system library supportes up to %d)\n"
+    printf("Using FUSE features up to version %d (system library supportes up to %d)\n"
            "Using %s\n"
            "Using libxml2 %s\n"
            "Using %s\n"
            "\n",
-           FSFUSE_NAME,
-           FSFUSE_VERSION,
-           FSFUSE_DATE,
            FUSE_USE_VERSION,
            fuse_version(),
            curl_version(),
