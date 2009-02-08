@@ -18,8 +18,8 @@
 
 
 #define FSFUSE_NAME    "fsfuse"
-#define FSFUSE_VERSION "0.1.1"
-#define FSFUSE_DATE    "December 2008"
+#define FSFUSE_VERSION "0.2.0"
+#define FSFUSE_DATE    "(beta)"
 
 /* Greatest protocol version that we know we support */
 #define PROTO_GREATEST 0.5f
