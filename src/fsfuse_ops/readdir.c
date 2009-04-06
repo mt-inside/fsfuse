@@ -31,8 +31,8 @@ int fsfuse_readdir (const char *path,
     NOT_USED(offset);
     NOT_USED(fi);
 
-    trce("fsfuse_readir(%s)\n", path);
-    trace_indent();
+    method_trace("fsfuse_readir(%s)\n", path);
+    method_trace_indent();
 
     rc = direntry_get_with_children(path, &de);
 
@@ -67,7 +67,7 @@ int fsfuse_readdir (const char *path,
     }
 
 
-    trace_dedent();
+    method_trace_dedent();
 
 
     return rc;

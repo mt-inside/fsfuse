@@ -32,8 +32,8 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     int rc = -EIO, fetcher_rc;
 
 
-    trce("fsfuse_statfs(path==%s)\n", path);
-    trace_indent();
+    method_trace("fsfuse_statfs(path==%s)\n", path);
+    method_trace_indent();
 
     memset(stfs, 0, sizeof(struct statvfs));
     stfs->f_bsize = FSFUSE_BLKSIZE;
@@ -69,7 +69,7 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
 
     parser_delete(parser);
 
-    trace_dedent();
+    method_trace_dedent();
 
 
     return rc;

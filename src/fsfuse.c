@@ -323,6 +323,7 @@ static void settings_parse (int argc, char *argv[], struct fuse_args args)
                 TRACE_ARG(direntry)
                 TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
+                TRACE_ARG(method)
                 TRACE_ARG(parser)
 #if FEATURE_PROGRESS_METER
                 TRACE_ARG(progress)

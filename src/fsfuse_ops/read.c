@@ -45,8 +45,8 @@ int fsfuse_read (const char *path,
 
     NOT_USED(fi);
 
-    read_trace("fsfuse_read(path==%s, size==%zd, offset==%ju)\n", path, size, offset);
-    trace_indent();
+    method_trace("fsfuse_read(path==%s, size==%zd, offset==%ju)\n", path, size, offset);
+    method_trace_indent();
 
 
     rc = direntry_get(path, &de);
@@ -103,7 +103,7 @@ int fsfuse_read (const char *path,
         direntry_delete(de);
     }
 
-    trace_dedent();
+    method_trace_dedent();
 
 
     return rc;

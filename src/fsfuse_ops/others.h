@@ -12,6 +12,9 @@
 #include "trace.h"
 
 
+TRACE_DECLARE(method)
+
+
 extern int fsfuse_getattr ( const char *path,
                             struct stat *stbuf );
 
