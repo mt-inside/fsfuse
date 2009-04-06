@@ -75,13 +75,13 @@ static void fsfuse_destroy (void *private_data)
 
 static struct fuse_operations fsfuse_oper = {
     &fsfuse_getattr,     /* getattr */
-    NULL,                /* readlink */
+    &fsfuse_readlink,    /* readlink */
     NULL,                /* getdir D */
     &fsfuse_mknod,       /* mknod */
     &fsfuse_mkdir,       /* mkdir */
     &fsfuse_unlink,      /* unlink */
     &fsfuse_rmdir,       /* rmdir */
-    NULL,                /* symlink */
+    &fsfuse_symlink,     /* symlink */
     &fsfuse_rename,      /* rename */
     &fsfuse_link,        /* link */
     &fsfuse_chmod,       /* chmod */
@@ -94,15 +94,15 @@ static struct fuse_operations fsfuse_oper = {
     &fsfuse_statfs,      /* statfs */
     NULL,                /* flush */
     NULL,                /* release */
-    NULL,                /* fsync */
+    &fsfuse_fsync,       /* fsync */
     NULL,                /* setxattr */
     NULL,                /* getxattr */
     NULL,                /* listxattr */
     NULL,                /* removexattr */
-    NULL,                /* opendir */
+    &fsfuse_opendir,     /* opendir */
     &fsfuse_readdir,     /* readdir */
     NULL,                /* releasedir */
-    NULL,                /* fsyncdir */
+    &fsfuse_fsyncdir,    /* fsyncdir */
     &fsfuse_init,        /* init */
     &fsfuse_destroy,     /* destroy */
     &fsfuse_access,      /* access */
@@ -111,7 +111,7 @@ static struct fuse_operations fsfuse_oper = {
     NULL,                /* fgetattr */
     NULL,                /* lock */
     NULL,                /* utimens */
-    NULL,                /* bmap */
+    &fsfuse_bmap         /* bmap */
 };
 
 

@@ -46,6 +46,25 @@ int fsfuse_getattr ( const char *path,
     return rc;
 }
 
+int fsfuse_readlink ( const char *path,
+                      char * buf,
+                      size_t len )
+{
+    NOT_USED(buf);
+    NOT_USED(len);
+
+    trce("fsfuse_readlink(path==%s). SHOULD NOT HAPPEN\n", path);
+
+    /* We do not currently claim that there are any symlinks in an fsfuse
+     * filesystem (although I envisage search and/or multiple file alternatives
+     * will be implemented like this in future), so we shouldn't currently be
+     * getting any queries about them */
+    assert(0);
+
+
+    return 0; /* success */
+}
+
 int fsfuse_open ( const char *path,
                   struct fuse_file_info *fi )
 {
@@ -56,6 +75,8 @@ int fsfuse_open ( const char *path,
     direntry_t *de;
 
 
+    trce("fsfuse_open(path==%s)\n", path);
+
     /* get the direntry first so that if we try to write a non-existant file,
      * the non-existance is complained about over the write flag. Is there a
      * defined order of precidence for this kind of thing anywhere? Lower error
@@ -64,9 +85,11 @@ int fsfuse_open ( const char *path,
 
     if (!rc)
     {
-        if ((fi->flags & 3) != O_RDONLY) rc = -EROFS;
+        if (de->type != direntry_type_FILE) { rc = -EISDIR; goto err; }
+        if ((fi->flags & 3) != O_RDONLY)    { rc = -EROFS;  goto err; }
     }
 
+err:
     direntry_delete(de);
 
 
@@ -103,6 +126,15 @@ int fsfuse_unlink ( const char *path )
 int fsfuse_rmdir ( const char *path )
 {
     trce("fsfuse_rmdir(path==%s)\n", path);
+
+
+    return -EROFS;
+}
+
+int fsfuse_symlink ( const char *from,
+                     const char *to    )
+{
+    trce("fsfuse_symlink(from==%s, to==%s)\n", from, to);
 
 
     return -EROFS;
@@ -170,6 +202,59 @@ int fsfuse_write ( const char *path,
     return -EROFS;
 }
 
+int fsfuse_fsync ( const char *path,
+                   int datasync,
+                   struct fuse_file_info *fi )
+{
+    trce("fsfuse_fsync(path==%s, datasync==%d)\n", path, datasync);
+
+    NOT_USED(fi);
+
+
+    return -EROFS;
+}
+
+int fsfuse_opendir ( const char *path,
+                     struct fuse_file_info *fi )
+{
+    /* not doing anything special here atm (future possibilities include
+     * pre-fetching (incl. parallel pre-fetching in another thread))
+     * For now, simply check the existence of path, and check permissions */
+    int rc;
+    direntry_t *de;
+
+
+    trce("fsfuse_opendir(path==%s)\n", path);
+
+    rc = direntry_get(path, &de);
+
+    if (!rc)
+    {
+        /* can you open a directory for write? The libc function doesn't take
+         * any flags... */
+        if ((fi->flags & 3) != O_RDONLY)         { rc = -EROFS;   goto err; }
+        if (de->type != direntry_type_DIRECTORY) { rc = -ENOTDIR; goto err; }
+    }
+
+err:
+    direntry_delete(de);
+
+
+    return rc;
+}
+
+int fsfuse_fsyncdir ( const char *path,
+                      int datasync,
+                      struct fuse_file_info *fi )
+{
+    trce("fsfuse_fsyncdir(path==%s, datasync==%d)\n", path, datasync);
+
+    NOT_USED(fi);
+
+
+    return -EROFS;
+}
+
 int fsfuse_create ( const char *path,
                     mode_t mode,
                     struct fuse_file_info *fi )
@@ -224,4 +309,22 @@ int fsfuse_access ( const char *path,
 
 
     return rc;
+}
+
+/* Totally pointless operation on a pretend filesystem not stored on a block
+ * device, which is read-only anyway. I'd like to see anyone swap onto fsfuse,
+ * or install a bootloader on it */
+int fsfuse_bmap (const char *path,
+                 size_t blocksize,
+                 uint64_t *idx)
+{
+    trce("fsfuse_bmap(path==%s, blocksize=%zu, idx==%lu)\n",
+         path, blocksize, idx);
+    trce("bmap would seem rather pointless... Anything calling it is likely to malfunction pretty quickly\n");
+    assert(0); /* bmap? Presumably, someone could call this and then try to
+                  write to some "underlying" block device, not that we report
+                  one, at which point things will go horribly wrong. */
+
+
+    return 0;
 }
