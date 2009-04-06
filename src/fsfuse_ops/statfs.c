@@ -17,6 +17,7 @@
 
 #include "common.h"
 #include "fetcher.h"
+#include "fsfuse_ops/others.h"
 #include "parser.h"
 #include "indexnode.h"
 

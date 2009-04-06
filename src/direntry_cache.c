@@ -155,7 +155,7 @@ static void sigusr1_handler (int signum)
     while (direntry_cache)
     {
         de = direntry_cache;
-        HASH_DEL(direntry_cache, de);
+        HASH_DEL(direntry_cache, de); /* FIXME: segfault seen here */
         direntry_delete(de);
     }
 

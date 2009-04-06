@@ -15,6 +15,7 @@
 #include "common.h"
 #include "locks.h"
 #include "read.h"
+#include "fsfuse_ops/others.h"
 #include "direntry.h"
 #include "fetcher.h"
 #include "indexnode.h"
