@@ -141,10 +141,14 @@ void thread_pool_chunk_add (direntry_t *de,
                             char *buf,
                             void *ctxt      )
 {
-    thread_t *thread = tp_thread_get(de->hash);
+    thread_t *thread = tp_thread_get(direntry_get_hash(de));
 
 
-    dtp_trace("thread_pool_chunk_add(path==%s, hash==%s, start==%#x, end==%#x)\n", de->path, de->hash, start, end);
+    dtp_trace("thread_pool_chunk_add(path==%s, hash==%s, start==%#x, end==%#x)\n",
+              direntry_get_path(de),
+              direntry_get_hash(de),
+              start,
+              end );
     dtp_trace_indent();
 
     if (!thread)
@@ -170,7 +174,7 @@ static thread_t *tp_thread_get (const char *hash)
 
     TAILQ_FOREACH(t, &thread_list, entries)
     {
-        if (!strcmp(hash, t->de->hash)) break;
+        if (!strcmp(hash, direntry_get_hash(t->de))) break;
     }
 
     rw_lock_runlock(&thread_list_lock);
@@ -296,7 +300,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
         sem_getvalue(&(thread->chunk_list_count), &sval);
         dtp_trace("Downloader thread for %s woken up! "
                   "Chunks remaining: %d\n",
-                  thread->de->base_name,
+                  direntry_get_base_name(thread->de),
                   sval);
 
 
@@ -337,14 +341,14 @@ static void thread_chunk_list_add_chunk (thread_t *thread,
     /* proto-chunks (start and end offsets) must come in here partially
      * sanitised. They are not allowed to be completely out of the range of the
      * file, but may overshoot the end */
-    assert(start < thread->de->size);
-    if (end > thread->de->size)
+    assert(start < direntry_get_size(thread->de));
+    if (end > direntry_get_size(thread->de))
     {
         /* fix the chunk up so that it within the extents of the file. This way
          * when the consumer is passed the last buffer of the file this chunk
          * ends too and will be disposed of. This means any remaining chunks
          * actually need something meaningful done with them */
-        end = thread->de->size;
+        end = direntry_get_size(thread->de);
     }
 
     c = chunk_new(start, end, buf, ctxt);
@@ -396,7 +400,8 @@ static void *downloader_thread_main (void *arg)
     int first_time = 1;
 
 
-    dtp_trace("downloader_thread_main(file==%s): New downloader thread!\n", thread->de->base_name);
+    dtp_trace("downloader_thread_main(file==%s): New downloader thread!\n",
+              direntry_get_base_name(thread->de) );
     dtp_trace_indent();
 
     /* We never try to guess when we're done with a file completely and call
@@ -461,7 +466,7 @@ static void *downloader_thread_main (void *arg)
         dtp_trace("fetching range \"%s\"\n", range);
 
         /* begin the download */
-        rc = fetcher_fetch(thread->de->hash,
+        rc = fetcher_fetch(direntry_get_hash(thread->de),
                            fetcher_url_type_t_DOWNLOAD,
                            range,
                            (curl_write_callback)&thread_pool_consumer,
@@ -489,7 +494,7 @@ static void *downloader_thread_main (void *arg)
 
     /* Delete the data structures */
 #if FEATURE_PROGRESS_METER
-    progress_delete(thread->de->base_name);
+    progress_delete(direntry_get_base_name(thread->de));
 #endif
     thread_delete(thread); /* When we move to a pool, we'll need to blank it */
 
@@ -569,7 +574,9 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
             dtp_trace("chunk->start now == %#x\n", buf->start);
 
 #if FEATURE_PROGRESS_METER
-            progress_update(thread->de->base_name, thread->de->size, buf->end);
+            progress_update(direntry_get_base_name(thread->de),
+                            direntry_get_size(thread->de),
+                            buf->end );
 #endif
 
 
@@ -643,6 +650,8 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
 
 
 bail:
+    free(buf);
+
     dtp_trace_dedent();
 
 

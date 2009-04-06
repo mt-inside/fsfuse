@@ -43,6 +43,7 @@ int fsfuse_readdir (const char *path,
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
 
+        /* TODO: write an iterator for de trees */
         child = de->children;
         while (child)
         {

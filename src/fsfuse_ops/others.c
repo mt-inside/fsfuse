@@ -77,19 +77,16 @@ int fsfuse_open ( const char *path,
 
     trce("fsfuse_open(path==%s)\n", path);
 
-    /* get the direntry first so that if we try to write a non-existant file,
-     * the non-existance is complained about over the write flag. Is there a
-     * defined order of precidence for this kind of thing anywhere? Lower error
-     * code first maybe? */
     rc = direntry_get(path, &de);
 
     if (!rc)
     {
-        if (de->type != direntry_type_FILE) { rc = -EISDIR; goto err; }
-        if ((fi->flags & 3) != O_RDONLY)    { rc = -EROFS;  goto err; }
+        /* Ordering below is deliberate - the reverse of our order of presidence
+         * for complaining (TODO: which is a guess anyway). */
+        if ((fi->flags & 3) != O_RDONLY)                 rc = -EROFS;
+        if (direntry_get_type(de) != direntry_type_FILE) rc = -EISDIR;
     }
 
-err:
     direntry_delete(de);
 
 
@@ -217,9 +214,7 @@ int fsfuse_fsync ( const char *path,
 int fsfuse_opendir ( const char *path,
                      struct fuse_file_info *fi )
 {
-    /* not doing anything special here atm (future possibilities include
-     * pre-fetching (incl. parallel pre-fetching in another thread))
-     * For now, simply check the existence of path, and check permissions */
+    /* For now, simply check the existence of path, and check permissions */
     int rc;
     direntry_t *de;
 
@@ -232,11 +227,12 @@ int fsfuse_opendir ( const char *path,
     {
         /* can you open a directory for write? The libc function doesn't take
          * any flags... */
-        if ((fi->flags & 3) != O_RDONLY)         { rc = -EROFS;   goto err; }
-        if (de->type != direntry_type_DIRECTORY) { rc = -ENOTDIR; goto err; }
+        /* Ordering below is deliberate - the reverse of our order of presidence
+         * for complaining (TODO: which is a guess anyway). */
+        if ((fi->flags & 3) != O_RDONLY)                      rc = -EROFS;
+        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
     }
 
-err:
     direntry_delete(de);
 
 
@@ -293,7 +289,7 @@ int fsfuse_access ( const char *path,
 
     if (!rc)
     {
-        switch (de->type)
+        switch (direntry_get_type(de))
         {
             case direntry_type_DIRECTORY:
                 if (mode & ~config_get(config_key_DIR_MODE).int_val)  rc = -EACCES;

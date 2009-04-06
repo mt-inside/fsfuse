@@ -62,7 +62,7 @@ int fsfuse_read (const char *path,
 
     if (!rc)
     {
-        if (de->type == direntry_type_DIRECTORY)
+        if (direntry_get_type(de) == direntry_type_DIRECTORY)
         {
             rc = -EISDIR;
         }
@@ -71,7 +71,7 @@ int fsfuse_read (const char *path,
             /* check file limits - despite always calling getattr() first (so it
              * knows the length), fuse sometimes asks for ranges completely
              * past the end of the file */
-            if (offset >= de->size)
+            if (offset >= direntry_get_size(de))
             {
                 rc = 0;
             }

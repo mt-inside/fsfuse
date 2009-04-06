@@ -53,7 +53,8 @@ void direntry_cache_finalise (void)
 int direntry_cache_add (direntry_t *de)
 {
     direntry_trace("direntry_cache_add(de->base_name==\"%s\",->path==\"%s\")\n",
-                   de->base_name, de->path);
+                   direntry_get_base_name(de),
+                   direntry_get_path(de) );
     direntry_trace_indent();
 
     direntry_post(de); /* inc reference count */
@@ -61,7 +62,11 @@ int direntry_cache_add (direntry_t *de)
     de->cache_last_valid = time(NULL);
 
     rw_lock_wlock(&direntry_cache_lock);
-    HASH_ADD_KEYPTR(hh, direntry_cache, de->path, strlen(de->path), de); /* FIXME: segfault seem here */
+    HASH_ADD_KEYPTR(hh,
+                    direntry_cache,
+                    direntry_get_path(de),
+                    strlen(direntry_get_path(de)),
+                    de); /* FIXME: segfault seem here */
     rw_lock_wunlock(&direntry_cache_lock);
 
     direntry_trace_dedent();
@@ -105,7 +110,7 @@ direntry_t *direntry_cache_get (const char * const path)
     /* still valid? */
     if (de && de->cache_last_valid + config_get(config_key_CACHE_ITEM_TIMEOUT).int_val < time(NULL))
     {
-        direntry_trace("cache entry for %s expired; deleting\n", de->base_name);
+        direntry_trace("cache entry for %s expired; deleting\n", direntry_get_base_name(de));
         HASH_DELETE(hh, direntry_cache, de);
         direntry_delete(de);
         de = NULL;

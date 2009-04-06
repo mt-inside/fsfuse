@@ -54,7 +54,7 @@ static char *xpath_attr_escape (char *s);
 static int fetch_node (const char * const path, direntry_t **de_io);
 
 
-/* external interface ======================================================= */
+/* direntry module external interface ======================================= */
 int direntry_init (void)
 {
     direntry_trace("direntry_init()\n");
@@ -89,6 +89,7 @@ void direntry_finalise (void)
     direntry_delete(de_root);
 }
 
+/* direntry functions ======================================================= */
 direntry_t *direntry_new (void)
 {
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
@@ -160,6 +161,43 @@ void direntry_delete_with_children (direntry_t *de)
 
     direntry_delete(de);
 }
+
+/* direntry getters ========================================================= */
+char *direntry_get_path (direntry_t *de)
+{
+    return de->path;
+}
+
+char *direntry_get_base_name (direntry_t *de)
+{
+    return de->base_name;
+}
+
+char *direntry_get_hash (direntry_t *de)
+{
+    return de->hash;
+}
+
+direntry_type_t direntry_get_type (direntry_t *de)
+{
+    return de->type;
+}
+
+off_t direntry_get_size (direntry_t *de)
+{
+    return de->size;
+}
+
+unsigned long direntry_get_link_count (direntry_t *de)
+{
+    return de->link_count;
+}
+
+char *direntry_get_href (direntry_t *de)
+{
+    return de->href;
+}
+
 
 /* Get direntry for path.
  * Doesn't guarantee its children list is populated. */

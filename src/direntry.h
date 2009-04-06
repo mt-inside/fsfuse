@@ -28,6 +28,8 @@ typedef enum
 
 typedef struct _direntry_t
 {
+    /* External properties */
+
     char                      *base_name;
     /* These are stored normalised. Fuse doesn't give us ".."s, but we don't
      * generate e.g. "//". It would be easier in places to not care if we make
@@ -43,6 +45,7 @@ typedef struct _direntry_t
 #endif
     char                      *href;
 
+    /* Private properties */
     struct _direntry_t        *children; /* directories in fs2 are never empty,
                                             so NULL children means we haven't
                                             looked yet */
@@ -64,6 +67,14 @@ extern void direntry_post (direntry_t *de);
 extern direntry_t *direntry_copy (direntry_t *de);
 extern void direntry_delete (direntry_t *de);
 extern void direntry_delete_with_children (direntry_t *de);
+
+extern char *          direntry_get_path       (direntry_t *de);
+extern char *          direntry_get_base_name  (direntry_t *de);
+extern char *          direntry_get_hash       (direntry_t *de);
+extern direntry_type_t direntry_get_type       (direntry_t *de);
+extern off_t           direntry_get_size       (direntry_t *de);
+extern unsigned long   direntry_get_link_count (direntry_t *de);
+extern char *          direntry_get_href       (direntry_t *de);
 
 extern int direntry_get               (const char * const path, direntry_t **de);
 extern int direntry_get_with_children (const char * const path, direntry_t **de);
