@@ -11,8 +11,7 @@
  *
  * Some externally visible functions may be re-entered by multiple threads,
  * all associated with a different file, thus there is a lock for the hash
- * table itself (this is a mutex, as required by the uthash docs - a r/w lock
- * is insufficient). There is a bijection between threads (file downloads) and
+ * table itself. There is a bijection between threads (file downloads) and
  * hash entries. thus the progress_t entries themselves require no locking */
 
 #include <curses.h>
@@ -20,12 +19,12 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "uthash.h"
-
 #include "common.h"
+#include "hash.h"
 #include "locks.h"
 #include "config.h"
 #include "progress.h"
@@ -41,11 +40,11 @@ typedef struct
     char *path;
     unsigned len;
     unsigned downloaded;
-    UT_hash_handle hh;
 } progress_t;
 
 
-static progress_t *progress_cache = NULL;
+#define PROGRESS_CACHE_SIZE 16
+static hash_table_t *progress_cache = NULL;
 static rw_lock_t progress_cache_lock;
 
 
@@ -84,6 +83,8 @@ int progress_init (void)
 
             rw_lock_init(&progress_cache_lock);
 
+            progress_cache = hash_table_new(PROGRESS_CACHE_SIZE);
+
             alarm_schedule(0, 100000, &progress_draw_cb, NULL);
 
             rc = 0;
@@ -108,6 +109,9 @@ void progress_finalise (void)
     {
         endwin();
 
+        hash_table_delete(progress_cache);
+        progress_cache = NULL;
+
         rw_lock_destroy(&progress_cache_lock);
     }
 }
@@ -121,9 +125,9 @@ void progress_update (const char *path,
 
     if (config_get(config_key_PROGRESS).int_val)
     {
-        rw_lock_rlock(&progress_cache_lock);
-        HASH_FIND(hh, progress_cache, path, (signed)strlen(path), p);
-        rw_lock_runlock(&progress_cache_lock);
+        rw_lock_wlock(&progress_cache_lock);
+
+        p = (progress_t *)hash_table_find(progress_cache, path);
 
         if (!p)
         {
@@ -132,10 +136,10 @@ void progress_update (const char *path,
 
             p->path = strdup(path);
 
-            rw_lock_wlock(&progress_cache_lock);
-            HASH_ADD_KEYPTR(hh, progress_cache, p->path, strlen(p->path), p);
-            rw_lock_wunlock(&progress_cache_lock);
+            hash_table_add(progress_cache, p->path, (void *)p);
         }
+
+        rw_lock_wunlock(&progress_cache_lock);
 
         p->len = len;
         p->downloaded = downloaded;
@@ -149,18 +153,18 @@ void progress_delete (const char *path)
 
     if (config_get(config_key_PROGRESS).int_val)
     {
-        rw_lock_rlock(&progress_cache_lock);
-        HASH_FIND(hh, progress_cache, path, (signed)strlen(path), p);
-        rw_lock_runlock(&progress_cache_lock);
+        rw_lock_wlock(&progress_cache_lock);
+
+        p = (progress_t *)hash_table_find(progress_cache, path);
 
         if (p)
         {
-            rw_lock_wlock(&progress_cache_lock);
-            HASH_DELETE(hh, progress_cache, p);
-            rw_lock_wunlock(&progress_cache_lock);
+            hash_table_del(progress_cache, path);
 
             free(p);
         }
+
+        rw_lock_wunlock(&progress_cache_lock);
     }
 }
 
@@ -171,14 +175,26 @@ static void progress_bar_draw_all (void)
 {
     unsigned i = 0;
     progress_t *p;
+    hash_table_iterator_t *iter;
 
 
     clear();
 
-    for (p = progress_cache, i = 1; p != NULL; p = p->hh.next, i++)
+    rw_lock_rlock(&progress_cache_lock);
+
+    iter = hash_table_iterator_new(progress_cache);
+    while (!hash_table_iterator_at_end(iter))
     {
+        p = (progress_t *)hash_table_iterator_current_data(iter);
+
         progress_bar_draw(p, i);
+
+        ++i;
+        hash_table_iterator_next(iter);
     }
+    hash_table_iterator_delete(iter);
+
+    rw_lock_runlock(&progress_cache_lock);
 
     refresh();
 }

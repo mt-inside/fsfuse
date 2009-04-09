@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include <getopt.h>
+#include <string.h>
 
 #include <fuse.h>
 #include <fuse/fuse_opt.h>

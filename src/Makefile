@@ -18,6 +18,7 @@ default: fsfuse
 DEFINES := -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 OBJECTS := fsfuse.o                \
+           hash.o                  \
            trace.o                 \
            direntry.o              \
            fetcher.o               \

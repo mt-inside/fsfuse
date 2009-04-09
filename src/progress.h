@@ -9,7 +9,6 @@
 #ifndef _INCLUDED_PROGRESS_H
 #define _INCLUDED_PROGRESS_H
 
-#include "uthash.h"
 #include "trace.h"
 
 

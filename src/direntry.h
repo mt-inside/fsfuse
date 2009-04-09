@@ -15,7 +15,6 @@
 #include <unistd.h>
 
 #include "trace.h"
-#include "uthash.h"
 
 
 TRACE_DECLARE(direntry)
@@ -52,7 +51,6 @@ typedef struct _direntry_t
     int                        looked_for_children;
     unsigned                   ref_count;
     struct _direntry_t        *next;
-    UT_hash_handle             hh;
 } direntry_t;
 
 
