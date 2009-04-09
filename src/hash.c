@@ -11,7 +11,7 @@
 typedef uint32_t hash_t;
 
 
-static hash_t hash (const char *str);
+static hash_t (*hash) (const char *str);
 
 static void hash_table_iterator_find_first (hash_table_iterator_t *iter);
 
@@ -244,7 +244,7 @@ static void hash_table_iterator_find_first (hash_table_iterator_t *iter)
 
 /* hash functions */
 
-static hash_t hash (const char *str)
+static hash_t hash_sha (const char *str)
 {
     unsigned char digest[SHA_DIGEST_LENGTH];
 
@@ -254,3 +254,19 @@ static hash_t hash (const char *str)
 
     return *((hash_t *)&digest);
 }
+static hash_t hash_djb2 (const char *str)
+{
+    hash_t hash = 5381;
+    char c;
+
+    while ((c = *str++))
+    {
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
+/* hash in use */
+static hash_t (*hash) (const char *str) = &hash_djb2;
+
