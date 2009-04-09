@@ -109,6 +109,7 @@ int hash_table_del (hash_table_t *tbl, const char *key)
                     free(e_del);
 
                     rc = 1;
+                    break;
                 }
 
                 *e = (*e)->next;

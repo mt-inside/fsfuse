@@ -56,9 +56,6 @@ endif
 CFLAGS := -W -Wall -pedantic $(INCLUDES) $(DEFINES)
 CFLAGS_OPTIM := -O2
 CFLAGS_DEBUG := -O0 -g3
-ifneq ($(OS),FreeBSD)
-    CFLAGS_DEBUG += -pg #causes wierd issues on freebsd
-endif
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
 else
