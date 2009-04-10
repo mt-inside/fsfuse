@@ -52,15 +52,6 @@ int fsfuse_read (const char *path,
 
     rc = direntry_get(path, &de);
 
-    if (rc)
-    {
-        assert(!de);
-    }
-    else
-    {
-        assert(de);
-    }
-
     if (!rc)
     {
         if (direntry_get_type(de) == direntry_type_DIRECTORY)

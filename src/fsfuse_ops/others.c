@@ -88,9 +88,9 @@ int fsfuse_open ( const char *path,
          * for complaining (TODO: which is a guess anyway). */
         if ((fi->flags & 3) != O_RDONLY)                 rc = -EROFS;
         if (direntry_get_type(de) != direntry_type_FILE) rc = -EISDIR;
-    }
 
-    direntry_delete(de);
+        direntry_delete(de);
+    }
 
 
     return rc;
@@ -234,9 +234,9 @@ int fsfuse_opendir ( const char *path,
          * for complaining (TODO: which is a guess anyway). */
         if ((fi->flags & 3) != O_RDONLY)                      rc = -EROFS;
         if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
-    }
 
-    direntry_delete(de);
+        direntry_delete(de);
+    }
 
 
     return rc;
@@ -301,9 +301,10 @@ int fsfuse_access ( const char *path,
                 if (mode & ~config_get(config_key_FILE_MODE).int_val) rc = -EACCES;
                 break;
         }
+
+        direntry_delete(de);
     }
 
-    direntry_delete(de);
     method_trace_dedent();
 
 

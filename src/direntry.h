@@ -66,6 +66,9 @@ extern direntry_t *direntry_copy (direntry_t *de);
 extern void direntry_delete (direntry_t *de);
 extern void direntry_delete_with_children (direntry_t *de);
 
+extern direntry_t *direntry_get_first_child (direntry_t *de);
+extern direntry_t *direntry_get_next_sibling (direntry_t *de);
+
 extern char *          direntry_get_path       (direntry_t *de);
 extern char *          direntry_get_base_name  (direntry_t *de);
 extern char *          direntry_get_hash       (direntry_t *de);
@@ -73,6 +76,7 @@ extern direntry_type_t direntry_get_type       (direntry_t *de);
 extern off_t           direntry_get_size       (direntry_t *de);
 extern unsigned long   direntry_get_link_count (direntry_t *de);
 extern char *          direntry_get_href       (direntry_t *de);
+extern int             direntry_got_children   (direntry_t *de);
 
 extern int direntry_get               (const char * const path, direntry_t **de);
 extern int direntry_get_with_children (const char * const path, direntry_t **de);

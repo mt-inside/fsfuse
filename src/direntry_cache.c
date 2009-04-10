@@ -31,10 +31,6 @@ static hash_table_t *direntry_cache = NULL;
 static rw_lock_t direntry_cache_lock;
 
 
-static void cache_empty_cb (void *ctxt);
-static void sigusr1_handler (int signum);
-
-
 void direntry_cache_init (void)
 {
     direntry_trace("direntry_cache_init()\n");
@@ -42,10 +38,6 @@ void direntry_cache_init (void)
     rw_lock_init(&direntry_cache_lock);
 
     direntry_cache = hash_table_new(DIRENTRY_CACHE_SIZE);
-
-    signal(SIGUSR1, &sigusr1_handler);
-
-    alarm_schedule(CACHE_EMPTY_TIMEOUT, 0, &cache_empty_cb, NULL);
 }
 
 void direntry_cache_finalise (void)
@@ -82,101 +74,53 @@ int direntry_cache_add (direntry_t *de)
 /* Get the de for path out of the cache, else return NULL */
 direntry_t *direntry_cache_get (const char * const path)
 {
-    direntry_t *de = NULL, *parent_de = NULL;
+    direntry_t *de = NULL;
 
 
     rw_lock_rlock(&direntry_cache_lock);
     de = (direntry_t *)hash_table_find(direntry_cache, path);
     rw_lock_runlock(&direntry_cache_lock);
 
-    if (!de)
-    {
-        /* do we have its parent cached? */
-        char *parent = fsfuse_dirname(path);
-
-        rw_lock_rlock(&direntry_cache_lock);
-        de = (direntry_t *)hash_table_find(direntry_cache, path);
-        rw_lock_runlock(&direntry_cache_lock);
-
-        free(parent);
-
-        if (parent_de && !parent_de->looked_for_children)
-        {
-            populate_directory(parent_de);
-
-            rw_lock_rlock(&direntry_cache_lock);
-            de = (direntry_t *)hash_table_find(direntry_cache, path);
-            rw_lock_runlock(&direntry_cache_lock);
-        }
-    }
+    /* You may think that it's an obvious step here to see if we've got its
+     * parent cached. If this is the case, and the parent's got a child list,
+     * yet we failed to find the direntry in the cache, then it would be
+     * tempting to assert that it doesn't exist. THIS IS NOT THE CACHE'S JOB.
+     * Just like the cache does not store a "negative" entry when we look up a
+     * path and don't find it, the cache cannot assert the non-existence of a
+     * direntry. After all, it's just a cache, and in our case it can't know if
+     * it's out of date. */
 
     direntry_trace("direntry_cache_get(path==%s): %s\n",
             path, (de ? "hit" : "miss"));
 
     if (de)
     {
-        direntry_post(de); /* ref_count++ */
+        direntry_post(de); /* inc reference count */
     }
 
 
     return de;
 }
 
-static void cache_empty_cb (void *ctxt)
+int direntry_cache_del (direntry_t *de)
 {
-    NOT_USED(ctxt);
+    int rc;
 
 
-    sigusr1_handler(SIGUSR1);
-
-    alarm_schedule(CACHE_EMPTY_TIMEOUT, 0, &cache_empty_cb, NULL);
-}
-
-static void sigusr1_handler (int signum)
-{
-    hash_table_iterator_t *iter;
-    const char *key = NULL;
-
+    direntry_trace("direntry_cache_del(path==%s)\n",
+                   direntry_get_path(de));
 
     rw_lock_wlock(&direntry_cache_lock);
-
-    assert(signum == SIGUSR1);
-    direntry_trace("sigusr1_handler()\n");
-    direntry_trace_indent();
-    direntry_trace("removing all %u items from the direntry cache\n",
-                   hash_table_get_count(direntry_cache));
-
-
-    iter = hash_table_iterator_new(direntry_cache);
-
-    /* hash table iterator is NOT delete-safe, hence this complicated loop
-     * structure */
-    while (!hash_table_iterator_at_end(iter))
-    {
-        if (key)
-        {
-            hash_table_del(direntry_cache, key);
-        }
-        key = hash_table_iterator_current_key(iter);
-
-        hash_table_iterator_next(iter);
-    }
-    if (key)
-    {
-        hash_table_del(direntry_cache, key);
-    }
-
-    hash_table_iterator_delete(iter);
-
-
-    /* horrible special case - freeing everything means we have to unset the
-     * children got flag on "/" */
-    de_root->looked_for_children = 0;
-    de_root->children = NULL;
-
-    assert(!hash_table_get_count(direntry_cache));
-
+    rc = hash_table_del(direntry_cache, direntry_get_path(de));
     rw_lock_wunlock(&direntry_cache_lock);
 
-    direntry_trace_dedent();
+    direntry_delete(de);
+
+
+    return rc;
+}
+
+void direntry_cache_notify_stale (direntry_t *de)
+{
+    direntry_cache_del(de);
 }

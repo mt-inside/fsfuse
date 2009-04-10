@@ -29,19 +29,11 @@
 #include "indexnode.h"
 
 
-typedef void (*direntry_traverse_cb_t)(direntry_t *);
-
-
 direntry_t *de_root = NULL;
 
 
 TRACE_DEFINE(direntry)
 
-static int direntry_get_internal (const char * const path,
-                                  direntry_t **de_io,
-                                  int with_children        );
-static void post_callback (direntry_t *de);
-static void direntry_walk_children (direntry_t *de, direntry_traverse_cb_t cb);
 static direntry_type_t direntry_type_from_string (const char * const s);
 static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent);
 static int filelist_entry_parse (xmlElementPtr node,
@@ -63,7 +55,6 @@ int direntry_init (void)
 
 
 #if FEATURE_DIRENTRY_CACHE
-    /* cache init */
     direntry_cache_init();
 #endif
 
@@ -147,15 +138,13 @@ void direntry_delete (direntry_t *de)
     direntry_trace_dedent();
 }
 
-/* direntry_delete_tree() ?? */
 void direntry_delete_with_children (direntry_t *de)
 {
-    direntry_t *child = de->children;
-    direntry_t *next_child;
+    direntry_t *child = direntry_get_first_child(de), *next_child;
 
     while (child)
     {
-        next_child = child->next;
+        next_child = direntry_get_next_sibling(child);
         direntry_delete(child);
         child = next_child;
     }
@@ -163,7 +152,21 @@ void direntry_delete_with_children (direntry_t *de)
     direntry_delete(de);
 }
 
-/* direntry getters ========================================================= */
+/* direntry tree traversal functions =========================================*/
+/* for now, we only provide these simple wrappers around the underlying
+ * implementation details. Iterator functions could be built from these */
+
+direntry_t *direntry_get_first_child (direntry_t *de)
+{
+    return de->children;
+}
+
+direntry_t *direntry_get_next_sibling (direntry_t *de)
+{
+    return de->next;
+}
+
+/* direntry attribute getters =============================================== */
 char *direntry_get_path (direntry_t *de)
 {
     return de->path;
@@ -199,26 +202,138 @@ char *direntry_get_href (direntry_t *de)
     return de->href;
 }
 
+int direntry_got_children (direntry_t *de)
+{
+    return de->looked_for_children;
+}
 
-/* Get direntry for path.
- * Doesn't guarantee its children list is populated. */
+
+/* Get direntry for path. I.e. we want the meta-data for the node at this path,
+ * be it a file or directory. */
 int direntry_get (const char * const path, direntry_t **de)
 {
-    return direntry_get_internal(path, de, 0);
+    int rc = 0;
+
+
+    /* special cases */
+    if (!strcmp(path, "/"))
+    {
+        direntry_trace("\"/\" is special\n");
+
+        /* If we're caching then there should be one, cached root de, which will
+         * persist and remember things like looked_for_children.
+         * If we're not, copy it so that the one with looked_for_children
+         * incorrectly set (these will be deleted as the cache is normally the
+         * only thing to semi-permanently hold onto them) is thrown away each
+         * time.
+         */
+#if FEATURE_DIRENTRY_CACHE
+        *de = de_root;
+        direntry_post(*de);
+#else
+        *de = direntry_copy(de_root);
+#endif
+    }
+    else
+    {
+
+#if FEATURE_DIRENTRY_CACHE
+        *de = direntry_cache_get(path);
+#else
+        *de = NULL;
+#endif
+
+        if (!*de)
+        {
+            rc = fetch_node(path, de);
+        }
+    }
+
+
+    return rc;
 }
 
-/* Get direntry for path.
- * Guarantee its children list is populated => if it's not then there are no
- * children.
- * Fills in de but returns -ENOTDIR if path isn't a directory */
 int direntry_get_with_children (const char * const path, direntry_t **de)
 {
-    return direntry_get_internal(path, de, 1);
+    int rc = 0;
+    direntry_t *child;
+
+
+    /* special cases */
+    if (!strcmp(path, "/"))
+    {
+        direntry_trace("\"/\" is special\n");
+
+        /* If we're caching then there should be one, cached root de, which will
+         * persist and remember things like looked_for_children.
+         * If we're not, copy it so that the one with looked_for_children
+         * incorrectly set (these will be deleted as the cache is normally the
+         * only thing to semi-permanently hold onto them) is thrown away each
+         * time.
+         */
+#if FEATURE_DIRENTRY_CACHE
+        *de = de_root;
+        direntry_post(*de);
+
+        if (*de && direntry_got_children(*de))
+        {
+            child = direntry_get_first_child(*de);
+            while (child)
+            {
+                direntry_post(child);
+                child = direntry_get_next_sibling(child);
+            }
+        }
+#else
+        *de = direntry_copy(de_root);
+#endif
+    }
+    else
+    {
+#if FEATURE_DIRENTRY_CACHE
+        *de = direntry_cache_get(path);
+
+        if (*de && direntry_got_children(*de))
+        {
+            child = direntry_get_first_child(*de);
+            while (child)
+            {
+                direntry_post(child);
+                child = direntry_get_next_sibling(child);
+            }
+        }
+#else
+        NOT_USED(child);
+        *de = NULL;
+#endif
+
+        if (!*de)
+        {
+            rc = fetch_node(path, de);
+        }
+    }
+
+
+    assert(direntry_get_type(*de) == direntry_type_DIRECTORY);
+
+    if (!rc && !direntry_got_children(*de))
+    {
+        rc = populate_directory(*de);
+
+        if (rc)
+        {
+            direntry_delete(*de);
+        }
+    }
+
+
+    return rc;
 }
+
 
 int populate_directory (direntry_t *de)
 {
-    int rc = -EIO, fetcher_rc;
+    int rc;
     xmlParserCtxtPtr parser;
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr doc;
@@ -232,13 +347,13 @@ int populate_directory (direntry_t *de)
     parser = parser_new();
 
     /* fetch the directory listing and feed it into the parser */
-    fetcher_rc = fetcher_fetch(de->path,
-                               fetcher_url_type_t_BROWSE,
-                               NULL,
-                               (curl_write_callback)&parser_consumer,
-                               (void *)parser                         );
+    rc = fetcher_fetch(de->path,
+                       fetcher_url_type_t_BROWSE,
+                       NULL,
+                       (curl_write_callback)&parser_consumer,
+                       (void *)parser                         );
 
-    if (fetcher_rc == 0)
+    if (rc == 0)
     {
         /* The fetcher has returned, so that's all the document.
          * Indicate to the parser that that's it */
@@ -358,113 +473,10 @@ char *fsfuse_basename (const char *path)
 
 /* static helpers =========================================================== */
 
-static int direntry_get_internal (const char * const path,
-                                  direntry_t **de_io,
-                                  int with_children        )
-{
-    int rc = 0;
-    direntry_t *de = NULL;
-
-
-    direntry_trace("direntry_get_internal(path==%s, with_children==%d)\n",
-                   path, with_children);
-    direntry_trace_indent();
-
-    /* special cases */
-    if (!strcmp(path, "/"))
-    {
-        direntry_trace("\"/\" is special\n");
-
-        /* If we're caching then there should be one, cached root de, which will
-         * persist and remember things like looked_for_children.
-         * If we're not, copy it so that the one with looked_for_children
-         * incorrectly set (these will be deleted as the cache is normally the
-         * only thing to semi-permanently hold onto them) is thrown away each
-         * time.
-         */
-#if FEATURE_DIRENTRY_CACHE
-        de = de_root;
-        direntry_post(de);
-#else
-        de = direntry_copy(de_root);
-#endif
-    }
-    else
-    {
-#if FEATURE_DIRENTRY_CACHE
-        /* try the cache */
-        de = direntry_cache_get(path);
-
-        /* Optimisation - if we've fetched the path's parent and enumed its
-         * children and we don't have the node in the cache (we don't if we're
-         * here), then it must not exist. Don't try to fetch it.
-         * TODO: move this logic into the cache, which will need some way of
-         * indicating whether it has something, doesn't have it (usual) or
-         * doesn't have it and can assert its non-existence. */
-        if (!de)
-        {
-            char *parent = fsfuse_dirname(path);
-            direntry_t *parent_de = NULL;
-
-            parent_de = direntry_cache_get(parent);
-            free(parent);
-
-            if (parent_de &&
-                parent_de->looked_for_children)
-            {
-                rc = -ENOENT;
-                goto bail;
-            }
-        }
-#endif
-        if (!de)
-        {
-            rc = fetch_node(path, &de);
-        }
-    }
-
-    if (!rc && with_children)
-    {
-        if (de->type == direntry_type_DIRECTORY)
-        {
-            if (!de->looked_for_children)
-            {
-                rc = populate_directory(de);
-            }
-#if FEATURE_DIRENTRY_CACHE
-            else
-            {
-                /* TODO: this is ugly, and probably very error-prone */
-                /* if we've not had to go and look for the children then they're
-                 * already in the cache. Post all their refcounts as they'll be
-                 * deleted by whomever we return them to */
-                direntry_walk_children(de, &post_callback);
-            }
-#endif
-        }
-        else
-        {
-            rc = -ENOTDIR;
-        }
-    }
-
-bail:
-    direntry_trace_dedent();
-
-
-    *de_io = de;
-    return rc;
-}
-
-static void post_callback (direntry_t *de)
-{
-    direntry_post(de);
-}
-
 /* Get a direntry_t for the node at path. Could be a file or directory */
 static int fetch_node (const char * const path, direntry_t **de_io)
 {
-    int rc = -EIO, fetcher_rc;
+    int rc;
     char *parent;
     direntry_t *de = NULL;
     xmlParserCtxtPtr parser;
@@ -479,13 +491,13 @@ static int fetch_node (const char * const path, direntry_t **de_io)
     parser = parser_new();
 
     /* fetch the parent's directory listing and feed it into the parser */
-    fetcher_rc = fetcher_fetch(parent,
-                               fetcher_url_type_t_BROWSE,
-                               NULL,
-                               (curl_write_callback)&parser_consumer,
-                               (void *)parser                         );
+    rc = fetcher_fetch(parent,
+                       fetcher_url_type_t_BROWSE,
+                       NULL,
+                       (curl_write_callback)&parser_consumer,
+                       (void *)parser                         );
 
-    if (fetcher_rc == 0)
+    if (rc == 0)
     {
         char *basename;
         char *xpath = (char *)malloc((PATH_MAX * 6 + 64) * sizeof(*xpath));
@@ -537,27 +549,11 @@ static int fetch_node (const char * const path, direntry_t **de_io)
     parser_delete(parser);
     free(parent);
 
-
     direntry_trace_dedent();
 
 
     *de_io = de;
     return rc;
-}
-
-/* enmerate the direct children of a node and call the callback on them.
- * Safe against the callback free()ing the node */
-static void direntry_walk_children (direntry_t *de, direntry_traverse_cb_t cb)
-{
-    direntry_t *child = de->children, *next;
-
-
-    while (child)
-    {
-        next = child->next;
-        (*cb)(child);
-        child = next;
-    }
 }
 
 static direntry_type_t direntry_type_from_string (const char * const s)
@@ -667,7 +663,7 @@ static int filelist_entry_parse (xmlElementPtr node,
         free(path);
     }
 
-    /* attatch to parent */
+    /* attach to parent */
     if (parent_de)
     {
         de->next = parent_de->children;

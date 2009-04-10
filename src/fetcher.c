@@ -67,7 +67,7 @@ void fetcher_finalise (void)
 /*      File Operations                                                       */
 /* ========================================================================== */
 
-/* Actual fetcher function. Returns the HTTP code if the operation "completed" -
+/* Actual fetcher function. Returns the UNIX errno code if the operation "completed" -
  * either with success or error (indicated by the HTTP code). Returns 0 when the
  * operation didn't complete for "benign" reasons - try again */
 int fetcher_fetch (const char * const   path,

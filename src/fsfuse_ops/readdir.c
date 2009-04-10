@@ -44,8 +44,7 @@ int fsfuse_readdir (const char *path,
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
 
-        /* TODO: write an iterator for de trees */
-        child = de->children;
+        child = direntry_get_first_child(de);
         while (child)
         {
             if (child->base_name && child->path)
@@ -57,7 +56,7 @@ int fsfuse_readdir (const char *path,
                 free(st);
             }
 
-            child = child->next;
+            child = direntry_get_next_sibling(child);
         }
 
         direntry_delete_with_children(de);

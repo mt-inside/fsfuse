@@ -26,6 +26,9 @@
 #include "locks.h"
 #include "config.h"
 #include "direntry.h"
+#if FEATURE_DIRENTRY_CACHE
+#include "direntry_cache.h"
+#endif
 #include "download_thread_pool.h"
 #include "fetcher.h"
 #include "indexnode.h"
@@ -482,6 +485,14 @@ static void *downloader_thread_main (void *arg)
     }
     else
     {
+#if FEATURE_DIRENTRY_CACHE
+        if (rc == -ENOENT)
+        {
+            /* this direntry from the cache is stale */
+            direntry_cache_notify_stale(thread->de);
+        }
+#endif
+
         if (thread->current_chunk)
         {
             signal_read_thread(thread->current_chunk->ctxt, rc);
