@@ -6,7 +6,7 @@
 # $Id$
 #
 
-DIRENTRY_CACHE := 0
+DIRENTRY_CACHE := 1
 PROGRESS_METER := 0
 DEBUG          := 1
 

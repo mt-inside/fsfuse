@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <libxml/tree.h>
 #include <libxml/parser.h>
@@ -29,11 +30,26 @@
 #include "indexnode.h"
 
 
+/* This is a little horrible, but isn't too bad. I can't think of a way to make
+ * handling of "/" non-horrible.
+ * If we're caching then there is one "cached" de for "/", kept in this global
+ * var, not the cache, so it's can't be deleted. It always has to exist because
+ * we can't fetch it. It's an open question as to whether that should be dealt
+ * with here (as it is currently), or in the fetcher. This single root de
+ * persists and remembers things like any child lists attached to it.
+ * If we're not caching, we just make a new one each time, which will be thrown
+ * away when done with. TODO: currently, this also serves to take with it any
+ * out-of-date information about children, as these data structures aren't
+ * currently kept consistent.
+ */
+#if FEATURE_DIRENTRY_CACHE
 direntry_t *de_root = NULL;
+#endif
 
 
 TRACE_DEFINE(direntry)
 
+static direntry_t *direntry_new_root (void);
 static direntry_type_t direntry_type_from_string (const char * const s);
 static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent);
 static int filelist_entry_parse (xmlElementPtr node,
@@ -56,15 +72,11 @@ int direntry_init (void)
 
 #if FEATURE_DIRENTRY_CACHE
     direntry_cache_init();
+
+    /* If we're caching, we have one root node, made here, which is posted when
+     * it's needed. If we're not, we create them when needed */
+    de_root = direntry_new_root();
 #endif
-
-
-    /* specials init */
-    de_root = direntry_new();
-    direntry_attribute_add(de_root, "fs2-name", "");
-    direntry_attribute_add(de_root, "fs2-path", "/");
-    direntry_attribute_add(de_root, "fs2-type", "directory");
-
 
     direntry_trace_dedent();
 
@@ -86,9 +98,26 @@ direntry_t *direntry_new (void)
 {
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
+
+    de->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(de->lock, NULL);
+
     de->ref_count = 1;
 
     return de;
+}
+
+static direntry_t *direntry_new_root (void)
+{
+    direntry_t *root = direntry_new();
+
+
+    direntry_attribute_add(root, "fs2-name", "");
+    direntry_attribute_add(root, "fs2-path", "/");
+    direntry_attribute_add(root, "fs2-type", "directory");
+
+
+    return root;
 }
 
 void direntry_post (direntry_t *de)
@@ -99,33 +128,25 @@ void direntry_post (direntry_t *de)
                    de->base_name, de->ref_count);
 }
 
-direntry_t *direntry_copy (direntry_t *de)
-{
-    direntry_t *copy = direntry_new();
-
-
-    memcpy(copy, de, sizeof(direntry_t));
-
-    if (de->base_name) copy->base_name = strdup(de->base_name);
-    if (de->path)      copy->path      = strdup(de->path);
-    if (de->hash)      copy->hash      = strdup(de->hash);
-    if (de->href)      copy->href      = strdup(de->href);
-
-
-    return copy;
-}
-
 void direntry_delete (direntry_t *de)
 {
-    de->ref_count--;
+    unsigned refc;
+
+
+    pthread_mutex_lock(de->lock);
+    refc = --de->ref_count;
 
     direntry_trace("direntry_delete(de->base_name==%s): refcount now %u\n",
                    de->base_name, de->ref_count);
     direntry_trace_indent();
 
-    if (!de->ref_count)
+    if (!refc)
     {
         direntry_trace("refcount == 0 => free()ing\n");
+
+        pthread_mutex_unlock(de->lock);
+        pthread_mutex_destroy(de->lock);
+        free(de->lock);
 
         if (de->base_name) free(de->base_name);
         if (de->path) free(de->path);
@@ -133,6 +154,10 @@ void direntry_delete (direntry_t *de)
         if (de->href) free(de->href);
 
         free(de);
+    }
+    else
+    {
+        pthread_mutex_unlock(de->lock);
     }
 
     direntry_trace_dedent();
@@ -220,18 +245,11 @@ int direntry_get (const char * const path, direntry_t **de)
     {
         direntry_trace("\"/\" is special\n");
 
-        /* If we're caching then there should be one, cached root de, which will
-         * persist and remember things like looked_for_children.
-         * If we're not, copy it so that the one with looked_for_children
-         * incorrectly set (these will be deleted as the cache is normally the
-         * only thing to semi-permanently hold onto them) is thrown away each
-         * time.
-         */
 #if FEATURE_DIRENTRY_CACHE
         *de = de_root;
         direntry_post(*de);
 #else
-        *de = direntry_copy(de_root);
+        *de = direntry_new_root();
 #endif
     }
     else
@@ -264,13 +282,6 @@ int direntry_get_with_children (const char * const path, direntry_t **de)
     {
         direntry_trace("\"/\" is special\n");
 
-        /* If we're caching then there should be one, cached root de, which will
-         * persist and remember things like looked_for_children.
-         * If we're not, copy it so that the one with looked_for_children
-         * incorrectly set (these will be deleted as the cache is normally the
-         * only thing to semi-permanently hold onto them) is thrown away each
-         * time.
-         */
 #if FEATURE_DIRENTRY_CACHE
         *de = de_root;
         direntry_post(*de);
@@ -285,7 +296,7 @@ int direntry_get_with_children (const char * const path, direntry_t **de)
             }
         }
 #else
-        *de = direntry_copy(de_root);
+        *de = direntry_new_root();
 #endif
     }
     else

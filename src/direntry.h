@@ -50,6 +50,7 @@ typedef struct _direntry_t
                                             looked yet */
     int                        looked_for_children;
     unsigned                   ref_count;
+    pthread_mutex_t           *lock;
     struct _direntry_t        *next;
 } direntry_t;
 
@@ -62,7 +63,6 @@ extern void direntry_finalise (void);
 
 extern direntry_t *direntry_new (void);
 extern void direntry_post (direntry_t *de);
-extern direntry_t *direntry_copy (direntry_t *de);
 extern void direntry_delete (direntry_t *de);
 extern void direntry_delete_with_children (direntry_t *de);
 
