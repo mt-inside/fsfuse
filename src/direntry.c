@@ -33,14 +33,12 @@
 /* This is a little horrible, but isn't too bad. I can't think of a way to make
  * handling of "/" non-horrible.
  * If we're caching then there is one "cached" de for "/", kept in this global
- * var, not the cache, so it's can't be deleted. It always has to exist because
+ * var, not the cache, so it can't be deleted. It always has to exist because
  * we can't fetch it. It's an open question as to whether that should be dealt
  * with here (as it is currently), or in the fetcher. This single root de
  * persists and remembers things like any child lists attached to it.
  * If we're not caching, we just make a new one each time, which will be thrown
- * away when done with. TODO: currently, this also serves to take with it any
- * out-of-date information about children, as these data structures aren't
- * currently kept consistent.
+ * away when done with.
  */
 #if FEATURE_DIRENTRY_CACHE
 direntry_t *de_root = NULL;
@@ -50,17 +48,19 @@ direntry_t *de_root = NULL;
 TRACE_DEFINE(direntry)
 
 static direntry_t *direntry_new_root (void);
+static int fetch_node (const char * const path, direntry_t **de_io);
 static direntry_type_t direntry_type_from_string (const char * const s);
-static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent);
+static int direntry_children_fetch (const char * const path, direntry_t **de_out);
+static int filelist_entries_parse (xmlNodeSetPtr nodes,
+                                   const char * const parent_path,
+                                   direntry_t **de_out             );
 static int filelist_entry_parse (xmlElementPtr node,
-                                 direntry_t *de,
-                                 const char * const parent,
-                                 direntry_t *parent_de      );
+                                  direntry_t *de,
+                                  const char * const parent );
 static void direntry_attribute_add (direntry_t * const de,
                                     const char *name,
                                     const char *value      );
 static char *xpath_attr_escape (char *s);
-static int fetch_node (const char * const path, direntry_t **de_io);
 
 
 /* direntry module external interface ======================================= */
@@ -76,6 +76,7 @@ int direntry_init (void)
     /* If we're caching, we have one root node, made here, which is posted when
      * it's needed. If we're not, we create them when needed */
     de_root = direntry_new_root();
+    direntry_cache_add(de_root);
 #endif
 
     direntry_trace_dedent();
@@ -163,18 +164,16 @@ void direntry_delete (direntry_t *de)
     direntry_trace_dedent();
 }
 
-void direntry_delete_with_children (direntry_t *de)
+void direntry_delete_list (direntry_t *de)
 {
-    direntry_t *child = direntry_get_first_child(de), *next_child;
+    direntry_t *next;
 
-    while (child)
+    while (de)
     {
-        next_child = direntry_get_next_sibling(child);
-        direntry_delete(child);
-        child = next_child;
+        next = direntry_get_next_sibling(de);
+        direntry_delete(de);
+        de = next;
     }
-
-    direntry_delete(de);
 }
 
 /* direntry tree traversal functions =========================================*/
@@ -232,6 +231,11 @@ int direntry_got_children (direntry_t *de)
     return de->looked_for_children;
 }
 
+int direntry_is_root (direntry_t *de)
+{
+    return !strcmp(direntry_get_path(de), "/");
+}
+
 
 /* Get direntry for path. I.e. we want the meta-data for the node at this path,
  * be it a file or directory. */
@@ -271,123 +275,54 @@ int direntry_get (const char * const path, direntry_t **de)
     return rc;
 }
 
-int direntry_get_with_children (const char * const path, direntry_t **de)
-{
-    int rc = 0;
-    direntry_t *child;
 
-
-    /* special cases */
-    if (!strcmp(path, "/"))
-    {
-        direntry_trace("\"/\" is special\n");
-
-#if FEATURE_DIRENTRY_CACHE
-        *de = de_root;
-        direntry_post(*de);
-
-        if (*de && direntry_got_children(*de))
-        {
-            child = direntry_get_first_child(*de);
-            while (child)
-            {
-                direntry_post(child);
-                child = direntry_get_next_sibling(child);
-            }
-        }
-#else
-        *de = direntry_new_root();
-#endif
-    }
-    else
-    {
-#if FEATURE_DIRENTRY_CACHE
-        *de = direntry_cache_get(path);
-
-        if (*de && direntry_got_children(*de))
-        {
-            child = direntry_get_first_child(*de);
-            while (child)
-            {
-                direntry_post(child);
-                child = direntry_get_next_sibling(child);
-            }
-        }
-#else
-        NOT_USED(child);
-        *de = NULL;
-#endif
-
-        if (!*de)
-        {
-            rc = fetch_node(path, de);
-        }
-    }
-
-
-    assert(direntry_get_type(*de) == direntry_type_DIRECTORY);
-
-    if (!rc && !direntry_got_children(*de))
-    {
-        rc = populate_directory(*de);
-
-        if (rc)
-        {
-            direntry_delete(*de);
-        }
-    }
-
-
-    return rc;
-}
-
-
-int populate_directory (direntry_t *de)
+int direntry_get_children (direntry_t *de, direntry_t **de_out)
 {
     int rc;
-    xmlParserCtxtPtr parser;
-    xmlXPathObjectPtr xpathObj;
-    xmlDocPtr doc;
 
 
-    direntry_trace("populate_directory(%s)\n", de->path);
+    direntry_trace("direntry_get_children(%s)\n", de->path);
     direntry_trace_indent();
 
 
-    /* make a new parser for this thread */
-    parser = parser_new();
-
-    /* fetch the directory listing and feed it into the parser */
-    rc = fetcher_fetch(de->path,
-                       fetcher_url_type_t_BROWSE,
-                       NULL,
-                       (curl_write_callback)&parser_consumer,
-                       (void *)parser                         );
-
-    if (rc == 0)
+#if FEATURE_DIRENTRY_CACHE
+    /* If the direntry is marked as having had its children enumerated then:
+     * - they must have been enumerated, QED
+     * => they must be in the cache
+     * => they must be attached as children of de, which also must be in the
+     * cache because it exists.
+     * So, we can just return them.
+     */
+    if (direntry_got_children(de))
     {
-        /* The fetcher has returned, so that's all the document.
-         * Indicate to the parser that that's it */
-        doc = parser_done(parser);
-
-        xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name]");
-        if (xpathObj->type == XPATH_NODESET)
+        direntry_t *child = direntry_get_first_child(de);
+        while (child)
         {
-            rc = filelist_entries_parse(xpathObj->nodesetval, de);
-            de->looked_for_children = 1;
+            direntry_post(child);
+            child = direntry_get_next_sibling(child);
         }
 
-        xmlXPathFreeObject(xpathObj);
-        xmlFreeDoc(doc);
+        *de_out = direntry_get_first_child(de);
+        rc = 0;
+        goto ret;
+    }
+#endif
+
+
+    rc = direntry_children_fetch(de->path, de_out);
+    if (!rc)
+    {
+        de->looked_for_children = 1;
     }
 
-    parser_delete(parser);
 
+ret:
     direntry_trace_dedent();
 
 
     return rc;
 }
+
 
 int direntry_de2stat (struct stat *st, direntry_t *de)
 {
@@ -487,22 +422,74 @@ char *fsfuse_basename (const char *path)
 /* Get a direntry_t for the node at path. Could be a file or directory */
 static int fetch_node (const char * const path, direntry_t **de_io)
 {
-    int rc;
-    char *parent;
-    direntry_t *de = NULL;
+    direntry_t *de_tmp, *de_parent;
+    int rc = -ENOENT;
+
+
+#if FEATURE_DIRENTRY_CACHE
+    /* this is an internal function - node cannot be in the cache */
+
+    de_parent = direntry_cache_get(fsfuse_dirname(path));
+    assert(de_parent);
+
+    /* We have to call the external function here, as it won't double-fetch if
+     * the children are already cached, and will set the looked_for_children
+     * flag on de_parent if it has to go and get them */
+    direntry_get_children(de_parent, &de_tmp);
+
+    *de_io = direntry_cache_get(path);
+
+    direntry_delete_list(de_tmp);
+    direntry_delete(de_parent);
+
+
+    if (*de_io)
+    {
+        rc = 0;
+    }
+
+#else
+
+    /* We call the fetcher direct here, so that we don't have to go and acquire a
+     * de for the parent, which is pointless because:
+     * a) it won't have anything cached (cache is off)
+     * b) we'll set a flag on it, but it's gonna be thrown away instantly
+     */
+    direntry_children_fetch(fsfuse_dirname(path), &de_tmp);
+
+    rc = -ENOENT;
+    while (de_tmp)
+    {
+        if (!strcmp(direntry_get_path(de_tmp), path))
+        {
+            *de_io = de_tmp;
+            rc = 0;
+            break;
+        }
+        de_tmp = direntry_get_next_sibling(de_tmp);
+    }
+
+#endif
+
+
+    return rc;
+}
+
+static int direntry_children_fetch (const char * const path, direntry_t **de_out)
+{
     xmlParserCtxtPtr parser;
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr doc;
+    int rc;
 
 
-    direntry_trace("fetch_node(%s)\n", path);
-    direntry_trace_indent();
+    direntry_trace("direntry_children_fetch(%s)\n", path);
 
-    parent = fsfuse_dirname(path);
+    /* make a new parser for this thread */
     parser = parser_new();
 
-    /* fetch the parent's directory listing and feed it into the parser */
-    rc = fetcher_fetch(parent,
+    /* fetch the directory listing and feed it into the parser */
+    rc = fetcher_fetch(path,
                        fetcher_url_type_t_BROWSE,
                        NULL,
                        (curl_write_callback)&parser_consumer,
@@ -510,60 +497,23 @@ static int fetch_node (const char * const path, direntry_t **de_io)
 
     if (rc == 0)
     {
-        char *basename;
-        char *xpath = (char *)malloc((PATH_MAX * 6 + 64) * sizeof(*xpath));
         /* The fetcher has returned, so that's all the document.
          * Indicate to the parser that that's it */
         doc = parser_done(parser);
 
-        if (doc)
+        xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name]");
+        if (xpathObj->type == XPATH_NODESET)
         {
-            basename = fsfuse_basename(path);
-            /* FIXME can't deal with names that contain both '"' and '''!!
-             * The internet literally seems to have no idea how to get around
-             * this, save for some funny trick with xpath variables */
-            /* TODO: security */
-            if (strchr(basename, '"'))
-            {
-                sprintf(xpath, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name='%s']", basename);
-            }
-            else
-            {
-                sprintf(xpath, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name=\"%s\"]", basename);
-            }
-            free(basename);
-
-            xpathObj = parser_xhtml_xpath(doc, xpath);
-            if (xpathObj &&
-                xpathObj->type == XPATH_NODESET &&
-                xpathObj->nodesetval->nodeNr <= 1)
-            {
-                if (xpathObj->nodesetval->nodeNr)
-                {
-                    de = direntry_new();
-                    filelist_entry_parse((xmlElementPtr)xpathObj->nodesetval->nodeTab[0], de, parent, NULL);
-                    rc = 0;
-                }
-                else
-                {
-                    rc = -ENOENT;
-                }
-            }
-
-            xmlXPathFreeObject(xpathObj);
-            xmlFreeDoc(doc);
+            rc = filelist_entries_parse(xpathObj->nodesetval, path, de_out);
         }
 
-        free(xpath);
+        xmlXPathFreeObject(xpathObj);
+        xmlFreeDoc(doc);
     }
 
     parser_delete(parser);
-    free(parent);
-
-    direntry_trace_dedent();
 
 
-    *de_io = de;
     return rc;
 }
 
@@ -585,9 +535,11 @@ static direntry_type_t direntry_type_from_string (const char * const s)
 
 /* Parse a nodeset representing the A tags in an fs2-filelist,
  * building direntries */
-static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent)
+static int filelist_entries_parse (xmlNodeSetPtr nodes,
+                                   const char * const parent_path,
+                                   direntry_t **de_out             )
 {
-    direntry_t *de;
+    direntry_t *de, *prev;
     int rc = 0, size, i;
 
 
@@ -597,7 +549,7 @@ static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent)
     direntry_trace_indent();
 
     /* Enumerate the A elements */
-    for (i = 0; i < size && !rc; i++)
+    for (i = 0, prev = NULL; i < size && !rc; i++)
     {
         if (!(de = direntry_new()))
         {
@@ -607,9 +559,11 @@ static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent)
 
         rc = filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i],
                                   de,
-                                  parent->path,
-                                  parent);
+                                  parent_path);
+        de->next = prev;
+        prev = de;
     }
+    *de_out = prev;
 
     direntry_trace_dedent();
 
@@ -619,8 +573,7 @@ static int filelist_entries_parse (xmlNodeSetPtr nodes, direntry_t *parent)
 
 static int filelist_entry_parse (xmlElementPtr node,
                                   direntry_t *de,
-                                  const char * const parent,
-                                  direntry_t *parent_de      )
+                                  const char * const parent )
 {
     xmlAttributePtr curAttr = NULL;
 
@@ -672,13 +625,6 @@ static int filelist_entry_parse (xmlElementPtr node,
         direntry_attribute_add(de, "fs2-path", path);
 
         free(path);
-    }
-
-    /* attach to parent */
-    if (parent_de)
-    {
-        de->next = parent_de->children;
-        parent_de->children = de;
     }
 
 #if FEATURE_DIRENTRY_CACHE

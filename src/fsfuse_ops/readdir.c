@@ -25,7 +25,7 @@ int fsfuse_readdir (const char *path,
                     struct fuse_file_info *fi)
 {
     int rc = 0;
-    direntry_t *de, *child;
+    direntry_t *de, *first_child, *child;
     struct stat *st;
 
 
@@ -35,37 +35,38 @@ int fsfuse_readdir (const char *path,
     method_trace("fsfuse_readir(%s)\n", path);
     method_trace_indent();
 
-    rc = direntry_get_with_children(path, &de);
+    rc = direntry_get(path, &de);
 
     if (!rc)
     {
-        assert(de);
+        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
 
-        filler(buf, ".", NULL, 0);
-        filler(buf, "..", NULL, 0);
-
-        child = direntry_get_first_child(de);
-        while (child)
+        if (!rc)
         {
-            if (child->base_name && child->path)
-            {
-                st = (struct stat *)malloc(sizeof(struct stat));
-                direntry_de2stat(st, child);
+            filler(buf, ".", NULL, 0);
+            filler(buf, "..", NULL, 0);
 
-                filler(buf, child->base_name, st, 0);
-                free(st);
+            direntry_get_children(de, &first_child);
+            child = first_child;
+            while (child)
+            {
+                if (child->base_name && child->path)
+                {
+                    st = (struct stat *)malloc(sizeof(struct stat));
+                    direntry_de2stat(st, child);
+
+                    filler(buf, child->base_name, st, 0);
+                    free(st);
+                }
+
+                child = direntry_get_next_sibling(child);
             }
 
-            child = direntry_get_next_sibling(child);
+            direntry_delete_list(first_child);
         }
 
-        direntry_delete_with_children(de);
+        direntry_delete(de);
     }
-    else
-    {
-        assert(!de);
-    }
-
 
     method_trace_dedent();
 

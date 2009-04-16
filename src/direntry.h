@@ -52,6 +52,7 @@ typedef struct _direntry_t
     unsigned                   ref_count;
     pthread_mutex_t           *lock;
     struct _direntry_t        *next;
+    struct _direntry_t        *parent;
 } direntry_t;
 
 
@@ -64,7 +65,7 @@ extern void direntry_finalise (void);
 extern direntry_t *direntry_new (void);
 extern void direntry_post (direntry_t *de);
 extern void direntry_delete (direntry_t *de);
-extern void direntry_delete_with_children (direntry_t *de);
+extern void direntry_delete_list (direntry_t *de);
 
 extern direntry_t *direntry_get_first_child (direntry_t *de);
 extern direntry_t *direntry_get_next_sibling (direntry_t *de);
@@ -77,10 +78,11 @@ extern off_t           direntry_get_size       (direntry_t *de);
 extern unsigned long   direntry_get_link_count (direntry_t *de);
 extern char *          direntry_get_href       (direntry_t *de);
 extern int             direntry_got_children   (direntry_t *de);
+extern int             direntry_is_root        (direntry_t *de);
 
 extern int direntry_get               (const char * const path, direntry_t **de);
 extern int direntry_get_with_children (const char * const path, direntry_t **de);
-extern int populate_directory (direntry_t *de);
+extern int direntry_get_children      (direntry_t *de, direntry_t **de_out);
 
 extern int direntry_de2stat (struct stat *st, direntry_t *de);
 extern char *fsfuse_dirname (const char *path);

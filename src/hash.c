@@ -127,6 +127,12 @@ int hash_table_del (hash_table_t *tbl, const char *key)
     return rc;
 }
 
+double hash_table_get_load_factor (hash_table_t *tbl)
+{
+    return (double)tbl->count / (double)tbl->size;
+}
+
+
 /* hash table - helpers */
 
 static void hash_table_dump_histogram (hash_table_t *tbl)
@@ -148,6 +154,43 @@ static void hash_table_dump_histogram (hash_table_t *tbl)
         }
 
         printf("\n");
+    }
+
+    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
+}
+
+static void hash_table_dump (hash_table_t *tbl)
+{
+    unsigned i;
+    hash_table_entry_t *e;
+
+
+    for (i = 0; i < tbl->size; ++i)
+    {
+        printf("[%03u]\n", i);
+
+        for (e = tbl->entries[i]; e; e = e->next)
+        {
+            printf("  %s\n", e->key);
+        }
+    }
+
+    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
+}
+
+void hash_table_dump_dot (hash_table_t *tbl)
+{
+    unsigned i;
+    hash_table_entry_t *e;
+
+
+    for (i = 0; i < tbl->size; ++i)
+    {
+        if (tbl->entries[i]) printf("\"%03u\" [color=red]\n", i);
+        for (e = tbl->entries[i]; e; e = e->next)
+        {
+            printf("\"%03u\" -> \"%s\" [color=red]\n", i, e->key);
+        }
     }
 }
 

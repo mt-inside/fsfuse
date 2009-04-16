@@ -24,7 +24,7 @@
 
 
 #define CACHE_EMPTY_TIMEOUT 1 * 60
-#define DIRENTRY_CACHE_SIZE 256
+#define DIRENTRY_CACHE_SIZE 16
 
 
 static hash_table_t *direntry_cache = NULL;
@@ -52,10 +52,34 @@ void direntry_cache_finalise (void)
 
 int direntry_cache_add (direntry_t *de)
 {
+    direntry_t *parent;
+
+
     direntry_trace("direntry_cache_add(de->base_name==\"%s\",->path==\"%s\")\n",
                    direntry_get_base_name(de),
                    direntry_get_path(de) );
     direntry_trace_indent();
+
+
+    rw_lock_rlock(&direntry_cache_lock);
+    parent = hash_table_find(direntry_cache, direntry_get_path(de));
+    rw_lock_runlock(&direntry_cache_lock);
+    assert(!parent); /* Shouldn't be duplicates */
+
+
+    if (!direntry_is_root(de))
+    {
+        /* parent *must* exist! */
+        rw_lock_rlock(&direntry_cache_lock);
+        parent = hash_table_find(direntry_cache, fsfuse_dirname(direntry_get_path(de)));
+        rw_lock_runlock(&direntry_cache_lock);
+        assert(parent);
+        trce("ofc parent exists in cache; path == %s\n", direntry_get_path(parent));
+        de->parent = parent;
+        de->next = parent->children;
+        parent->children = de;
+    }
+
 
     direntry_post(de); /* inc reference count */
 
@@ -122,5 +146,58 @@ int direntry_cache_del (direntry_t *de)
 
 void direntry_cache_notify_stale (direntry_t *de)
 {
+    /* FIXME: finish me */
     direntry_cache_del(de);
+}
+
+
+/* debug functions */
+static void direntry_cache_dump_tree (direntry_t *de)
+{
+    static unsigned indent = 0;
+    unsigned i;
+    direntry_t *child;
+
+
+    for (i = 0; i < indent; ++i) printf("  ");
+    printf("%s\n", direntry_get_path(de));
+
+    ++indent;
+    for (child = direntry_get_first_child(de); child; child = direntry_get_next_sibling(de))
+    {
+        direntry_cache_dump_tree(child);
+    }
+}
+
+static void direntry_cache_dump_tree_dot_do (direntry_t *parent, direntry_t *de)
+{
+    direntry_t *child;
+
+
+    printf("\"%s\" [color=%s]\n",
+            direntry_get_path(de),
+            (direntry_get_type(de) == direntry_type_DIRECTORY && !direntry_got_children(de)) ? "green" : "blue"
+          );
+    if (parent)
+    {
+        printf("\"%s\" -> \"%s\" [color=blue]\n", direntry_get_path(parent), direntry_get_path(de));
+    }
+
+    for (child = direntry_get_first_child(de); child; child = direntry_get_next_sibling(child))
+    {
+        direntry_cache_dump_tree_dot_do(de, child);
+    }
+}
+
+static void direntry_cache_dump_tree_dot (direntry_t *de)
+{
+    direntry_cache_dump_tree_dot_do(NULL, de);
+}
+
+/* special, amalgamated view of both tree structure and hash table structure */
+static void direntry_cache_dump_dot (void)
+{
+    hash_table_dump_dot(direntry_cache);
+
+    direntry_cache_dump_tree_dot(de_root);
 }
