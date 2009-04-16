@@ -40,7 +40,7 @@
 #include "fsfuse_ops/others.h"
 
 
-static void settings_parse (int argc, char *argv[], struct fuse_args args);
+static void settings_parse (int argc, char *argv[], struct fuse_args *args);
 static void fsfuse_splash (void);
 static void fsfuse_version (void);
 static void fsfuse_usage (const char *progname);
@@ -146,12 +146,10 @@ int main(int argc, char *argv[])
      * free()d a lot. fuse_opt_parse() must do this implicitly.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
-    fuse_args.argc = 1;
-    fuse_args.argv = (char **)malloc((argc + 1) * sizeof(char *));
-    fuse_args.argv[0] = strdup(argv[0]);
-    fuse_args.argv[1] = NULL;
-    fuse_args.allocated = 1;
-    settings_parse(argc, argv, fuse_args);
+    fuse_args.argc = 0;
+    fuse_args.argv = NULL;
+    fuse_opt_add_arg(&fuse_args, argv[0]);
+    settings_parse(argc, argv, &fuse_args);
 
     /* Here we add mount options to give fuse.
      * These seem to be normal mount options, plus some fuse-specific ones.
@@ -253,7 +251,7 @@ int main(int argc, char *argv[])
     exit(rc);
 }
 
-static void settings_parse (int argc, char *argv[], struct fuse_args args)
+static void settings_parse (int argc, char *argv[], struct fuse_args *args)
 {
     char my_arg[1024];
     int c, option_index = 0;
@@ -301,7 +299,7 @@ static void settings_parse (int argc, char *argv[], struct fuse_args args)
                 /* debug */
                 config_set_int(config_key_DEBUG, 1);
                 sprintf(my_arg, "-d");
-                fuse_opt_add_arg(&args, my_arg);
+                fuse_opt_add_arg(args, my_arg);
                 break;
 
             case 'f':
