@@ -56,9 +56,6 @@ typedef struct _direntry_t
 } direntry_t;
 
 
-extern direntry_t *de_root;
-
-
 extern int direntry_init (void);
 extern void direntry_finalise (void);
 

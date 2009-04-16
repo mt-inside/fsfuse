@@ -30,21 +30,6 @@
 #include "indexnode.h"
 
 
-/* This is a little horrible, but isn't too bad. I can't think of a way to make
- * handling of "/" non-horrible.
- * If we're caching then there is one "cached" de for "/", kept in this global
- * var, not the cache, so it can't be deleted. It always has to exist because
- * we can't fetch it. It's an open question as to whether that should be dealt
- * with here (as it is currently), or in the fetcher. This single root de
- * persists and remembers things like any child lists attached to it.
- * If we're not caching, we just make a new one each time, which will be thrown
- * away when done with.
- */
-#if FEATURE_DIRENTRY_CACHE
-direntry_t *de_root = NULL;
-#endif
-
-
 TRACE_DEFINE(direntry)
 
 static direntry_t *direntry_new_root (void);
@@ -71,12 +56,18 @@ int direntry_init (void)
 
 
 #if FEATURE_DIRENTRY_CACHE
-    direntry_cache_init();
+    {
+        direntry_t *de_root;
 
-    /* If we're caching, we have one root node, made here, which is posted when
-     * it's needed. If we're not, we create them when needed */
-    de_root = direntry_new_root();
-    direntry_cache_add(de_root);
+
+        direntry_cache_init();
+
+        /* If we're caching, we have one root node, made here, which is posted when
+         * it's needed. If we're not, we create them when needed */
+        de_root = direntry_new_root();
+        direntry_cache_add(de_root);
+        direntry_delete(de_root);
+    }
 #endif
 
     direntry_trace_dedent();
@@ -90,8 +81,6 @@ void direntry_finalise (void)
 #if FEATURE_DIRENTRY_CACHE
     direntry_cache_finalise();
 #endif
-
-    direntry_delete(de_root);
 }
 
 /* direntry functions ======================================================= */
@@ -244,31 +233,25 @@ int direntry_get (const char * const path, direntry_t **de)
     int rc = 0;
 
 
+#if FEATURE_DIRENTRY_CACHE
+    *de = direntry_cache_get(path);
+#else
     /* special cases */
     if (!strcmp(path, "/"))
     {
         direntry_trace("\"/\" is special\n");
 
-#if FEATURE_DIRENTRY_CACHE
-        *de = de_root;
-        direntry_post(*de);
-#else
         *de = direntry_new_root();
-#endif
     }
     else
     {
-
-#if FEATURE_DIRENTRY_CACHE
-        *de = direntry_cache_get(path);
-#else
         *de = NULL;
+    }
 #endif
 
-        if (!*de)
-        {
-            rc = fetch_node(path, de);
-        }
+    if (!*de)
+    {
+        rc = fetch_node(path, de);
     }
 
 

@@ -197,6 +197,9 @@ static void direntry_cache_dump_tree_dot (direntry_t *de)
 /* special, amalgamated view of both tree structure and hash table structure */
 static void direntry_cache_dump_dot (void)
 {
+    direntry_t *de_root = hash_table_find(direntry_cache, "/");
+
+
     hash_table_dump_dot(direntry_cache);
 
     direntry_cache_dump_tree_dot(de_root);
