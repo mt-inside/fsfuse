@@ -153,9 +153,13 @@ int main(int argc, char *argv[])
     fuse_args.allocated = 1;
     settings_parse(argc, argv, fuse_args);
 
-    sprintf(my_arg, "-ofsname=" FSFUSE_NAME);
-    fuse_opt_add_arg(&fuse_args, my_arg);
-
+    /* Here we add mount options to give fuse.
+     * These seem to be normal mount options, plus some fuse-specific ones.
+     * Presumably we can also read (and filter out) any fsfuse-specific ones
+     * from our command line.
+     * Apparently, default options are "nodev,nosuid". Others need to be added.
+     * It looks like fuse adds "user=<foo>".
+     */
     sprintf(my_arg, "-ofsname=" FSFUSE_NAME);
     fuse_opt_add_arg(&fuse_args, my_arg);
 
@@ -163,6 +167,9 @@ int main(int argc, char *argv[])
     fuse_opt_add_arg(&fuse_args, my_arg);
 
     sprintf(my_arg, "-oallow_other");
+    fuse_opt_add_arg(&fuse_args, my_arg);
+
+    sprintf(my_arg, "-oro");
     fuse_opt_add_arg(&fuse_args, my_arg);
 
 

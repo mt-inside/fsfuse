@@ -32,7 +32,21 @@ typedef struct
 } read_context_t;
 
 
-/* MUST return as many bytes as were asked for, unless error or EOF. */
+/* MUST return as many bytes as were asked for, unless error or EOF.
+ *
+ * Interesting snippets from the fuse docs:
+ *   max_read=N
+ *     With this option the maximum size of read operations can be set.
+ *     The default is infinite.  Note that the size of read requests is
+ *     limited anyway to 32 pages (which is 128kbyte on i386).
+ *
+ *   max_readahead=N
+ *     Set the maximum number of bytes to read-ahead.  The default is
+ *     determined by the kernel.  On linux-2.6.22 or earlier it's 131072
+ *     (128kbytes)
+ *   - maybe this explains the over-reads that we get.
+ *
+ */
 int fsfuse_read (const char *path,
                  char *buf,
                  size_t size,

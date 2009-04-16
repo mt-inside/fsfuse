@@ -105,6 +105,11 @@ static direntry_t *direntry_new_root (void)
     direntry_attribute_add(root, "fs2-name", "");
     direntry_attribute_add(root, "fs2-path", "/");
     direntry_attribute_add(root, "fs2-type", "directory");
+    /* Set the link count to something non-0. We can't query this from the
+     * indexnode. We could work it out every time, but that would be tedious.
+     * It turns out to be vitally important that this is non-0 if samba is going
+     * to share the filesystem */
+    direntry_attribute_add(root, "fs2-linkcount", "1");
 
 
     return root;

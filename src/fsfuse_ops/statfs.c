@@ -39,7 +39,8 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     memset(stfs, 0, sizeof(struct statvfs));
     stfs->f_bsize = FSFUSE_BLKSIZE;
     stfs->f_frsize = FSFUSE_BLKSIZE;
-    stfs->f_flag |= ST_RDONLY; /* TODO: doesn't seem to be having any effect */
+    stfs->f_flag |= ST_RDONLY | ST_NOSUID;
+    stfs->f_namemax = PATH_MAX;
 
     /* make a new parser for this thread */
     parser = parser_new();
