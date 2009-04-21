@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "download_thread_pool.h"
 #include "direntry.h"
+#include "direntry_cache.h"
 #if FEATURE_PROGRESS_METER
 #include "progress.h"
 #endif
@@ -93,8 +94,8 @@ static struct fuse_operations fsfuse_oper = {
     &fsfuse_read,        /* read */
     &fsfuse_write,       /* write */
     &fsfuse_statfs,      /* statfs */
-    NULL,                /* flush */
-    NULL,                /* release */
+    &fsfuse_flush,       /* flush */
+    &fsfuse_release,     /* release */
     &fsfuse_fsync,       /* fsync */
     NULL,                /* setxattr */
     NULL,                /* getxattr */
@@ -102,7 +103,7 @@ static struct fuse_operations fsfuse_oper = {
     NULL,                /* removexattr */
     &fsfuse_opendir,     /* opendir */
     &fsfuse_readdir,     /* readdir */
-    NULL,                /* releasedir */
+    &fsfuse_releasedir,  /* releasedir */
     &fsfuse_fsyncdir,    /* fsyncdir */
     &fsfuse_init,        /* init */
     &fsfuse_destroy,     /* destroy */
@@ -327,6 +328,7 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
 
                 TRACE_ARG(alarms)
                 TRACE_ARG(direntry)
+                TRACE_ARG(direntry_cache)
                 TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)

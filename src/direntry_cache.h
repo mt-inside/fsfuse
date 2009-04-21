@@ -8,6 +8,9 @@
 
 #include "direntry.h"
 
+
+TRACE_DECLARE(direntry_cache)
+
 extern void direntry_cache_init (void);
 extern void direntry_cache_finalise (void);
 

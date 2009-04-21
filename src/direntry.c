@@ -117,6 +117,8 @@ static direntry_t *direntry_new_root (void)
 
 void direntry_post (direntry_t *de)
 {
+    assert(de->ref_count);
+
     de->ref_count++;
 
     direntry_trace("direntry_post(de->base_name==%s): refcount now %u\n",
@@ -127,6 +129,9 @@ void direntry_delete (direntry_t *de)
 {
     unsigned refc;
 
+
+    /* hacky attempt to detect overflow */
+    assert((signed)de->ref_count > 0);
 
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
@@ -139,8 +144,15 @@ void direntry_delete (direntry_t *de)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
+#if FEATURE_DIRENTRY_CACHE
+        assert(!direntry_cache_get(direntry_get_path(de)));
+#endif
+
         pthread_mutex_unlock(de->lock);
         pthread_mutex_destroy(de->lock);
+
+#if !DEBUG
+
         free(de->lock);
 
         if (de->base_name) free(de->base_name);
@@ -149,6 +161,7 @@ void direntry_delete (direntry_t *de)
         if (de->href) free(de->href);
 
         free(de);
+#endif
     }
     else
     {
@@ -174,7 +187,12 @@ void direntry_delete_list (direntry_t *de)
 /* for now, we only provide these simple wrappers around the underlying
  * implementation details. Iterator functions could be built from these */
 
-direntry_t *direntry_get_first_child (direntry_t *de)
+direntry_t *direntry_get_parent       (direntry_t *de)
+{
+    return de->parent;
+}
+
+direntry_t *direntry_get_first_child  (direntry_t *de)
 {
     return de->children;
 }
@@ -418,7 +436,17 @@ static int fetch_node (const char * const path, direntry_t **de_io)
     /* this is an internal function - node cannot be in the cache */
 
     de_parent = direntry_cache_get(fsfuse_dirname(path));
-    assert(de_parent);
+
+    /* TODO: not great. Fuse only does us the courtesy of calling getattr() down
+     * the directory tree once per open(). If a file's been open()d, then
+     * read()'s failed so it's been de-cached, a second attempt to read() it
+     * (seems to happen quite a lot) will cause a request straight for
+     * /foo/bar/baz, despite /foo/... no longer being in the cache. This check
+     * detects that and bails out.
+     * It's not as bad as it looks - we know that if things are going fine we'll
+     * always have been asked for the parent first. If the parent doesn't exist,
+     * it's safe to say its children don't either. */
+    if (!de_parent) return rc;
 
     /* We have to call the external function here, as it won't double-fetch if
      * the children are already cached, and will set the looked_for_children
@@ -443,18 +471,21 @@ static int fetch_node (const char * const path, direntry_t **de_io)
      * a) it won't have anything cached (cache is off)
      * b) we'll set a flag on it, but it's gonna be thrown away instantly
      */
-    direntry_children_fetch(fsfuse_dirname(path), &de_tmp);
+    rc = direntry_children_fetch(fsfuse_dirname(path), &de_tmp);
 
-    rc = -ENOENT;
-    while (de_tmp)
+    if (!rc)
     {
-        if (!strcmp(direntry_get_path(de_tmp), path))
+        rc = -ENOENT;
+        while (de_tmp)
         {
-            *de_io = de_tmp;
-            rc = 0;
-            break;
+            if (!strcmp(direntry_get_path(de_tmp), path))
+            {
+                *de_io = de_tmp;
+                rc = 0;
+                break;
+            }
+            de_tmp = direntry_get_next_sibling(de_tmp);
         }
-        de_tmp = direntry_get_next_sibling(de_tmp);
     }
 
 #endif
@@ -482,6 +513,18 @@ static int direntry_children_fetch (const char * const path, direntry_t **de_out
                        NULL,
                        (curl_write_callback)&parser_consumer,
                        (void *)parser                         );
+
+#if FEATURE_DIRENTRY_CACHE
+    /* if we're caching, then path must have a de in the cache for us to be
+     * interested in its children. If it's disappeared we won't be able to list
+     * it and therefore must find its de and mark it stale */
+    if (rc == -ENOENT)
+    {
+        direntry_t *de = direntry_cache_get(path);
+        direntry_cache_notify_stale(de);
+        direntry_delete(de);
+    }
+#endif
 
     if (rc == 0)
     {

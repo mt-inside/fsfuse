@@ -55,7 +55,7 @@ endif
 
 CFLAGS := -W -Wall -pedantic $(INCLUDES) $(DEFINES)
 CFLAGS_OPTIM := -O2
-CFLAGS_DEBUG := -O0 -g3
+CFLAGS_DEBUG := -O0 -g3 -DDEBUG
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
 else

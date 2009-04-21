@@ -61,12 +61,21 @@ extern int fsfuse_write ( const char *path,
                           off_t off,
                           struct fuse_file_info *fi );
 
+extern int fsfuse_flush ( const char *path,
+                   struct fuse_file_info *fi );
+
+extern int fsfuse_release ( const char *path,
+                     struct fuse_file_info *fi );
+
 extern int fsfuse_fsync ( const char *path,
                           int datasync,
                           struct fuse_file_info *fi );
 
 extern int fsfuse_opendir ( const char *path,
                             struct fuse_file_info *fi );
+
+extern int fsfuse_releasedir ( const char * path,
+                               struct fuse_file_info *fi );
 
 extern int fsfuse_fsyncdir ( const char *path,
                              int datasync,

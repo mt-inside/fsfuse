@@ -46,23 +46,26 @@ int fsfuse_readdir (const char *path,
             filler(buf, ".", NULL, 0);
             filler(buf, "..", NULL, 0);
 
-            direntry_get_children(de, &first_child);
-            child = first_child;
-            while (child)
+            rc = direntry_get_children(de, &first_child);
+            if (!rc)
             {
-                if (child->base_name && child->path)
+                child = first_child;
+                while (child)
                 {
-                    st = (struct stat *)malloc(sizeof(struct stat));
-                    direntry_de2stat(st, child);
+                    if (child->base_name && child->path)
+                    {
+                        st = (struct stat *)malloc(sizeof(struct stat));
+                        direntry_de2stat(st, child);
 
-                    filler(buf, child->base_name, st, 0);
-                    free(st);
+                        filler(buf, child->base_name, st, 0);
+                        free(st);
+                    }
+
+                    child = direntry_get_next_sibling(child);
                 }
 
-                child = direntry_get_next_sibling(child);
+                direntry_delete_list(first_child);
             }
-
-            direntry_delete_list(first_child);
         }
 
         direntry_delete(de);

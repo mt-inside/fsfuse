@@ -202,6 +202,36 @@ int fsfuse_write ( const char *path,
     return -EROFS;
 }
 
+/* Called once per close() of a file descriptor. There may be more than one
+ * close() per fd open()ed, as fds are duplicated by dup(), fork(), etc */
+int fsfuse_flush ( const char *path,
+                   struct fuse_file_info *fi )
+{
+    method_trace("fsfuse_flush(path==%s)\n", path);
+
+    NOT_USED(fi);
+
+
+    return 0;
+}
+
+/* Called exactly once per open fd - when the last instance of that fd is
+ * close()ed. Thus there will be one release() per open().
+ * This does not mean that there won't be more operations on that file without a
+ * subsequent open() - there could be other open fds also referring to the file
+ * in question.
+ */
+int fsfuse_release ( const char *path,
+                     struct fuse_file_info *fi )
+{
+    method_trace("fsfuse_release(path==%s)\n", path);
+
+    NOT_USED(fi);
+
+
+    return 0;
+}
+
 int fsfuse_fsync ( const char *path,
                    int datasync,
                    struct fuse_file_info *fi )
@@ -240,6 +270,22 @@ int fsfuse_opendir ( const char *path,
 
 
     return rc;
+}
+
+/* Called exactly once per opendir().
+ * This does not mean that there won't be more operations on that directory
+ * without a subsequent opendir() - there could be other open fds also
+ * referring to the directory in question.
+ */
+int fsfuse_releasedir ( const char * path,
+                        struct fuse_file_info *fi )
+{
+    method_trace("fsfuse_releasedir(path==%s)\n", path);
+
+    NOT_USED(fi);
+
+
+    return 0;
 }
 
 int fsfuse_fsyncdir ( const char *path,

@@ -42,6 +42,8 @@ static char *make_plain_url (const char * const path, CURL *eh);
 static char *make_browse_url (const char * const path, CURL *eh);
 static char *make_download_url (const char * const hash, CURL *eh);
 
+static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp);
+
 
 /* ========================================================================== */
 /*      Init & Teardown                                                       */
@@ -128,8 +130,15 @@ int fetcher_fetch (const char * const   path,
     curl_easy_setopt(eh, CURLOPT_FORBID_REUSE, 1);
 
     /* Data consumer */
-    curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, cb);
-    curl_easy_setopt(eh, CURLOPT_WRITEDATA, &cb_data_real);
+    if (cb)
+    {
+        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, cb);
+        curl_easy_setopt(eh, CURLOPT_WRITEDATA, &cb_data_real);
+    }
+    else
+    {
+        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, &null_writefn);
+    }
 
     /* Have libcurl abort on error (http >= 400) */
     curl_easy_setopt(eh, CURLOPT_FAILONERROR, 1);
@@ -364,7 +373,7 @@ int http2errno (int http_code)
 
 
 /* ========================================================================== */
-/*      Misc Functions                                                        */
+/*      Static Helpers                                                        */
 /* ========================================================================== */
 static CURL *curl_eh_new (void)
 {
@@ -458,4 +467,16 @@ static char *make_download_url (const char * const hash, CURL *eh)
 
 
     return url;
+}
+
+/* ========================================================================== */
+/* Misc                                                                       */
+/* ========================================================================== */
+
+static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp)
+{
+    NOT_USED(buf);
+    NOT_USED(userp);
+
+    return size * nmemb;
 }
