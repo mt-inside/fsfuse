@@ -35,8 +35,9 @@ static hash_table_t *direntry_cache = NULL;
 static rw_lock_t direntry_cache_lock;
 
 
-static int direntry_cache_is_stale (direntry_t *de);
 static void direntry_cache_del_descendants (direntry_t *de);
+static int direntry_cache_is_stale (direntry_t *de);
+static int direntry_cache_is_expired (direntry_t *de);
 
 
 void direntry_cache_init (void)
@@ -124,11 +125,26 @@ direntry_t *direntry_cache_get (const char * const path)
 
     direntry_cache_trace("direntry_cache_get(path==%s): %s\n",
             path, (de ? "hit" : "miss"));
+    direntry_cache_trace_indent();
 
     if (de)
     {
-        direntry_post(de); /* inc reference count */
+        /* check for expiry */
+        if (direntry_cache_is_expired(de))
+        {
+            direntry_cache_trace("cache entry found to be stale\n");
+
+            direntry_cache_notify_stale(de);
+            de = NULL;
+        }
+
+        if (de)
+        {
+            direntry_post(de); /* inc reference count */
+        }
     }
+
+    direntry_cache_trace_dedent();
 
 
     return de;
@@ -154,13 +170,22 @@ int direntry_cache_del (direntry_t *de)
 
 void direntry_cache_notify_stale (direntry_t *de)
 {
-    direntry_t *parent = direntry_get_parent(de);
+    direntry_t *parent;
 
 
     direntry_cache_trace("direntry_notify_stale(%s)\n", direntry_get_path(de));
     direntry_cache_trace_indent();
 
-    while (!direntry_is_root(de) &&
+    if (direntry_is_root(de))
+    {
+        parent = de;
+    }
+    else
+    {
+        parent = direntry_get_parent(de);
+    }
+
+    while (!direntry_is_root(parent) &&
            direntry_cache_is_stale(parent)
           )
     {
@@ -217,6 +242,8 @@ static void direntry_cache_del_descendants (direntry_t *de)
      * order) would cause this info to be build again. */
     de->children = NULL;
     de->looked_for_children = 0;
+    /* If we've been asked to purge this de's children, it itself must be OK. */
+    de->cache_last_valid = time(NULL);
 }
 
 /* Is this direntry "stale". That is, do we no longer trust it to (probably)
@@ -234,6 +261,14 @@ static int direntry_cache_is_stale (direntry_t *de)
     direntry_cache_trace("direntry_is_stale(%s)\n", direntry_get_path(de));
     direntry_cache_trace_indent();
 
+    /* Has it expired? */
+    if (direntry_cache_is_expired(de))
+    {
+        rc = 1;
+        goto end;
+    }
+
+    /* Does it no longer exist? */
     rc = fetcher_fetch(direntry_get_path(de),
                        fetcher_url_type_t_BROWSE,
                        NULL,
@@ -248,6 +283,8 @@ static int direntry_cache_is_stale (direntry_t *de)
         rc = 1;
     }
 
+
+end:
     direntry_cache_trace("%s\n", (rc) ? "yes" : "no");
     direntry_cache_trace_dedent();
 
@@ -255,6 +292,10 @@ static int direntry_cache_is_stale (direntry_t *de)
     return rc;
 }
 
+static int direntry_cache_is_expired (direntry_t *de)
+{
+    return de->cache_last_valid < time(NULL) - config_get(config_key_CACHE_EXPIRE_TIMEOUT).int_val;
+}
 
 /* debug functions */
 static void direntry_cache_dump_tree (direntry_t *de)

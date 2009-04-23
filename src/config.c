@@ -13,8 +13,7 @@
 static config_item_t config_array[] =
 {
     INT_ITEM(5),
-    INT_ITEM(5 * 60),
-    INT_ITEM(5 * 60),
+    INT_ITEM(10),
     INT_ITEM(1),
     STR_ITEM(""),
     STR_ITEM(""),

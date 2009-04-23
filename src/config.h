@@ -17,7 +17,6 @@ typedef enum
 {
     config_key_NEXT_CHUNK_TIMEOUT,
     config_key_CACHE_EXPIRE_TIMEOUT,
-    config_key_CACHE_ITEM_TIMEOUT,
     config_key_INDEXNODE_AUTODETECT,
     config_key_INDEXNODE_HOST,
     config_key_INDEXNODE_PORT,
