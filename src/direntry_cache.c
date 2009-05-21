@@ -90,7 +90,7 @@ int direntry_cache_add (direntry_t *de)
     }
 
 
-    direntry_post(de); /* inc reference count */
+    direntry_post(CALLER_INFO de); /* inc reference count */
 
     de->cache_last_valid = time(NULL);
 
@@ -140,7 +140,7 @@ direntry_t *direntry_cache_get (const char * const path)
 
         if (de)
         {
-            direntry_post(de); /* inc reference count */
+            direntry_post(CALLER_INFO de); /* inc reference count */
         }
     }
 
@@ -162,10 +162,17 @@ int direntry_cache_del (direntry_t *de)
     rc = hash_table_del(direntry_cache, direntry_get_path(de));
     rw_lock_wunlock(&direntry_cache_lock);
 
-    direntry_delete(de);
+    assert(!direntry_cache_get(direntry_get_path(de)));
+
+    direntry_delete(CALLER_INFO de);
 
 
     return rc;
+}
+
+void direntry_cache_notify_still_valid (direntry_t *de)
+{
+    de->cache_last_valid = time(NULL);
 }
 
 void direntry_cache_notify_stale (direntry_t *de)

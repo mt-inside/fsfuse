@@ -209,7 +209,7 @@ static thread_t *tp_thread_new (direntry_t *de)
 
 
     /* fill in the thread's details */
-    direntry_post(de);
+    direntry_post(CALLER_INFO de);
     t->de = de;
     TAILQ_INIT(&t->chunk_list);
     sem_init(&(t->chunk_list_count), 0, 0);
@@ -240,7 +240,7 @@ static void thread_delete (thread_t *t)
 
     pthread_mutex_unlock(&(t->mutex));
 
-    direntry_delete(t->de);
+    direntry_delete(CALLER_INFO t->de);
     sem_destroy(&t->chunk_list_count);
     pthread_mutex_destroy(&t->mutex);
 

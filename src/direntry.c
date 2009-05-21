@@ -66,7 +66,7 @@ int direntry_init (void)
          * it's needed. If we're not, we create them when needed */
         de_root = direntry_new_root();
         direntry_cache_add(de_root);
-        direntry_delete(de_root);
+        direntry_delete(CALLER_INFO de_root);
     }
 #endif
 
@@ -84,7 +84,7 @@ void direntry_finalise (void)
 }
 
 /* direntry functions ======================================================= */
-direntry_t *direntry_new (void)
+direntry_t *direntry_new (CALLER_DECL_ONLY)
 {
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
@@ -94,12 +94,15 @@ direntry_t *direntry_new (void)
 
     de->ref_count = 1;
 
+    direntry_trace("direntry %p new " CALLER_FORMAT " ref %u\n",
+                   de, CALLER_PASS de->ref_count);
+
     return de;
 }
 
 static direntry_t *direntry_new_root (void)
 {
-    direntry_t *root = direntry_new();
+    direntry_t *root = direntry_new(CALLER_INFO_ONLY);
 
 
     direntry_attribute_add(root, "fs2-name", "");
@@ -115,17 +118,17 @@ static direntry_t *direntry_new_root (void)
     return root;
 }
 
-void direntry_post (direntry_t *de)
+void direntry_post (CALLER_DECL direntry_t *de)
 {
     assert(de->ref_count);
 
     de->ref_count++;
 
-    direntry_trace("direntry_post(de->base_name==%s): refcount now %u\n",
-                   de->base_name, de->ref_count);
+    direntry_trace("direntry %p post " CALLER_FORMAT " ref %u\n",
+                   de, CALLER_PASS de->ref_count);
 }
 
-void direntry_delete (direntry_t *de)
+void direntry_delete (CALLER_DECL direntry_t *de)
 {
     unsigned refc;
 
@@ -136,8 +139,8 @@ void direntry_delete (direntry_t *de)
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
 
-    direntry_trace("direntry_delete(de->base_name==%s): refcount now %u\n",
-                   de->base_name, de->ref_count);
+    direntry_trace("direntry %p delete " CALLER_FORMAT " ref %u\n",
+                   de, CALLER_PASS de->ref_count);
     direntry_trace_indent();
 
     if (!refc)
@@ -178,7 +181,7 @@ void direntry_delete_list (direntry_t *de)
     while (de)
     {
         next = direntry_get_next_sibling(de);
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
         de = next;
     }
 }
@@ -264,7 +267,7 @@ int direntry_get (const char * const path, direntry_t **de)
     {
         direntry_trace("\"/\" is special\n");
 
-        *de = direntry_new_root();
+        *de = direntry_new_root(CALLER_INFO);
     }
     else
     {
@@ -304,7 +307,7 @@ int direntry_get_children (direntry_t *de, direntry_t **de_out)
         direntry_t *child = direntry_get_first_child(de);
         while (child)
         {
-            direntry_post(child);
+            direntry_post(CALLER_INFO child);
             child = direntry_get_next_sibling(child);
         }
 
@@ -456,7 +459,7 @@ static int fetch_node (const char * const path, direntry_t **de_io)
     *de_io = direntry_cache_get(path);
 
     direntry_delete_list(de_tmp);
-    direntry_delete(de_parent);
+    direntry_delete(CALLER_INFO de_parent);
 
 
     if (*de_io)
@@ -522,7 +525,7 @@ static int direntry_children_fetch (const char * const path, direntry_t **de_out
     {
         direntry_t *de = direntry_cache_get(path);
         direntry_cache_notify_stale(de);
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 #endif
 
@@ -582,7 +585,7 @@ static int filelist_entries_parse (xmlNodeSetPtr nodes,
     /* Enumerate the A elements */
     for (i = 0, prev = NULL; i < size && !rc; i++)
     {
-        if (!(de = direntry_new()))
+        if (!(de = direntry_new(CALLER_INFO_ONLY)))
         {
             rc = -EIO;
             break;

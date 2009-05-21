@@ -17,4 +17,5 @@ extern void direntry_cache_finalise (void);
 extern int direntry_cache_add (direntry_t *de);
 extern direntry_t *direntry_cache_get (const char * const path);
 extern int direntry_cache_del (direntry_t *de);
+extern void direntry_cache_notify_still_valid (direntry_t *de);
 extern void direntry_cache_notify_stale (direntry_t *de);

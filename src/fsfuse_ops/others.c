@@ -36,7 +36,7 @@ int fsfuse_getattr ( const char *path,
         assert(de);
 
         direntry_de2stat(stbuf, de);
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
     else
     {
@@ -89,7 +89,7 @@ int fsfuse_open ( const char *path,
         if ((fi->flags & 3) != O_RDONLY)                 rc = -EROFS;
         if (direntry_get_type(de) != direntry_type_FILE) rc = -EISDIR;
 
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 
 
@@ -265,7 +265,7 @@ int fsfuse_opendir ( const char *path,
         if ((fi->flags & 3) != O_RDONLY)                      rc = -EROFS;
         if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
 
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 
 
@@ -348,7 +348,7 @@ int fsfuse_access ( const char *path,
                 break;
         }
 
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();

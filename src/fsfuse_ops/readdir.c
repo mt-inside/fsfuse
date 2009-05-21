@@ -68,7 +68,7 @@ int fsfuse_readdir (const char *path,
             }
         }
 
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();

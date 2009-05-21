@@ -59,9 +59,9 @@ typedef struct _direntry_t
 extern int direntry_init (void);
 extern void direntry_finalise (void);
 
-extern direntry_t *direntry_new (void);
-extern void direntry_post        (direntry_t *de);
-extern void direntry_delete      (direntry_t *de);
+extern direntry_t *direntry_new (CALLER_DECL_ONLY);
+extern void direntry_post        (CALLER_DECL direntry_t *de);
+extern void direntry_delete      (CALLER_DECL direntry_t *de);
 extern void direntry_delete_list (direntry_t *de);
 
 extern direntry_t *direntry_get_parent       (direntry_t *de);

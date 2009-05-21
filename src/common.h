@@ -30,6 +30,23 @@
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
+#if 1
+#define CALLER_DECL const char *const file, size_t line_num,
+#define CALLER_DECL_ONLY const char *const file, size_t line_num
+#define CALLER_INFO __FILE__, __LINE__,
+#define CALLER_INFO_ONLY __FILE__, __LINE__
+#define CALLER_PASS file, line_num,
+#define CALLER_PASS_ONLY file, line_num
+#define CALLER_FORMAT "%s:%d"
+#else
+#define CALLER_DECL
+#define CALLER_DECL_ONLY void
+#define CALLER_INFO
+#define CALLER_INFO_ONLY
+#define CALLER_PASS
+#define CALLER_PASS_ONLY
+#define CALLER_FORMAT
+#endif
 
 #define FSFUSE_BLKSIZE   512
 

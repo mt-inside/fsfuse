@@ -17,6 +17,7 @@
 #include "read.h"
 #include "fsfuse_ops/others.h"
 #include "direntry.h"
+#include "direntry_cache.h"
 #include "fetcher.h"
 #include "indexnode.h"
 #include "download_thread_pool.h"
@@ -101,12 +102,23 @@ int fsfuse_read (const char *path,
                 }
                 rc = read_ctxt->rc;
 
+#if FEATURE_DIRENTRY_CACHE
+                /* Notify the cache that this de is still OK. We can do this
+                 * here because the above code actually performs a real network
+                 * transaction involving that file, and so would no for real if
+                 * it didn't exist any more. */
+                if (rc > 0)
+                {
+                    direntry_cache_notify_still_valid(de);
+                }
+#endif
+
 
                 pthread_mutex_destroy(&read_ctxt->filled_mutex);
                 free(read_ctxt);
             }
         }
-        direntry_delete(de);
+        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();
