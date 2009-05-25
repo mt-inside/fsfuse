@@ -107,10 +107,12 @@ static void emitter_printf_emitter (emitter_flags_t flags,
                                     const char *fmt,
                                     va_list ap             )
 {
-    char *tabs = trace_get_tabs();
+    char *tabs;
 
 
     pthread_mutex_lock(&trace_mutex);
+
+    tabs = trace_get_tabs();
 
     if (!(flags & emitter_flag_NO_PREFIX))
     {
@@ -118,9 +120,9 @@ static void emitter_printf_emitter (emitter_flags_t flags,
     }
     vprintf(fmt, ap);
 
-    pthread_mutex_unlock(&trace_mutex);
-
     free(tabs);
+
+    pthread_mutex_unlock(&trace_mutex);
 }
 
 /*
@@ -142,10 +144,12 @@ static void emitter_logfile_emitter (emitter_flags_t flags,
                                      const char *fmt,
                                      va_list ap             )
 {
-    char *tabs = trace_get_tabs();
+    char *tabs;
 
 
     pthread_mutex_lock(&trace_mutex);
+
+    tabs = trace_get_tabs();
 
     if (!(flags & emitter_flag_NO_PREFIX))
     {
@@ -155,9 +159,9 @@ static void emitter_logfile_emitter (emitter_flags_t flags,
 
     fflush(log_file);
 
-    pthread_mutex_unlock(&trace_mutex);
-
     free(tabs);
+
+    pthread_mutex_unlock(&trace_mutex);
 }
 
 
@@ -191,9 +195,17 @@ void trce_np (const char *fmt, ...)
 
 void trace_indent (void)
 {
+    pthread_mutex_lock(&trace_mutex);
+
     trace_dent += 2;
+
+    pthread_mutex_unlock(&trace_mutex);
 }
 void trace_dedent (void)
 {
+    pthread_mutex_lock(&trace_mutex);
+
     if (trace_dent) trace_dent -= 2;
+
+    pthread_mutex_unlock(&trace_mutex);
 }

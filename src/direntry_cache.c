@@ -6,9 +6,6 @@
  * $Id$
  */
 
-/* FIXME: this needs a total re-write. E.g. the locking's all wrong - a single
- * search involving multiple finds of different paths should be atomic, yes? */
-
 #include <assert.h>
 #include <stdlib.h>
 #include <time.h>
@@ -78,11 +75,15 @@ int direntry_cache_add (direntry_t *de)
 
     if (!direntry_is_root(de))
     {
+#if DEBUG
+        char *parent_path = fsfuse_dirname(direntry_get_path(de));
         /* parent *must* exist! */
         rw_lock_rlock(&direntry_cache_lock);
-        parent = hash_table_find(direntry_cache, fsfuse_dirname(direntry_get_path(de)));
+        parent = hash_table_find(direntry_cache, parent_path);
         rw_lock_runlock(&direntry_cache_lock);
+        free(parent_path);
         assert(parent);
+#endif
 
         de->parent = parent;
         de->next = parent->children;
@@ -180,7 +181,7 @@ void direntry_cache_notify_stale (direntry_t *de)
     direntry_t *parent;
 
 
-    direntry_cache_trace("direntry_notify_stale(%s)\n", direntry_get_path(de));
+    direntry_cache_trace("direntry_cache_notify_stale(%s)\n", direntry_get_path(de));
     direntry_cache_trace_indent();
 
     if (direntry_is_root(de))

@@ -94,7 +94,7 @@ direntry_t *direntry_new (CALLER_DECL_ONLY)
 
     de->ref_count = 1;
 
-    direntry_trace("direntry %p new " CALLER_FORMAT " ref %u\n",
+    direntry_trace("[direntry %p] new (" CALLER_FORMAT ") ref %u\n",
                    de, CALLER_PASS de->ref_count);
 
     return de;
@@ -124,7 +124,7 @@ void direntry_post (CALLER_DECL direntry_t *de)
 
     de->ref_count++;
 
-    direntry_trace("direntry %p post " CALLER_FORMAT " ref %u\n",
+    direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
                    de, CALLER_PASS de->ref_count);
 }
 
@@ -139,7 +139,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
 
-    direntry_trace("direntry %p delete " CALLER_FORMAT " ref %u\n",
+    direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
                    de, CALLER_PASS de->ref_count);
     direntry_trace_indent();
 
@@ -392,8 +392,6 @@ char *fsfuse_dirname (const char *path)
     {
         strncpy(dir, path, dir_len);
         dir[dir_len] = '\0';
-        direntry_trace("fsfuse_dirname(path==%s) = %s (len %u)\n",
-                path, dir, dir_len);
     }
 
 
@@ -417,8 +415,6 @@ char *fsfuse_basename (const char *path)
     {
         strncpy(base, loc + 1, base_len);
         base[base_len] = '\0';
-        direntry_trace("fsfuse_basename(path==%s) = %s (len %u)\n",
-                path, base, base_len);
     }
 
 
@@ -432,13 +428,16 @@ char *fsfuse_basename (const char *path)
 static int fetch_node (const char * const path, direntry_t **de_io)
 {
     direntry_t *de_tmp, *de_parent;
+    char *parent_path;
     int rc = -ENOENT;
 
 
 #if FEATURE_DIRENTRY_CACHE
     /* this is an internal function - node cannot be in the cache */
 
-    de_parent = direntry_cache_get(fsfuse_dirname(path));
+    parent_path = fsfuse_dirname(path);
+    de_parent = direntry_cache_get(parent_path);
+    free(parent_path);
 
     /* TODO: not great. Fuse only does us the courtesy of calling getattr() down
      * the directory tree once per open(). If a file's been open()d, then
@@ -455,10 +454,10 @@ static int fetch_node (const char * const path, direntry_t **de_io)
      * the children are already cached, and will set the looked_for_children
      * flag on de_parent if it has to go and get them */
     direntry_get_children(de_parent, &de_tmp);
+    direntry_delete_list(de_tmp);
 
     *de_io = direntry_cache_get(path);
 
-    direntry_delete_list(de_tmp);
     direntry_delete(CALLER_INFO de_parent);
 
 
@@ -474,7 +473,9 @@ static int fetch_node (const char * const path, direntry_t **de_io)
      * a) it won't have anything cached (cache is off)
      * b) we'll set a flag on it, but it's gonna be thrown away instantly
      */
-    rc = direntry_children_fetch(fsfuse_dirname(path), &de_tmp);
+    parent_path = fsfuse_dirname(path);
+    rc = direntry_children_fetch(parent_path, &de_tmp);
+    free(parent_path);
 
     if (!rc)
     {
