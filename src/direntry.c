@@ -22,6 +22,7 @@
 #include "common.h"
 #include "config.h"
 #include "direntry.h"
+#include "direntry_internal.h"
 #if FEATURE_DIRENTRY_CACHE
 #include "direntry_cache.h"
 #endif

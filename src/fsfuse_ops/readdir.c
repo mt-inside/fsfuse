@@ -52,12 +52,12 @@ int fsfuse_readdir (const char *path,
                 child = first_child;
                 while (child)
                 {
-                    if (child->base_name && child->path)
+                    if (direntry_get_base_name(child) && direntry_get_path(child))
                     {
                         st = (struct stat *)malloc(sizeof(struct stat));
                         direntry_de2stat(st, child);
 
-                        filler(buf, child->base_name, st, 0);
+                        filler(buf, direntry_get_base_name(child), st, 0);
                         free(st);
                     }
 

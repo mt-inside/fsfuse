@@ -6,6 +6,8 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_CONFIG_H
+#define _INCLUDED_CONFIG_H
 
 typedef struct /* to become a union */
 {
@@ -42,3 +44,5 @@ extern void config_finalise (void);
 extern config_item_t config_get (config_key_t key);
 extern void config_set_int (config_key_t key, int value);
 extern void config_set_string (config_key_t key, char * value);
+
+#endif /* _INCLUDED_CONFIG_H */

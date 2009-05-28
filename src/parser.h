@@ -6,6 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_PARSER_H
+#define _INCLUDED_PARSER_H
+
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -27,3 +30,5 @@ extern size_t parser_consumer (void *buf, size_t size, size_t nmemb, void *userp
 extern xmlDocPtr parser_done (xmlParserCtxtPtr ctxt);
 
 extern xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath);
+
+#endif /* _INCLUDED_PARSER_H */

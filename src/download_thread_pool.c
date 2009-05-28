@@ -85,7 +85,7 @@ typedef struct _thread_t
 
 /* List of threads we've spawned - this is the thread pool */
 TAILQ_HEAD(, _thread_t) thread_list;
-rw_lock_t thread_list_lock;
+rw_lock_t *thread_list_lock = NULL;
 
 
 /* read() thread */
@@ -117,7 +117,7 @@ int thread_pool_init (void)
     dtp_trace("thread_pool_init()\n");
 
     TAILQ_INIT(&thread_list);
-    rw_lock_init(&thread_list_lock);
+    thread_list_lock = rw_lock_new();
 
 
     return 0;
@@ -127,7 +127,7 @@ void thread_pool_finalise (void)
 {
     dtp_trace("thread_pool_finalise()\n");
 
-    rw_lock_destroy(&thread_list_lock);
+    rw_lock_delete(thread_list_lock);
 }
 
 /* add a request for a range ("chunk") of a file to the threadpool downloader.
@@ -173,14 +173,14 @@ static thread_t *tp_thread_get (const char *hash)
     thread_t *t = NULL;
 
 
-    rw_lock_rlock(&thread_list_lock);
+    rw_lock_rlock(thread_list_lock);
 
     TAILQ_FOREACH(t, &thread_list, entries)
     {
         if (!strcmp(hash, direntry_get_hash(t->de))) break;
     }
 
-    rw_lock_runlock(&thread_list_lock);
+    rw_lock_runlock(thread_list_lock);
 
 
     return t;
@@ -225,9 +225,9 @@ static thread_t *tp_thread_new (direntry_t *de)
     pthread_attr_destroy(&attr);
 
     /* add to the thread list */
-    rw_lock_wlock(&thread_list_lock);
+    rw_lock_wlock(thread_list_lock);
     TAILQ_INSERT_HEAD(&thread_list, t, entries);
-    rw_lock_wunlock(&thread_list_lock);
+    rw_lock_wunlock(thread_list_lock);
 
 
     return t;

@@ -6,6 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_OTHERS_H
+#define _INCLUDED_OTHERS_H
+
 #include <fuse.h>
 
 #include "common.h"
@@ -95,3 +98,5 @@ extern int fsfuse_access ( const char *path,
 extern int fsfuse_bmap (const char *,
                         size_t blocksize,
                         uint64_t *idx);
+
+#endif /* _INCLUDED_OTHERS_H */

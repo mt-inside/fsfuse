@@ -8,25 +8,40 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "common.h"
 #include "locks.h"
 
 
-int rw_lock_init (rw_lock_t *mutex)
+struct _rw_lock_t
 {
+  int readers_reading;
+  int writer_writing;
+  pthread_mutex_t mutex;
+  pthread_cond_t lock_free;
+};
+
+
+rw_lock_t *rw_lock_new (void)
+{
+    rw_lock_t *mutex = (rw_lock_t *)malloc(sizeof(*mutex));
+
+
     memset((void *)mutex, 0, sizeof(rw_lock_t));
     pthread_mutex_init(&(mutex->mutex), NULL);
     pthread_cond_init(&(mutex->lock_free), NULL);
 
 
-    return 0;
+    return mutex;
 }
 
-int rw_lock_destroy(rw_lock_t *mutex)
+int rw_lock_delete (rw_lock_t *mutex)
 {
     pthread_cond_destroy(&(mutex->lock_free));
     pthread_mutex_destroy(&(mutex->mutex));
+
+    free(mutex);
 
 
     return 0;
@@ -48,7 +63,7 @@ int rw_lock_rlock (rw_lock_t *mutex)
     return 0;
 }
 
-int rw_lock_runlock(rw_lock_t *mutex)
+int rw_lock_runlock (rw_lock_t *mutex)
 {
     int rc;
 

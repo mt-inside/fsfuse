@@ -6,21 +6,20 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_LOCKS_H
+#define _INCLUDED_LOCKS_H
+
 #include <pthread.h>
 
 
-typedef struct
-{
-  int readers_reading;
-  int writer_writing;
-  pthread_mutex_t mutex;
-  pthread_cond_t lock_free;
-} rw_lock_t;
+typedef struct _rw_lock_t rw_lock_t;
 
 
-int rw_lock_init   (rw_lock_t *mutex);
-int rw_lock_destroy(rw_lock_t *mutex);
-int rw_lock_rlock  (rw_lock_t *mutex);
-int rw_lock_runlock(rw_lock_t *mutex);
-int rw_lock_wlock  (rw_lock_t *mutex);
-int rw_lock_wunlock(rw_lock_t *mutex);
+extern rw_lock_t *rw_lock_new     (void);
+extern int        rw_lock_delete  (rw_lock_t *mutex);
+extern int        rw_lock_rlock   (rw_lock_t *mutex);
+extern int        rw_lock_runlock (rw_lock_t *mutex);
+extern int        rw_lock_wlock   (rw_lock_t *mutex);
+extern int        rw_lock_wunlock (rw_lock_t *mutex);
+
+#endif /* _INCLUDED_LOCKS_H */

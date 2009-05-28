@@ -6,4 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_STATFS_H
+#define _INCLUDED_STATFS_H
+
 extern int fsfuse_statfs (const char *path, struct statvfs *buf);
+
+#endif /* _INCLUDED_STATFS_H */

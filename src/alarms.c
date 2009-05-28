@@ -40,7 +40,7 @@ static void schedule_next (void);
 
 /* List of alarms */
 TAILQ_HEAD(, _alarm_t) alarms_list;
-rw_lock_t alarms_list_lock;
+rw_lock_t *alarms_list_lock = NULL;
 
 
 int alarms_init (void)
@@ -48,7 +48,7 @@ int alarms_init (void)
     alarms_trace("alarms_init()\n");
 
     TAILQ_INIT(&alarms_list);
-    rw_lock_init(&alarms_list_lock);
+    alarms_list_lock = rw_lock_new();
 
     signal(SIGALRM, &sigalrm_h);
 
@@ -60,7 +60,7 @@ void alarms_finalise (void)
 {
     alarms_trace("alarms_finalise()\n");
 
-    rw_lock_destroy(&alarms_list_lock);
+    rw_lock_delete(alarms_list_lock);
 }
 
 extern void alarm_schedule (unsigned long seconds,
@@ -88,18 +88,18 @@ extern void alarm_schedule (unsigned long seconds,
     alarm->cb_data = cb_data;
 
 
-    rw_lock_wlock(&alarms_list_lock);
+    rw_lock_wlock(alarms_list_lock);
 
     if (TAILQ_EMPTY(&alarms_list) ||
         timercmp(&tv_alarm, &TAILQ_FIRST(&alarms_list)->expiry, <))
     {
         TAILQ_INSERT_HEAD(&alarms_list, alarm, entries);
 
-        rw_lock_wunlock(&alarms_list_lock);
+        rw_lock_wunlock(alarms_list_lock);
 
         schedule_next();
 
-        rw_lock_wlock(&alarms_list_lock);
+        rw_lock_wlock(alarms_list_lock);
     }
     else
     {
@@ -117,7 +117,7 @@ extern void alarm_schedule (unsigned long seconds,
         }
     }
 
-    rw_lock_wunlock(&alarms_list_lock);
+    rw_lock_wunlock(alarms_list_lock);
 
 }
 
@@ -128,22 +128,22 @@ static void sigalrm_h (int signum)
 
     assert(signum == SIGALRM);
 
-    rw_lock_rlock(&alarms_list_lock);
+    rw_lock_rlock(alarms_list_lock);
     alarm = TAILQ_FIRST(&alarms_list);
-    rw_lock_runlock(&alarms_list_lock);
+    rw_lock_runlock(alarms_list_lock);
 
     (*(alarm->cb))(alarm->cb_data);
 
-    rw_lock_wlock(&alarms_list_lock);
+    rw_lock_wlock(alarms_list_lock);
     TAILQ_REMOVE(&alarms_list, alarm, entries);
     free(alarm);
     if (!TAILQ_EMPTY(&alarms_list))
     {
-        rw_lock_wunlock(&alarms_list_lock);
+        rw_lock_wunlock(alarms_list_lock);
         schedule_next();
-        rw_lock_wlock(&alarms_list_lock);
+        rw_lock_wlock(alarms_list_lock);
     }
-    rw_lock_wunlock(&alarms_list_lock);
+    rw_lock_wunlock(alarms_list_lock);
 }
 
 /* Internal function!
@@ -159,9 +159,9 @@ static void schedule_next (void)
     alarms_trace("schedule_next()\n");
     alarms_trace_indent();
 
-    rw_lock_rlock(&alarms_list_lock);
+    rw_lock_rlock(alarms_list_lock);
     alarm = TAILQ_FIRST(&alarms_list);
-    rw_lock_runlock(&alarms_list_lock);
+    rw_lock_runlock(alarms_list_lock);
     tv_alarm = alarm->expiry;
     alarms_trace("first alarm: %lu.%lu\n", tv_alarm.tv_sec, tv_alarm.tv_usec);
 

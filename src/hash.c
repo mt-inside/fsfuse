@@ -1,3 +1,11 @@
+/*
+ * Simple hash table implementation.
+ *
+ * Copyright (C) Matthew Turner 2009. All rights reserved.
+ *
+ * $Id: trace.c 292 2009-05-25 20:21:20Z matt $
+ */
+
 #include "common.h"
 
 #include <stdint.h>
@@ -7,6 +15,30 @@
 
 #include "hash.h"
 
+
+typedef struct _hash_table_entry_t hash_table_entry_t;
+
+struct _hash_table_t
+{
+    unsigned size;
+    unsigned count;
+    hash_table_entry_t **entries;
+};
+
+struct _hash_table_entry_t
+{
+    const char *key;
+    void *data;
+    struct _hash_table_entry_t *next;
+};
+
+struct _hash_table_iterator_t
+{
+    unsigned slot;
+    hash_table_entry_t *entry;
+    hash_table_t *tbl;
+    int end;
+};
 
 typedef uint32_t hash_t;
 

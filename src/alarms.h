@@ -6,6 +6,8 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_ALARMS_H
+#define _INCLUDED_ALARMS_H
 
 TRACE_DECLARE(alarms)
 
@@ -19,3 +21,5 @@ extern void alarm_schedule (unsigned long seconds,
                             unsigned long useconds,
                             alarm_cb_t cb,
                             void *cb_data           );
+
+#endif /* _INCLUDED_ALARMS_H */

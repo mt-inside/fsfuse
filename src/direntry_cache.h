@@ -6,6 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_DIRENTRY_CACHE_H
+#define _INCLUDED_DIRENTRY_CACHE_H
+
 #include "direntry.h"
 
 
@@ -19,3 +22,5 @@ extern direntry_t *direntry_cache_get (const char * const path);
 extern int direntry_cache_del (direntry_t *de);
 extern void direntry_cache_notify_still_valid (direntry_t *de);
 extern void direntry_cache_notify_stale (direntry_t *de);
+
+#endif /* _INCLUDED_DIRENTRY_CACHE_H */

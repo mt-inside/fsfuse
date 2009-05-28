@@ -19,6 +19,7 @@
 #include "trace.h"
 #include "fetcher.h"
 #include "direntry.h"
+#include "direntry_internal.h"
 #include "direntry_cache.h"
 
 
@@ -29,7 +30,7 @@ TRACE_DEFINE(direntry_cache)
 
 
 static hash_table_t *direntry_cache = NULL;
-static rw_lock_t direntry_cache_lock;
+static rw_lock_t *direntry_cache_lock = NULL;
 
 
 static void direntry_cache_del_descendants (direntry_t *de);
@@ -41,7 +42,7 @@ void direntry_cache_init (void)
 {
     direntry_cache_trace("direntry_cache_init()\n");
 
-    rw_lock_init(&direntry_cache_lock);
+    direntry_cache_lock = rw_lock_new();
 
     direntry_cache = hash_table_new(DIRENTRY_CACHE_SIZE);
 }
@@ -53,7 +54,7 @@ void direntry_cache_finalise (void)
     hash_table_delete(direntry_cache);
     direntry_cache = NULL;
 
-    rw_lock_destroy(&direntry_cache_lock);
+    rw_lock_delete(direntry_cache_lock);
 }
 
 int direntry_cache_add (direntry_t *de)
@@ -61,15 +62,14 @@ int direntry_cache_add (direntry_t *de)
     direntry_t *parent;
 
 
-    direntry_cache_trace("direntry_cache_add(de->base_name==\"%s\",->path==\"%s\")\n",
-                   direntry_get_base_name(de),
-                   direntry_get_path(de) );
+    direntry_cache_trace("[direntry %p] cache add\n",
+                         de);
     direntry_cache_trace_indent();
 
 
-    rw_lock_rlock(&direntry_cache_lock);
+    rw_lock_rlock(direntry_cache_lock);
     parent = hash_table_find(direntry_cache, direntry_get_path(de));
-    rw_lock_runlock(&direntry_cache_lock);
+    rw_lock_runlock(direntry_cache_lock);
     assert(!parent); /* Shouldn't be duplicates */
 
 
@@ -78,9 +78,9 @@ int direntry_cache_add (direntry_t *de)
 #if DEBUG
         char *parent_path = fsfuse_dirname(direntry_get_path(de));
         /* parent *must* exist! */
-        rw_lock_rlock(&direntry_cache_lock);
+        rw_lock_rlock(direntry_cache_lock);
         parent = hash_table_find(direntry_cache, parent_path);
-        rw_lock_runlock(&direntry_cache_lock);
+        rw_lock_runlock(direntry_cache_lock);
         free(parent_path);
         assert(parent);
 #endif
@@ -95,9 +95,9 @@ int direntry_cache_add (direntry_t *de)
 
     de->cache_last_valid = time(NULL);
 
-    rw_lock_wlock(&direntry_cache_lock);
+    rw_lock_wlock(direntry_cache_lock);
     hash_table_add(direntry_cache, direntry_get_path(de), (void *)de);
-    rw_lock_wunlock(&direntry_cache_lock);
+    rw_lock_wunlock(direntry_cache_lock);
 
     direntry_cache_trace_dedent();
 
@@ -111,9 +111,9 @@ direntry_t *direntry_cache_get (const char * const path)
     direntry_t *de = NULL;
 
 
-    rw_lock_rlock(&direntry_cache_lock);
+    rw_lock_rlock(direntry_cache_lock);
     de = (direntry_t *)hash_table_find(direntry_cache, path);
-    rw_lock_runlock(&direntry_cache_lock);
+    rw_lock_runlock(direntry_cache_lock);
 
     /* You may think that it's an obvious step here to see if we've got its
      * parent cached. If this is the case, and the parent's got a child list,
@@ -156,12 +156,12 @@ int direntry_cache_del (direntry_t *de)
     int rc;
 
 
-    direntry_cache_trace("direntry_cache_del(path==%s)\n",
-                   direntry_get_path(de));
+    direntry_cache_trace("[direntry %p] cache delete\n",
+                         de);
 
-    rw_lock_wlock(&direntry_cache_lock);
+    rw_lock_wlock(direntry_cache_lock);
     rc = hash_table_del(direntry_cache, direntry_get_path(de));
-    rw_lock_wunlock(&direntry_cache_lock);
+    rw_lock_wunlock(direntry_cache_lock);
 
     assert(!direntry_cache_get(direntry_get_path(de)));
 

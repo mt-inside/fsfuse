@@ -1,26 +1,16 @@
+/*
+ * Simple hash table API.
+ *
+ * Copyright (C) Matthew Turner 2009. All rights reserved.
+ *
+ * $Id: trace.c 292 2009-05-25 20:21:20Z matt $
+ */
 
-typedef struct _hash_table_entry_t
-{
-    const char *key;
-    void *data;
-    struct _hash_table_entry_t *next;
-} hash_table_entry_t;
+#ifndef _INCLUDED_HASH_H
+#define _INCLUDED_HASH_H
 
-typedef struct
-{
-    unsigned size;
-    unsigned count;
-    hash_table_entry_t **entries;
-} hash_table_t;
-
-
-typedef struct
-{
-    unsigned slot;
-    hash_table_entry_t *entry;
-    hash_table_t *tbl;
-    int end;
-} hash_table_iterator_t;
+typedef struct _hash_table_t hash_table_t;
+typedef struct _hash_table_iterator_t hash_table_iterator_t;
 
 
 extern hash_table_t *hash_table_new (unsigned size);
@@ -37,3 +27,5 @@ extern const char *hash_table_iterator_current_key (hash_table_iterator_t *iter)
 extern void *hash_table_iterator_current_data (hash_table_iterator_t *iter);
 extern int hash_table_iterator_next (hash_table_iterator_t *iter);
 extern int hash_table_iterator_at_end (hash_table_iterator_t *iter);
+
+#endif /* _INCLUDED_HASH_H */

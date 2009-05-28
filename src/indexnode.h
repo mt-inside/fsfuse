@@ -6,9 +6,14 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_INDEXNODE_H
+#define _INCLUDED_INDEXNODE_H
+
 extern int indexnode_find (void);
 
 extern double indexnode_parse_version (char *s);
 extern char *indexnode_host (void);
 extern char *indexnode_port (void);
 extern double indexnode_version (void);
+
+#endif /* _INCLUDED_INDEXNODE_H */

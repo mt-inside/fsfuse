@@ -6,6 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_READ_H
+#define _INCLUDED_READ_H
+
 #include <fuse.h>
 
 
@@ -19,3 +22,5 @@ extern int fsfuse_read (const char *path,
                         struct fuse_file_info *fi);
 
 extern void read_signal_chunk_done (int rc, void *ctxt);
+
+#endif /* _INCLUDED_READ_H */

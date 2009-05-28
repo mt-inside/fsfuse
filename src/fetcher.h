@@ -6,6 +6,9 @@
  * $Id$
  */
 
+#ifndef _INCLUDED_FETCHER_H
+#define _INCLUDED_FETCHER_H
+
 #include <curl/curl.h>
 
 #include "common.h"
@@ -38,3 +41,5 @@ extern int fetcher_fetch (const char * const   path,
                           void                *cb_data);
 extern double fetcher_get_indexnode_version (void);
 extern int http2errno (int http_code);
+
+#endif /* _INCLUDED_FETCHER_H */
