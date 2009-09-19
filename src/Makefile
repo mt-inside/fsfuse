@@ -47,7 +47,7 @@ ifeq ($(PROGRESS_METER),1)
     DEFINES += -DFEATURE_PROGRESS_METER=1
 endif
 
-INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I.
+INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -isystem 3rdparty
 OS:=$(shell uname -s)
 ifeq ($(OS),Darwin)
     INCLUDES += -I/opt/local/include

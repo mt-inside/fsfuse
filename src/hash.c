@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/sha.h>
 
 #include "hash.h"
 
@@ -320,16 +319,6 @@ static void hash_table_iterator_find_first (hash_table_iterator_t *iter)
 
 /* hash functions */
 
-static hash_t hash_sha (const char *str)
-{
-    unsigned char digest[SHA_DIGEST_LENGTH];
-
-
-    SHA1((unsigned char *)str, strlen(str), &digest);
-
-
-    return *((hash_t *)&digest);
-}
 static hash_t hash_djb2 (const char *str)
 {
     hash_t hash = 5381;
@@ -345,4 +334,3 @@ static hash_t hash_djb2 (const char *str)
 
 /* hash in use */
 static hash_t (*hash) (const char *str) = &hash_djb2;
-
