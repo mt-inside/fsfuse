@@ -341,10 +341,10 @@ int fsfuse_access ( const char *path,
         switch (direntry_get_type(de))
         {
             case direntry_type_DIRECTORY:
-                if (mode & ~config_get(config_key_DIR_MODE).int_val)  rc = -EACCES;
+                if (mode & ~config_attr_mode_dir)  rc = -EACCES;
                 break;
             case direntry_type_FILE:
-                if (mode & ~config_get(config_key_FILE_MODE).int_val) rc = -EACCES;
+                if (mode & ~config_attr_mode_file) rc = -EACCES;
                 break;
         }
 

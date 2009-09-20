@@ -25,7 +25,6 @@
 
 TRACE_DEFINE(direntry_cache)
 
-#define CACHE_EMPTY_TIMEOUT 1 * 60
 #define DIRENTRY_CACHE_SIZE 16
 
 
@@ -302,7 +301,7 @@ end:
 
 static int direntry_cache_is_expired (direntry_t *de)
 {
-    return de->cache_last_valid < time(NULL) - config_get(config_key_CACHE_EXPIRE_TIMEOUT).int_val;
+    return de->cache_last_valid < time(NULL) - config_timeout_cache;
 }
 
 /* debug functions */

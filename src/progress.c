@@ -68,7 +68,7 @@ int progress_init (void)
     progress_trace("progress_init()\n");
     progress_trace_indent();
 
-    if (config_get(config_key_PROGRESS).int_val)
+    if (config_opt_progress)
     {
         win = initscr();
 
@@ -105,7 +105,7 @@ int progress_init (void)
 
 void progress_finalise (void)
 {
-    if (config_get(config_key_PROGRESS).int_val)
+    if (config_option_progress)
     {
         endwin();
 
@@ -123,7 +123,7 @@ void progress_update (const char *path,
     progress_t *p = NULL;
 
 
-    if (config_get(config_key_PROGRESS).int_val)
+    if (config_option_progress)
     {
         rw_lock_wlock(&progress_cache_lock);
 
@@ -151,7 +151,7 @@ void progress_delete (const char *path)
     progress_t *p = NULL;
 
 
-    if (config_get(config_key_PROGRESS).int_val)
+    if (config_option_progress)
     {
         rw_lock_wlock(&progress_cache_lock);
 

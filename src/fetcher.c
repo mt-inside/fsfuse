@@ -121,7 +121,7 @@ int fetcher_fetch (const char * const   path,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    sprintf(s, "fs2-alias: [fsfuse]%s", config_get(config_key_ALIAS).str_val);
+    sprintf(s, "fs2-alias: %s", config_alias);
     slist = curl_slist_append(slist, s);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
 
@@ -229,7 +229,7 @@ double fetcher_get_indexnode_version (void)
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    sprintf(s, "fs2-alias: [fsfuse]%s", config_get(config_key_ALIAS).str_val);
+    sprintf(s, "fs2-alias: %s", config_alias);
     slist = curl_slist_append(slist, s);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
 

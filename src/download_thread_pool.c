@@ -279,11 +279,11 @@ static chunk_t *chunk_get_next (thread_t *thread)
 
 
     clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += config_get(config_key_NEXT_CHUNK_TIMEOUT).int_val;
+    ts.tv_sec += config_timeout_chunk;
 
     /* wait for a chunk on the list */
     dtp_trace("chunk_get_next() waiting %u seconds for new chunk...\n",
-              config_get(config_key_NEXT_CHUNK_TIMEOUT).int_val);
+              config_timeout_chunk);
     dtp_trace_indent();
 
 

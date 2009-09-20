@@ -336,8 +336,8 @@ ret:
 
 int direntry_de2stat (struct stat *st, direntry_t *de)
 {
-    int uid = config_get(config_key_FS_UID).int_val,
-        gid = config_get(config_key_FS_GID).int_val;
+    int uid = config_attr_id_uid,
+        gid = config_attr_id_gid;
 
 
     memset((void *)st, 0, sizeof(struct stat));
@@ -349,7 +349,7 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
     {
         /* Regular file */
         case direntry_type_FILE:
-            st->st_mode = S_IFREG | config_get(config_key_FILE_MODE).int_val;
+            st->st_mode = S_IFREG | config_attr_mode_file;
 
             st->st_size = de->size;
             st->st_blksize = FSFUSE_BLKSIZE;
@@ -360,7 +360,7 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
 
             break;
         case direntry_type_DIRECTORY:
-            st->st_mode = S_IFDIR | config_get(config_key_DIR_MODE).int_val;
+            st->st_mode = S_IFDIR | config_attr_mode_dir;
 
             /* indexnode supplies directory's tree size - not what a unix fs
              * wants */

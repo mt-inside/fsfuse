@@ -41,6 +41,9 @@
 #include "fsfuse_ops/others.h"
 
 
+static char *mountpoint = NULL;
+
+
 static void settings_parse (int argc, char *argv[], struct fuse_args *args);
 static void fsfuse_splash (void);
 static void fsfuse_version (void);
@@ -134,6 +137,9 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    config_init();
+    config_read();
+
     fsfuse_splash();
 
     /* Parse cmdline args */
@@ -172,15 +178,14 @@ int main(int argc, char *argv[])
     fuse_opt_add_arg(&fuse_args, my_arg);
 
 
-    if (config_get(config_key_DEBUG).int_val)
+    if (config_proc_debug)
     {
-        config_set_int(config_key_FOREGROUND, 1);
+        config_proc_fg = 1;
         trace_on();
     }
 
     /* Inits */
     if (trace_init()       ||
-        config_init()      ||
         alarms_init()      ||
         fetcher_init()     ||
         parser_init()      ||
@@ -208,17 +213,17 @@ int main(int argc, char *argv[])
     }
 
     /* Hand over to fuse */
-    if ((ch = fuse_mount(config_get(config_key_MOUNTPOINT).str_val, &fuse_args)))
+    if ((ch = fuse_mount(mountpoint, &fuse_args)))
     {
         if ((f = fuse_new(ch, &fuse_args, &fsfuse_oper, sizeof(fsfuse_oper), NULL)))
         {
             /* Setup */
             fuse_set_signal_handlers(fuse_get_session(f));
-            fuse_daemonize(config_get(config_key_FOREGROUND).int_val);
+            fuse_daemonize(config_proc_fg);
 
             /* Go! */
             printf("handing over to fuse_loop*()...\n");
-            if (config_get(config_key_SINGLE_THREADED).int_val)
+            if (config_proc_singlethread)
             {
                 rc = fuse_loop(f);
             }
@@ -229,7 +234,7 @@ int main(int argc, char *argv[])
 
             /* Teardown */
             fuse_remove_signal_handlers(fuse_get_session(f));
-            fuse_unmount(config_get(config_key_MOUNTPOINT).str_val, ch);
+            fuse_unmount(mountpoint, ch);
             fuse_destroy(f);
         }
     }
@@ -256,7 +261,6 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
 {
     char my_arg[1024];
     int c, option_index = 0;
-    char *mountpoint;
     struct option long_options[] = {
         {"debug",          no_argument,       NULL, 'd'},
         {"foreground",     no_argument,       NULL, 'f'},
@@ -284,7 +288,6 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
                 argv[optind + 1], strerror(errno));
         exit(1);
     }
-    config_set_string(config_key_MOUNTPOINT, mountpoint);
 
     argv += 2;
     argc -= 2;
@@ -298,24 +301,24 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
         {
             case 'd':
                 /* debug */
-                config_set_int(config_key_DEBUG, 1);
+                config_proc_debug = 1;
                 sprintf(my_arg, "-d");
                 fuse_opt_add_arg(args, my_arg);
                 break;
 
             case 'f':
                 /* foreground */
-                config_set_int(config_key_FOREGROUND, 1);
+                config_proc_fg = 1;
                 break;
 
             case 's':
                 /* single threaded */
-                config_set_int(config_key_SINGLE_THREADED, 1);
+                config_proc_singlethread = 1;
                 break;
 
             case 'p':
                 /* progress meter */
-                config_set_int(config_key_PROGRESS, 1);
+                config_option_progress = 1;
                 break;
 
             case 't':

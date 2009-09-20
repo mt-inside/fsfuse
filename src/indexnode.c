@@ -44,10 +44,10 @@ int indexnode_find (void)
     struct sockaddr_in sa;
 
 
-    if (!config_get(config_key_INDEXNODE_AUTODETECT).int_val)
+    if (!config_indexnode_autodetect)
     {
-        host = config_get(config_key_INDEXNODE_HOST).str_val;
-        port = config_get(config_key_INDEXNODE_PORT).str_val;
+        host = config_indexnode_host;
+        port = config_indexnode_port;
         version = fetcher_get_indexnode_version();
 
         printf("Static index node configured at %s:%s - version %f\n", host, port, version);
