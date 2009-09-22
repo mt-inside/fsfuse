@@ -5,7 +5,7 @@
 
     Copyright (C) Matthew Turner 2009. All rights reserved.
 
-    $Id: config.c 311 2009-09-20 19:55:45Z matt $
+    $Id$
  -->
 
 <xsl:stylesheet
@@ -47,7 +47,7 @@
  *
  * Copyright (C) Matthew Turner 2009. All rights reserved.
  *
- * $Id: config.c 311 2009-09-20 19:55:45Z matt $
+ * $Id$
  *
  * WARNING: THIS FILE IS AUTO-GENERATED. DO NOT ALTER!
  */
@@ -64,7 +64,7 @@
  *
  * Copyright (C) Matthew Turner 2009. All rights reserved.
  *
- * $Id: config.c 311 2009-09-20 19:55:45Z matt $
+ * $Id$
  *
  * WARNING: THIS FILE IS AUTO-GENERATED. DO NOT ALTER!
  */]]></xsl:text>

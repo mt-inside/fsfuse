@@ -3,7 +3,7 @@
  *
  * Copyright (C) Matthew Turner 2009. All rights reserved.
  *
- * $Id: direntry.h 291 2009-05-21 00:10:40Z matt $
+ * $Id$
  */
 
 #ifndef _INCLUDED_DIRENTRY_INTERNAL_H

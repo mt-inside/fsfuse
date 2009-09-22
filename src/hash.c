@@ -3,7 +3,7 @@
  *
  * Copyright (C) Matthew Turner 2009. All rights reserved.
  *
- * $Id: trace.c 292 2009-05-25 20:21:20Z matt $
+ * $Id$
  */
 
 #include "common.h"
