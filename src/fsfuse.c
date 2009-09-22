@@ -205,10 +205,10 @@ int main(int argc, char *argv[])
         printf("%s error: indexnode find error (this is not a simple indexnode not found)\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    if (indexnode_version() > PROTO_GREATEST)
+    if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
     {
-        printf("%s error: indexnode reports to be version %f, only versions <= %f are supported\n",
-               argv[0], indexnode_version(), PROTO_GREATEST);
+        printf("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
+               argv[0], indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
         exit(EXIT_FAILURE);
     }
 

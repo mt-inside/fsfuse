@@ -23,7 +23,8 @@
 #define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2009\n"
 
 /* Greatest protocol version that we know we support */
-#define PROTO_GREATEST 0.5f
+#define PROTO_MINIMUM 0.5f
+#define PROTO_MAXIMUM 0.6f
 
 #define NOT_USED(x) (void)x
 #define DO_NOTHING NOT_USED(0)
