@@ -18,6 +18,7 @@ default: fsfuse
 DEFINES := -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 OBJECTS := fsfuse.o                \
+           buildnumber.o           \
            hash.o                  \
            trace.o                 \
            direntry.o              \
@@ -85,6 +86,11 @@ config_declare.h: config-config.xml config.xsl
 config_define.c: config-config.xml config.xsl
 	xsltproc --stringparam filetype c config.xsl config-config.xml > config_define.c
 
+buildnumber.c:
+	$(shell echo -n "unsigned svn_rev = " > buildnumber.c)
+	$(shell echo -n `svn info | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
+	$(shell echo ";" >> buildnumber.c)
+
 %.o: %.c
 	@echo "Compiling $< -> $@"
 	@$(CC) -c $(CFLAGS) -o $@ $<
@@ -98,7 +104,7 @@ fsfuse: $(CONFIGS) $(OBJECTS)
 	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) config_declare.h config_define.c gmon.out fsfuse.log
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) buildnumber.c gmon.out fsfuse.log
 
 count:
 	find . \( -name "*c" -o -name "*h" \) -exec cat {} + | wc -l

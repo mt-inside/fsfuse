@@ -23,6 +23,7 @@
 #include <curses.h>
 
 #include "common.h"
+#include "buildnumber.h"
 #include "config.h"
 #include "alarms.h"
 #include "fetcher.h"
@@ -391,12 +392,13 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
 static void fsfuse_splash (void)
 {
     printf("%s - FragSoc Filesystem in USErspace\n"
-           "Version %s - %s\n"
+           "Version %s - %s (subversion revision %u)\n"
            "%s\n"
            "\n",
            FSFUSE_NAME,
            FSFUSE_VERSION,
            FSFUSE_DATE,
+           svn_rev,
            FSFUSE_COPYRIGHT
           );
 }
