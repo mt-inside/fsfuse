@@ -9,31 +9,14 @@
 #include "common.h"
 #include "config.h"
 
+#include <string.h>
 #include <assert.h>
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
 
-#define CONFIG_FILE_PATH "fsfuse.conf"
-
-
-/* the config */
-char *config_alias;
-int   config_timeout_chunk;
-int   config_timeout_cache;
-int   config_indexnode_autodetect;
-char *config_indexnode_host;
-char *config_indexnode_port;
-int   config_attr_mode_file;
-int   config_attr_mode_dir;
-int   config_attr_id_uid;
-int   config_attr_id_gid;
-int   config_proc_fg;
-int   config_proc_singlethread;
-int   config_proc_debug;
-int   config_option_cache;
-int   config_option_progress;
+static char *config_path = NULL;
 
 
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
@@ -41,7 +24,8 @@ static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
 
 int config_init (void)
 {
-    /* do nothing */
+    if (!config_path) config_path = strdup("fsfuse.conf");
+
 
     return 0;
 }
@@ -54,36 +38,51 @@ void config_finalise (void)
 
 int config_read (void)
 {
+    unsigned i = 0;
+    config_item item;
+    char *val;
     xmlDocPtr doc;
     xmlXPathContextPtr xpathCtxt;
 
 
     /* Read the config file */
-    doc = xmlParseFile(CONFIG_FILE_PATH);
-    assert(doc);
+    doc = xmlParseFile(config_path_get());
 
+    if (doc)
+    {
+        xpathCtxt = xmlXPathNewContext(doc);
 
-    xpathCtxt = xmlXPathNewContext(doc);
+        item = config_items[i];
+        while (item.symbol)
+        {
+            val = xpath_get(item.xpath, xpathCtxt);
+            if (val)
+            {
+                switch (item.type)
+                {
+                    case config_item_type_STRING:
+                        *((char **)item.symbol) = val;
+                        break;
 
-    config_alias                =      xpath_get("/config/alias/text()",                     xpathCtxt);
-    config_timeout_chunk        = atoi(xpath_get("/config/timeouts/chunk/text()",            xpathCtxt));
-    config_timeout_cache        = atoi(xpath_get("/config/timeouts/cache/text()",            xpathCtxt));
-    config_indexnode_autodetect = atoi(xpath_get("/config/indexnode/autodetect/text()",      xpathCtxt));
-    config_indexnode_host       =      xpath_get("/config/indexnode/host/text()",            xpathCtxt);
-    config_indexnode_port       =      xpath_get("/config/indexnode/port/text()",            xpathCtxt);
-    config_attr_mode_file       = atoi(xpath_get("/config/node-attrs/mode/file/text()",      xpathCtxt));
-    config_attr_mode_dir        = atoi(xpath_get("/config/node-attrs/mode/directory/text()", xpathCtxt));
-    config_attr_id_uid          = atoi(xpath_get("/config/node-attrs/id/uid/text()",         xpathCtxt));
-    config_attr_id_gid          = atoi(xpath_get("/config/node-attrs/id/gid/text()",         xpathCtxt));
-    config_proc_fg              = atoi(xpath_get("/config/process/foreground/text()",        xpathCtxt));
-    config_proc_singlethread    = atoi(xpath_get("/config/process/single-thread/text()",     xpathCtxt));
-    config_proc_debug           = atoi(xpath_get("/config/process/debug/text()",             xpathCtxt));
-    config_option_cache         = atoi(xpath_get("/config/options/cache/text()",             xpathCtxt));
-    config_option_progress      = atoi(xpath_get("/config/options/progress/text()",          xpathCtxt));
+                    case config_item_type_NUMBER:
+                        *((int *)item.symbol) = strtoul(val, NULL, 0);
+                        break;
 
+                    default:
+                        assert(0);
+                }
+            }
 
-    xmlXPathFreeContext(xpathCtxt);
-    xmlFreeDoc(doc);
+            item = config_items[++i];
+        }
+
+        xmlXPathFreeContext(xpathCtxt);
+        xmlFreeDoc(doc);
+    }
+    else
+    {
+        trce("Unable to read / parse config file %s\n", config_path_get());
+    }
 
 
     return 0;
@@ -115,4 +114,15 @@ static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt)
 
 
     return ret;
+}
+
+char *config_path_get (void)
+{
+    return config_path;
+}
+
+void config_path_set (char *config_path_new)
+{
+    if (config_path) free(config_path);
+    config_path = config_path_new;
 }

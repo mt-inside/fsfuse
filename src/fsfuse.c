@@ -129,6 +129,8 @@ int main(int argc, char *argv[])
     char my_arg[1024];
 
 
+    fsfuse_splash();
+
     /* Check system fuse version */
     if (fuse_version() < FUSE_USE_VERSION)
     {
@@ -137,10 +139,6 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    config_init();
-    config_read();
-
-    fsfuse_splash();
 
     /* Parse cmdline args */
     /* fuse *really* wants you to use its parsing mechanism. It ignores
@@ -157,6 +155,15 @@ int main(int argc, char *argv[])
     fuse_args.argv = NULL;
     fuse_opt_add_arg(&fuse_args, argv[0]);
     settings_parse(argc, argv, &fuse_args);
+
+
+    /* FIXME: this currently over-writes any options set on the command-line.
+     * The command line has to be read first in order to find the address of the
+     * config file, but anything else set on the command line should have
+     * precedence over the config file. */
+    config_init();
+    config_read();
+
 
     /* Here we add mount options to give fuse.
      * These seem to be normal mount options, plus some fuse-specific ones.
@@ -262,6 +269,7 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
     char my_arg[1024];
     int c, option_index = 0;
     struct option long_options[] = {
+        {"config",         required_argument, NULL, 'c'},
         {"debug",          no_argument,       NULL, 'd'},
         {"foreground",     no_argument,       NULL, 'f'},
         {"singlethreaded", no_argument,       NULL, 's'},
@@ -294,11 +302,16 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
 
     while (1)
     {
-        c = getopt_long(argc, argv, "dfspt:hvo", long_options, &option_index);
+        c = getopt_long(argc, argv, "c:dfspt:hvo", long_options, &option_index);
         if (c == -1) break;
 
         switch (c)
         {
+            case 'c':
+                /* config file */
+                config_path_set(strdup(optarg));
+                break;
+
             case 'd':
                 /* debug */
                 config_proc_debug = 1;

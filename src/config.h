@@ -7,25 +7,14 @@
  */
 
 
-/* the config */
-extern char *config_alias;
-extern int   config_timeout_chunk;
-extern int   config_timeout_cache;
-extern int   config_indexnode_autodetect;
-extern char *config_indexnode_host;
-extern char *config_indexnode_port;
-extern int   config_attr_mode_file;
-extern int   config_attr_mode_dir;
-extern int   config_attr_id_uid;
-extern int   config_attr_id_gid;
-extern int   config_proc_fg;
-extern int   config_proc_singlethread;
-extern int   config_proc_debug;
-extern int   config_option_cache;
-extern int   config_option_progress;
+#include "config_internal.h"
+#include "config_declare.h"
 
 
 extern int config_init (void);
 extern void config_finalise (void);
 
 extern int config_read (void);
+
+extern char *config_path_get (void);
+extern void config_path_set (char *config_path_new);

@@ -26,6 +26,7 @@ OBJECTS := fsfuse.o                \
            download_thread_pool.o  \
            indexnode.o             \
            config.o                \
+           config_define.o 	   \
            alarms.o                \
            locks.o                 \
            fsfuse_ops/readdir.o    \
@@ -37,6 +38,9 @@ DEPENDS := $(patsubst %.o,%.d,$(OBJECTS))
 #this will cause an attempt to build all included files (although it will still
 #moan they don't exist first, just before building them, if given the chance)
 -include $(DEPENDS)
+
+CONFIGS := config_declare.h \
+	   config_define.c
 
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o
@@ -76,6 +80,11 @@ ifeq ($(OS),FreeBSD)
 endif
 
 
+config_declare.h: config-config.xml config.xsl
+	xsltproc --stringparam filetype h config.xsl config-config.xml > config_declare.h
+config_define.c: config-config.xml config.xsl
+	xsltproc --stringparam filetype c config.xsl config-config.xml > config_define.c
+
 %.o: %.c
 	@echo "Compiling $< -> $@"
 	@$(CC) -c $(CFLAGS) -o $@ $<
@@ -84,12 +93,12 @@ endif
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM $(CFLAGS) -o $@ $<
 
-fsfuse: $(OBJECTS)
+fsfuse: $(CONFIGS) $(OBJECTS)
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) gmon.out fsfuse.log
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) config_declare.h config_define.c gmon.out fsfuse.log
 
 count:
 	find . \( -name "*c" -o -name "*h" \) -exec cat {} + | wc -l

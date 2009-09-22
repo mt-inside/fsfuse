@@ -88,6 +88,10 @@ int indexnode_find (void)
                 }
             }
         }
+        else
+        {
+            printf("Cannot bind to indexnode listener socket\n");
+        }
 
         close(s);
     }
