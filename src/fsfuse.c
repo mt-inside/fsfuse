@@ -18,6 +18,7 @@
 #include <fuse/fuse_opt.h>
 #include <fuse/fuse_lowlevel.h>
 
+#include <sys/utsname.h>
 #include <curl/curl.h>
 #include <libxml/xmlversion.h>
 #include <curses.h>
@@ -42,13 +43,24 @@
 #include "fsfuse_ops/others.h"
 
 
+typedef enum
+{
+    start_action_MOUNT,
+    start_action_VERSION,
+    start_action_USAGE
+} start_action_t;
+
+
 static char *mountpoint = NULL;
+static char *mountpoint_raw = NULL;
+static char *progname = NULL;
 
 
-static void settings_parse (int argc, char *argv[], struct fuse_args *args);
+static start_action_t settings_parse (int argc, char *argv[]);
+static void fuse_args_set (struct fuse_args *fuse_args);
 static void fsfuse_splash (void);
-static void fsfuse_version (void);
-static void fsfuse_usage (const char *progname);
+static void fsfuse_versions (void);
+static void fsfuse_usage (void);
 
 
 static void *fsfuse_init (struct fuse_conn_info *conn)
@@ -124,11 +136,13 @@ static struct fuse_operations fsfuse_oper = {
 int main(int argc, char *argv[])
 {
     int rc = 1;
+    start_action_t sa;
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
     struct fuse *f;
-    char my_arg[1024];
 
+
+    progname = argv[0];
 
     fsfuse_splash();
 
@@ -136,7 +150,7 @@ int main(int argc, char *argv[])
     if (fuse_version() < FUSE_USE_VERSION)
     {
         printf("%s error: fuse version %d required, only version %d available\n",
-               argv[0], FUSE_USE_VERSION, fuse_version());
+               progname, FUSE_USE_VERSION, fuse_version());
         exit(EXIT_FAILURE);
     }
 
@@ -146,49 +160,51 @@ int main(int argc, char *argv[])
      * fuse_args.argv[0], as if it's the program name - i.e. it's expecting a
      * copy of your argv, not a special one you've made for it. However, if you
      * give fuse_new() any arguments it doesn't understand it b0rks. This is
-     * convenient, given fuse's parsing functions remove allow you to remove any
+     * convenient, given fuse's parsing functions allow you to remove any
      * (non-fuse) arguments you've dealt with...
      * Anything you do give it must be malloc()d, as it all gets realloc()d and
      * free()d a lot. fuse_opt_parse() must do this implicitly.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
-    fuse_args.argc = 0;
-    fuse_args.argv = NULL;
-    fuse_opt_add_arg(&fuse_args, argv[0]);
-    settings_parse(argc, argv, &fuse_args);
+    settings_parse(argc, argv);
 
 
-    /* FIXME: this currently over-writes any options set on the command-line.
-     * The command line has to be read first in order to find the address of the
-     * config file, but anything else set on the command line should have
-     * precedence over the config file. */
     config_init();
     config_read();
 
 
-    /* Here we add mount options to give fuse.
-     * These seem to be normal mount options, plus some fuse-specific ones.
-     * Presumably we can also read (and filter out) any fsfuse-specific ones
-     * from our command line.
-     * Apparently, default options are "nodev,nosuid". Others need to be added.
-     * It looks like fuse adds "user=<foo>".
-     */
-    sprintf(my_arg, "-ofsname=" FSFUSE_NAME);
-    fuse_opt_add_arg(&fuse_args, my_arg);
+    sa = settings_parse(argc, argv);
 
-    sprintf(my_arg, "-osubtype=" FSFUSE_NAME "-" FSFUSE_VERSION);
-    fuse_opt_add_arg(&fuse_args, my_arg);
 
-    sprintf(my_arg, "-oallow_other");
-    fuse_opt_add_arg(&fuse_args, my_arg);
+    fuse_args_set(&fuse_args);
 
-    sprintf(my_arg, "-oro");
-    fuse_opt_add_arg(&fuse_args, my_arg);
+
+    switch (sa)
+    {
+        case start_action_MOUNT:
+            if (!mountpoint)
+            {
+                printf("%s error: bad or missing mount point \"%s\".\n", progname, mountpoint_raw);
+                fsfuse_usage();
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case start_action_VERSION:
+            fsfuse_versions();
+            exit(EXIT_SUCCESS);
+            break;
+
+        case start_action_USAGE:
+            fsfuse_usage();
+            exit(EXIT_SUCCESS);
+            break;
+    }
+
 
 
     if (config_proc_debug)
     {
-        config_proc_fg = 1;
         trace_on();
     }
 
@@ -203,20 +219,20 @@ int main(int argc, char *argv[])
 #endif
         thread_pool_init()    )
     {
-        printf("%s error: initialisation failed\n", argv[0]);
+        printf("%s error: initialisation failed\n", progname);
         exit(EXIT_FAILURE);
     }
 
     /* Check indexnode version */
     if (indexnode_find())
     {
-        printf("%s error: indexnode find error (this is not a simple indexnode not found)\n", argv[0]);
+        printf("%s error: indexnode find error (this is not a simple indexnode not found)\n", progname);
         exit(EXIT_FAILURE);
     }
     if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
     {
         printf("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
-               argv[0], indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
+               progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
         exit(EXIT_FAILURE);
     }
 
@@ -265,11 +281,12 @@ int main(int argc, char *argv[])
     exit(rc);
 }
 
-static void settings_parse (int argc, char *argv[], struct fuse_args *args)
+static start_action_t settings_parse (int argc, char *argv[])
 {
-    char my_arg[1024];
+    start_action_t rc = start_action_MOUNT;
     int c, option_index = 0;
-    struct option long_options[] = {
+    struct option long_options[] =
+    {
         {"config",         required_argument, NULL, 'c'},
         {"debug",          no_argument,       NULL, 'd'},
         {"foreground",     no_argument,       NULL, 'f'},
@@ -281,29 +298,12 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
         {0, 0, 0, 0}
     };
 
-    if (argc < 3)
-    {
-        fsfuse_usage(argv[0]);
-        exit(1);
-    }
-    /* standard mount options:
-     * - argv[1] is "what" to mount - ignored
-     * - argv[2] is "where" to mount - mountpoint */
-    mountpoint = (char *)malloc(PATH_MAX * sizeof(char *));
-    if (realpath(argv[2], mountpoint) == NULL)
-    {
-        fprintf(stderr,
-                "fsfuse: bad mount point `%s': %s\n",
-                argv[optind + 1], strerror(errno));
-        exit(1);
-    }
 
-    argv += 2;
-    argc -= 2;
+    optind = 0;
 
     while (1)
     {
-        c = getopt_long(argc, argv, "c:dfspt:hvo", long_options, &option_index);
+        c = getopt_long(argc, argv, "c:dfspt:h?vo", long_options, &option_index);
         if (c == -1) break;
 
         switch (c)
@@ -316,9 +316,7 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
             case 'd':
                 /* debug */
                 config_proc_debug = 1;
-                sprintf(my_arg, "-d");
-                fuse_opt_add_arg(args, my_arg);
-                break;
+                /* fall through; d => f */
 
             case 'f':
                 /* foreground */
@@ -358,14 +356,12 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
                 break;
 
             case 'v':
-                fsfuse_version();
-                exit(0);
+                rc = start_action_VERSION;
                 break;
 
             case 'h':
             case '?':
-                fsfuse_usage(argv[0]);
-                exit(0);
+                rc = start_action_USAGE;
                 break;
 
             case 'o':
@@ -378,15 +374,64 @@ static void settings_parse (int argc, char *argv[], struct fuse_args *args)
         }
     }
 
-    if (optind < argc)
+    if (argc - optind >= 2)
     {
-        printf("non-option argv elements: ");
-        while (optind < argc)
+        /* standard mount options:
+         * - argv[1] is "what" to mount - ignored
+         * - argv[2] is "where" to mount - mountpoint */
+        optind++;
+        mountpoint_raw = argv[optind];
+        mountpoint = realpath(argv[optind], NULL);
+        optind++;
+
+        if (optind < argc)
         {
-            printf("%s ", argv[optind++]);
+            printf("non-option argv elements: ");
+            while (optind < argc)
+            {
+                printf("%s ", argv[optind++]);
+            }
+            printf("\n");
         }
-        printf("\n");
     }
+
+
+
+    return rc;
+}
+
+static void fuse_args_set (struct fuse_args *fuse_args)
+{
+    char my_arg[1024];
+    fuse_args->argc = 0;
+    fuse_args->argv = NULL;
+    fuse_opt_add_arg(fuse_args, progname);
+
+
+    /* Here we add mount options to give fuse.
+     * These seem to be normal mount options, plus some fuse-specific ones.
+     * Presumably we can also read (and filter out) any fsfuse-specific ones
+     * from our command line.
+     * Apparently, default options are "nodev,nosuid". Others need to be added.
+     * It looks like fuse adds "user=<foo>".
+     */
+    if (config_proc_debug)
+    {
+        sprintf(my_arg, "-d");
+        fuse_opt_add_arg(fuse_args, my_arg);
+    }
+
+    sprintf(my_arg, "-ofsname=" FSFUSE_NAME);
+    fuse_opt_add_arg(fuse_args, my_arg);
+
+    sprintf(my_arg, "-osubtype=" FSFUSE_NAME "-" FSFUSE_VERSION);
+    fuse_opt_add_arg(fuse_args, my_arg);
+
+    sprintf(my_arg, "-oallow_other");
+    fuse_opt_add_arg(fuse_args, my_arg);
+
+    sprintf(my_arg, "-oro");
+    fuse_opt_add_arg(fuse_args, my_arg);
 }
 
 static void fsfuse_splash (void)
@@ -403,22 +448,29 @@ static void fsfuse_splash (void)
           );
 }
 
-static void fsfuse_version (void)
+static void fsfuse_versions (void)
 {
-    printf("Using FUSE features up to version %d (system library supportes up to %d)\n"
+    struct utsname un;
+
+
+    uname(&un);
+
+    printf("Using kernel %s %s\n"
+           "Using libfuse version %d.%d (using API version %d)\n"
            "Using %s\n"
            "Using libxml2 %s\n"
            "Using %s\n"
            "\n",
-           FUSE_USE_VERSION,
-           fuse_version(),
+           un.sysname,
+           un.release,
+           FUSE_MAJOR_VERSION, FUSE_MINOR_VERSION, FUSE_USE_VERSION,
            curl_version(),
            LIBXML_DOTTED_VERSION, /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
            curses_version()
           );
 }
 
-static void fsfuse_usage (const char *progname)
+static void fsfuse_usage (void)
 {
     printf("usage: %s device mountpoint [-o option[,...]]\n"
            "    device: device to mount - ignored\n"

@@ -87,8 +87,8 @@ config_define.c: config-config.xml config.xsl
 	xsltproc --stringparam filetype c config.xsl config-config.xml > config_define.c
 
 buildnumber.c:
-	$(shell echo -n "unsigned svn_rev = " > buildnumber.c)
-	$(shell echo -n `svn info | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
+	$(shell echo "unsigned svn_rev = " > buildnumber.c)
+	$(shell echo `svn info | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
 	$(shell echo ";" >> buildnumber.c)
 
 %.o: %.c
