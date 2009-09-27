@@ -15,6 +15,9 @@ default: fsfuse
 
 .PHONY: clean count
 
+#Force rebuilding every build
+.PHONY: buildnumber.c
+
 DEFINES := -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 OBJECTS := fsfuse.o                \
