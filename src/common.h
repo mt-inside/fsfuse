@@ -18,7 +18,7 @@
 
 
 #define FSFUSE_NAME      "fsfuse"
-#define FSFUSE_VERSION   "0.2.0"
+#define FSFUSE_VERSION   "0.3.0"
 #define FSFUSE_DATE      "(beta)"
 #define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2009\n"
 
