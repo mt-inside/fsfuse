@@ -58,6 +58,9 @@ void direntry_cache_finalise (void)
 
 int direntry_cache_add (direntry_t *de)
 {
+#if DEBUG
+    direntry_t *de2;
+#endif
     direntry_t *parent;
 
 
@@ -66,15 +69,16 @@ int direntry_cache_add (direntry_t *de)
     direntry_cache_trace_indent();
 
 
+#if DEBUG
     rw_lock_rlock(direntry_cache_lock);
-    parent = hash_table_find(direntry_cache, direntry_get_path(de));
+    de2 = hash_table_find(direntry_cache, direntry_get_path(de));
     rw_lock_runlock(direntry_cache_lock);
-    assert(!parent); /* Shouldn't be duplicates */
+    assert(!de2); /* Shouldn't be duplicates */
+#endif
 
 
     if (!direntry_is_root(de))
     {
-#if DEBUG
         char *parent_path = fsfuse_dirname(direntry_get_path(de));
         /* parent *must* exist! */
         rw_lock_rlock(direntry_cache_lock);
@@ -82,7 +86,6 @@ int direntry_cache_add (direntry_t *de)
         rw_lock_runlock(direntry_cache_lock);
         free(parent_path);
         assert(parent);
-#endif
 
         de->parent = parent;
         de->next = parent->children;

@@ -289,29 +289,26 @@ static chunk_t *chunk_get_next (thread_t *thread)
     dtp_trace_indent();
 
 
-    errno = 0;
     pthread_mutex_lock(&thread->chunk_list_mutex);
     while (!thread->chunk_list_count)
     {
         gettimeofday(&tv, NULL);
         ts.tv_sec = tv.tv_sec + config_timeout_chunk;
         ts.tv_nsec = 0;
-        pthread_cond_timedwait(&thread->chunk_list_cond,
-                               &thread->chunk_list_mutex,
-                               &ts);
+        rc = pthread_cond_timedwait(&thread->chunk_list_cond,
+                                    &thread->chunk_list_mutex,
+                                    &ts);
     }
     thread->chunk_list_count--;
     pthread_mutex_unlock(&thread->chunk_list_mutex);
 
-    if (rc == -1)
+    if (rc == ETIMEDOUT)
     {
-        assert(errno == ETIMEDOUT);
-
         /* timed out, abort */
         chunk = NULL;
         dtp_trace("timed out\n");
     }
-    else
+    else if (rc == 0)
     {
         dtp_trace("Downloader thread for %s woken up! "
                   "Chunks remaining: %d\n",
@@ -332,6 +329,11 @@ static chunk_t *chunk_get_next (thread_t *thread)
         dump_chunk_list(thread);
 
         pthread_mutex_unlock(&(thread->mutex));
+    }
+    else
+    {
+        dtp_trace("pthread_cond_timedwait(): error\n");
+        assert(0);
     }
 
     dtp_trace_dedent();
