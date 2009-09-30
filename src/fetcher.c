@@ -420,7 +420,7 @@ static char *make_url (const char * const path, fetcher_url_type_t url_type, CUR
 static char *make_plain_url (const char * const resource, CURL *eh)
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://%s:%s/%s";
+    char fmt[] = "http://[%s]:%s/%s";
     size_t len = strlen(host) + strlen(port) + strlen(resource) + strlen(fmt) + 1;
     char *url = (char *)malloc(len * sizeof(*url));
 
@@ -436,7 +436,7 @@ static char *make_plain_url (const char * const resource, CURL *eh)
 static char *make_browse_url (const char * const path, CURL *eh)
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://%s:%s/browse/%s";
+    char fmt[] = "http://[%s]:%s/browse/%s";
     char *path_esc, *url;
     size_t len;
 
@@ -456,7 +456,7 @@ static char *make_browse_url (const char * const path, CURL *eh)
 static char *make_download_url (const char * const hash, CURL *eh)
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://%s:%s/download/%s";
+    char fmt[] = "http://[%s]:%s/download/%s";
     size_t len = strlen(host) + strlen(port) + strlen(hash) + strlen(fmt) + 1;
     char *url = (char *)malloc(len * sizeof(*url));
 

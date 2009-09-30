@@ -14,16 +14,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 #include "common.h"
 #include "config.h"
 #include "indexnode.h"
 #include "fetcher.h"
-
-
-#define VERSION_LEN 1024
-#define HOST_LEN 1024
-#define PORT_LEN 1024
 
 
 /* these are global, but they are written before any threads are spawned, and
@@ -37,11 +35,17 @@ static double version = 0.0;
 int indexnode_find (void)
 {
     /* TODO: security */
-    int s = -1;
+    int s4 = -1, s6 = -1;
+    int s4_ok = 0, s6_ok = 0;
     int their_rc, rc = 1;
     socklen_t socklen;
     char buf[1024], version_str[1024];
-    struct sockaddr_in sa;
+    struct sockaddr_in  sa4;
+    struct sockaddr_in6 sa6;
+    fd_set r_fds;
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+    const int one = 1;
 
 
     if (!config_indexnode_autodetect)
@@ -56,46 +60,176 @@ int indexnode_find (void)
     }
 
 
-    sa.sin_family      = AF_INET;
-    sa.sin_port        = htons(42444);
-    sa.sin_addr.s_addr = INADDR_ANY;
+    /* === Listen for an indexnode === */
 
-    printf("Listening for index node on port %d...\n", ntohs(sa.sin_port));
+    host    = (char *)malloc(NI_MAXHOST * sizeof(char));
+    port    = (char *)malloc(NI_MAXSERV * sizeof(char));
 
-    host    = (char *)malloc(HOST_LEN    * sizeof(char));
-    port    = (char *)malloc(PORT_LEN    * sizeof(char));
 
-    s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s != -1)
+    /* TODO: make this a config option */
+    printf("Listening on all addresses:\n");
+
+    errno = 0;
+    if (getifaddrs(&ifaddr) == -1)
     {
-        their_rc = bind(s, (struct sockaddr *)&sa, sizeof(sa));
+        printf("Cannot get interface addresses: %s\n", strerror(errno));
+    }
+
+    for (ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+    {
+        family = ifa->ifa_addr->sa_family;
+
+        /* For an AF_INET* interface address, display the address, interface and
+         * address family */
+        if (family == AF_INET || family == AF_INET6)
+        {
+            s = getnameinfo(ifa->ifa_addr,
+                    (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                    sizeof(struct sockaddr_in6),
+                    host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST
+                );
+
+            if (s)
+            {
+                printf("Cannot getnameinfo(): %s\n", gai_strerror(s));
+            }
+
+            printf("\t%s (%s, %s)\n",
+                    host,
+                    ifa->ifa_name,
+                    (family == AF_INET)   ? "AF_INET" :
+                    (family == AF_INET6)  ? "AF_INET6" :
+                    ""
+                );
+        }
+    }
+    printf("\n");
+
+    freeifaddrs(ifaddr);
+
+
+    /* IPv4 */
+    memset(&sa4, 0, sizeof(sa4));
+    sa4.sin_family      = AF_INET;
+    sa4.sin_port        = htons(42444);
+    sa4.sin_addr.s_addr = INADDR_ANY;
+
+    errno = 0;
+    s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    setsockopt(s4, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* FIXME: magic runes. Not sure if this should be used */
+    if (s4 != -1)
+    {
+        errno = 0;
+        their_rc = bind(s4, (struct sockaddr *)&sa4, sizeof(sa4));
         if (!their_rc)
         {
-            socklen = sizeof(sa);
-            their_rc = recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)&sa, &socklen);
-            if (their_rc > 0 &&
-                socklen == sizeof(sa))
-            {
-                buf[their_rc] = '\0';
-
-                sscanf(buf, "%[^:]:%s", version_str, port);
-                version = indexnode_parse_version(version_str);
-
-                if (inet_ntop(AF_INET, &(sa.sin_addr), host, HOST_LEN))
-                {
-                    rc = 0;
-                    printf("Found index node, version %f, at %s:%s\n", version, host, port);
-                }
-            }
+            s4_ok = 1;
+            printf("Listening for index node on udp4 port %d...\n", ntohs(sa4.sin_port));
         }
         else
         {
-            printf("Cannot bind to indexnode listener socket\n");
+            printf("Cannot bind to udp4 indexnode listener socket: %s\n", strerror(errno));
         }
-
-        close(s);
+    }
+    else
+    {
+        printf("Cannot create udp4 indexnode listener socket: %s\n", strerror(errno));
     }
 
+
+    /* IPv6 */
+    memset(&sa6, 0, sizeof(sa6));
+    sa6.sin6_family = AF_INET6;
+    sa6.sin6_port   = htons(42444);
+    sa6.sin6_addr   = in6addr_any;
+
+    errno = 0;
+    s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    setsockopt(s6, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* FIXME: magic runes. Not sure if this should be used */
+    if (s6 != -1)
+    {
+        errno = 0;
+        their_rc = bind(s6, (struct sockaddr *)&sa6, sizeof(sa6));
+        if (!their_rc)
+        {
+            s6_ok = 1;
+            printf("Listening for index node on udp6 port %d...\n", ntohs(sa6.sin6_port));
+        }
+        else
+        {
+            printf("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
+        }
+    }
+    else
+    {
+        printf("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
+    }
+
+
+    FD_ZERO(&r_fds);
+    if (s4_ok) FD_SET(s4, &r_fds);
+    if (s6_ok) FD_SET(s6, &r_fds);
+
+    errno = 0;
+    their_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
+
+    switch (their_rc)
+    {
+        case -1:
+            printf("Error waiting for indexnode broadcast: %s\n", strerror(errno));
+            break;
+        case 0:
+            printf("Not found\n");
+            break;
+        default:
+            if (FD_ISSET(s4, &r_fds))
+            {
+                socklen = sizeof(sa4);
+                their_rc = recvfrom(s4, buf, sizeof(buf), 0, (struct sockaddr *)&sa4, &socklen);
+                if (their_rc > 0 &&
+                    socklen == sizeof(sa4))
+                {
+                    buf[their_rc] = '\0';
+
+                    sscanf(buf, "%[^:]:%s", version_str, port);
+                    version = indexnode_parse_version(version_str);
+
+                    if (inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
+                    {
+                        rc = 0;
+                        printf("Found index node, version %f, at %s:%s\n", version, host, port);
+                    }
+                }
+            }
+            else if (FD_ISSET(s6, &r_fds))
+            {
+                socklen = sizeof(sa6);
+                their_rc = recvfrom(s6, buf, sizeof(buf), 0, (struct sockaddr *)&sa6, &socklen);
+                if (their_rc > 0 &&
+                    socklen == sizeof(sa6))
+                {
+                    buf[their_rc] = '\0';
+
+                    sscanf(buf, "%[^:]:%s", version_str, port);
+                    version = indexnode_parse_version(version_str);
+
+                    if (inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
+                    {
+                        rc = 0;
+                        printf("Found index node, version %f, at %s:%s\n", version, host, port);
+                    }
+                }
+            }
+            else
+            {
+                assert(0);
+            }
+            break;
+    }
+
+
+    if (s4_ok) close(s4);
+    if (s6_ok) close(s6);
 
     return rc;
 }
