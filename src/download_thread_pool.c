@@ -67,7 +67,9 @@ typedef struct _thread_t
      * end, giving O(n^2) running time. Need a doubly-linked list and an end
      * pointer */
     TAILQ_HEAD(, _chunk_t) chunk_list;
-    sem_t chunk_list_count;
+    unsigned chunk_list_count;
+    pthread_cond_t chunk_list_cond;
+    pthread_mutex_t chunk_list_mutex;
     off_t download_offset;
     pthread_t pthread_id;
     chunk_t *current_chunk; /* needs to be kept separate because it may not be
@@ -212,7 +214,8 @@ static thread_t *tp_thread_new (direntry_t *de)
     direntry_post(CALLER_INFO de);
     t->de = de;
     TAILQ_INIT(&t->chunk_list);
-    sem_init(&(t->chunk_list_count), 0, 0);
+    pthread_cond_init(&(t->chunk_list_cond), NULL);
+    pthread_mutex_init(&(t->chunk_list_mutex), NULL);
     pthread_mutex_init(&(t->mutex), NULL);
 
 
@@ -241,7 +244,8 @@ static void thread_delete (thread_t *t)
     pthread_mutex_unlock(&(t->mutex));
 
     direntry_delete(CALLER_INFO t->de);
-    sem_destroy(&t->chunk_list_count);
+    pthread_cond_destroy(&t->chunk_list_cond);
+    pthread_mutex_destroy(&t->chunk_list_mutex);
     pthread_mutex_destroy(&t->mutex);
 
     TAILQ_REMOVE(&thread_list, t, entries);
@@ -274,12 +278,10 @@ static void chunk_delete (chunk_t *chunk)
 static chunk_t *chunk_get_next (thread_t *thread)
 {
     chunk_t *chunk;
-    int sval, rc;
+    int rc;
+    struct timeval tv;
     struct timespec ts;
 
-
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += config_timeout_chunk;
 
     /* wait for a chunk on the list */
     dtp_trace("chunk_get_next() waiting %u seconds for new chunk...\n",
@@ -288,8 +290,18 @@ static chunk_t *chunk_get_next (thread_t *thread)
 
 
     errno = 0;
-    while ((rc = sem_timedwait(&thread->chunk_list_count, &ts)) == -1
-            && errno == EINTR);
+    pthread_mutex_lock(&thread->chunk_list_mutex);
+    while (!thread->chunk_list_count)
+    {
+        gettimeofday(&tv, NULL);
+        ts.tv_sec = tv.tv_sec + config_timeout_chunk;
+        ts.tv_nsec = 0;
+        pthread_cond_timedwait(&thread->chunk_list_cond,
+                               &thread->chunk_list_mutex,
+                               &ts);
+    }
+    pthread_mutex_unlock(&thread->chunk_list_mutex);
+
     if (rc == -1)
     {
         assert(errno == ETIMEDOUT);
@@ -300,11 +312,10 @@ static chunk_t *chunk_get_next (thread_t *thread)
     }
     else
     {
-        sem_getvalue(&(thread->chunk_list_count), &sval);
         dtp_trace("Downloader thread for %s woken up! "
                   "Chunks remaining: %d\n",
                   direntry_get_base_name(thread->de),
-                  sval);
+                  thread->chunk_list_count);
 
 
         pthread_mutex_lock(&(thread->mutex));
@@ -387,7 +398,10 @@ static void thread_chunk_list_add_chunk (thread_t *thread,
     dump_chunk_list(thread);
 
     /* increment the chunk list count */
-    sem_post(&thread->chunk_list_count);
+    pthread_mutex_lock(&thread->chunk_list_mutex);
+    thread->chunk_list_count++;
+    pthread_mutex_unlock(&thread->chunk_list_mutex);
+    pthread_cond_signal(&thread->chunk_list_cond);
 
     pthread_mutex_unlock(&(thread->mutex));
 }
