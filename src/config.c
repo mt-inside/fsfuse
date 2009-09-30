@@ -61,7 +61,7 @@ int config_read (void)
                 switch (item.type)
                 {
                     case config_item_type_STRING:
-                        *((char **)item.symbol) = val;
+                        *((char **)item.symbol) = strdup(val);
                         break;
 
                     case config_item_type_NUMBER:
