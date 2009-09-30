@@ -278,7 +278,7 @@ static void chunk_delete (chunk_t *chunk)
 static chunk_t *chunk_get_next (thread_t *thread)
 {
     chunk_t *chunk;
-    int rc;
+    int rc = 0;
     struct timeval tv;
     struct timespec ts;
 
