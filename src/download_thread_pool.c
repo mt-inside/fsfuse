@@ -300,6 +300,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
                                &thread->chunk_list_mutex,
                                &ts);
     }
+    thread->chunk_list_count--;
     pthread_mutex_unlock(&thread->chunk_list_mutex);
 
     if (rc == -1)
