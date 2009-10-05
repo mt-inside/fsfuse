@@ -260,6 +260,9 @@ int direntry_get (const char * const path, direntry_t **de)
     int rc = 0;
 
 
+    *de = NULL;
+
+
 #if FEATURE_DIRENTRY_CACHE
     *de = direntry_cache_get(path);
 #else
@@ -269,10 +272,6 @@ int direntry_get (const char * const path, direntry_t **de)
         direntry_trace("\"/\" is special\n");
 
         *de = direntry_new_root(CALLER_INFO);
-    }
-    else
-    {
-        *de = NULL;
     }
 #endif
 
@@ -428,28 +427,22 @@ char *fsfuse_basename (const char *path)
 /* Get a direntry_t for the node at path. Could be a file or directory */
 static int fetch_node (const char * const path, direntry_t **de_io)
 {
-    direntry_t *de_tmp, *de_parent;
-    char *parent_path;
+    direntry_t *de_tmp, *de_parent = NULL;
+    const char *parent_path = path;
     int rc = -ENOENT;
 
 
 #if FEATURE_DIRENTRY_CACHE
     /* this is an internal function - node cannot be in the cache */
 
-    parent_path = fsfuse_dirname(path);
+    parent_path = fsfuse_dirname(parent_path);
     de_parent = direntry_cache_get(parent_path);
-    free(parent_path);
-
-    /* TODO: not great. Fuse only does us the courtesy of calling getattr() down
-     * the directory tree once per open(). If a file's been open()d, then
-     * read()'s failed so it's been de-cached, a second attempt to read() it
-     * (seems to happen quite a lot) will cause a request straight for
-     * /foo/bar/baz, despite /foo/... no longer being in the cache. This check
-     * detects that and bails out.
-     * It's not as bad as it looks - we know that if things are going fine we'll
-     * always have been asked for the parent first. If the parent doesn't exist,
-     * it's safe to say its children don't either. */
+    if (!de_parent)
+    {
+        fetch_node(parent_path, &de_parent);
+    }
     if (!de_parent) return rc;
+    free((char *)parent_path);
 
     /* We have to call the external function here, as it won't double-fetch if
      * the children are already cached, and will set the looked_for_children
