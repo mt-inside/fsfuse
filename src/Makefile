@@ -16,6 +16,8 @@ DEBUG          := 1
 default: fsfuse
 .PHONY: clean count
 
+OS:=$(shell uname -s)
+
 DEFINES = -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 OBJECTS := fsfuse.o                \
@@ -46,14 +48,13 @@ DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))
 -include $(DEPENDS)
 
 INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -isystem 3rdparty
-OS:=$(shell uname -s)
-ifeq ($(OS),Darwin)
-    INCLUDES += -I/opt/local/include
-endif
 
 CFLAGS = -W -Wall -pedantic $(INCLUDES) $(DEFINES)
 CFLAGS_OPTIM := -O2
 CFLAGS_DEBUG := -O0 -g3 -DDEBUG
+ifeq ($(OS),Darwin)
+    CFLAGS += -mmacosx-version-min=10.5
+endif
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
 else
@@ -65,9 +66,6 @@ ifeq ($(DEBUG),1)
     LDFLAGS += $(CFLAGS_DEBUG)
 else
     LDFLAGS += $(CFLAGS_OPTIM)
-endif
-ifeq ($(OS),Darwin)
-    LDFLAGS += -L/opt/local/lib
 endif
 ifeq ($(OS),FreeBSD)
     LDFLAGS += -L/usr/local/lib -liconv -pthread
