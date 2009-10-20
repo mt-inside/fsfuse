@@ -3,7 +3,7 @@
  *
  * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
  *
- * $Id: direntry.c 347 2009-10-05 23:24:05Z matt $
+ * $Id$
  */
 
 #include <stdlib.h>
