@@ -211,13 +211,16 @@ int main(int argc, char *argv[])
     }
 
     /* Inits */
-    if (trace_init()       ||
-        alarms_init()      ||
-        fetcher_init()     ||
-        parser_init()      ||
-        direntry_init()    ||
+    if (trace_init()          ||
+        alarms_init()         ||
+        fetcher_init()        ||
+        parser_init()         ||
+        direntry_init()       ||
+#if FEATURE_DIRENTRY_CACHE
+        direntry_cache_init() ||
+#endif
 #if FEATURE_PROGRESS_METER
-        progress_init()    ||
+        progress_init()       ||
 #endif
         thread_pool_init()    )
     {
@@ -271,6 +274,9 @@ int main(int argc, char *argv[])
     thread_pool_finalise();
 #if FEATURE_PROGRESS_METER
     progress_finalise();
+#endif
+#if FEATURE_DIRENTRY_CACHE
+    direntry_cache_finalise();
 #endif
     direntry_finalise();
     parser_finalise();

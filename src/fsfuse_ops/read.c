@@ -47,6 +47,9 @@ typedef struct
  *     (128kbytes)
  *   - maybe this explains the over-reads that we get.
  *
+ * The FUSE docs also assert that read() will only be called on a file that's
+ * been successfully open()ed. This means we don't have to check it's a file,
+ * its permissions, etc. We /do/ have to check it (still) exists though.
  */
 int fsfuse_read (const char *path,
                  char *buf,
@@ -65,58 +68,59 @@ int fsfuse_read (const char *path,
     method_trace_indent();
 
 
-    rc = direntry_get(path, &de);
+    rc = path_get_direntry(path, &de);
 
     if (!rc)
     {
-        if (direntry_get_type(de) == direntry_type_DIRECTORY)
+        /* check file limits - despite always calling getattr() first (so it
+         * knows the length), fuse sometimes asks for ranges completely
+         * past the end of the file */
+        if (offset >= direntry_get_size(de))
         {
-            rc = -EISDIR;
+            rc = 0;
         }
         else
         {
-            /* check file limits - despite always calling getattr() first (so it
-             * knows the length), fuse sometimes asks for ranges completely
-             * past the end of the file */
-            if (offset >= direntry_get_size(de))
+            read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
+            pthread_mutex_init(&read_ctxt->filled_mutex, NULL);
+            pthread_mutex_lock(&read_ctxt->filled_mutex);
+
+
+            thread_pool_chunk_add(de, offset, offset + size, buf, (void *)read_ctxt);
+
+            /* wait until the downloader thread pool has filled buf */
+            read_trace("fsfuse_read() waiting on full buffer...\n");
+            pthread_mutex_lock(&read_ctxt->filled_mutex);
+            read_trace("fsfuse_read() woken by full buffer semaphore - returning (chunk->end == %u)\n", offset + size);
+
+            if (read_ctxt->rc != (signed)size)
             {
-                rc = 0;
+                read_trace("bytes read != file size => EOF / error\n");
             }
-            else
+            rc = read_ctxt->rc;
+
+            /* As a result of this read() operation we can say certain things
+             * about the direntry. These professions can be made with confidence
+             * because we've just performed an actual network transaction, so
+             * our information is "live":
+             * - If we actually read data from the file then it definitely still
+             *   exists, now.
+             * - If we tried to read from it and found it didn't exist, then it
+             *   definitely doesn't exist any more.
+             * - Any other error doesn't give enough info.
+             */
+            if (rc > 0)
             {
-                read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
-                pthread_mutex_init(&read_ctxt->filled_mutex, NULL);
-                pthread_mutex_lock(&read_ctxt->filled_mutex);
-
-
-                thread_pool_chunk_add(de, offset, offset + size, buf, (void *)read_ctxt);
-
-                /* wait until the downloader thread pool has filled buf */
-                read_trace("fsfuse_read() waiting on full buffer...\n");
-                pthread_mutex_lock(&read_ctxt->filled_mutex);
-                read_trace("fsfuse_read() woken by full buffer semaphore - returning (chunk->end == %u)\n", offset + size);
-
-                if (read_ctxt->rc != (signed)size)
-                {
-                    read_trace("bytes read != file size => EOF / error\n");
-                }
-                rc = read_ctxt->rc;
-
-#if FEATURE_DIRENTRY_CACHE
-                /* Notify the cache that this de is still OK. We can do this
-                 * here because the above code actually performs a real network
-                 * transaction involving that file, and so would no for real if
-                 * it didn't exist any more. */
-                if (rc > 0)
-                {
-                    direntry_cache_notify_still_valid(de);
-                }
-#endif
-
-
-                pthread_mutex_destroy(&read_ctxt->filled_mutex);
-                free(read_ctxt);
+                direntry_still_exists(de);
             }
+            else if (rc == -ENOENT)
+            {
+                direntry_no_longer_exists(de);
+            }
+
+
+            pthread_mutex_destroy(&read_ctxt->filled_mutex);
+            free(read_ctxt);
         }
         direntry_delete(CALLER_INFO de);
     }

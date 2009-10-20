@@ -14,7 +14,7 @@
 
 TRACE_DECLARE(direntry_cache)
 
-extern void direntry_cache_init (void);
+extern int direntry_cache_init (void);
 extern void direntry_cache_finalise (void);
 
 extern int direntry_cache_add (direntry_t *de);

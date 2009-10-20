@@ -18,6 +18,10 @@
 #include "fetcher.h"
 
 
+/* The FUSE docs assert that readdir() will only be called on existing, valid
+ * directories, so there's no need to check for the existence / type of the
+ * direntry at path
+ */
 int fsfuse_readdir (const char *path,
                     void *buf,
                     fuse_fill_dir_t filler,
@@ -25,7 +29,7 @@ int fsfuse_readdir (const char *path,
                     struct fuse_file_info *fi)
 {
     int rc = 0;
-    direntry_t *de, *first_child, *child;
+    direntry_t *first_child, *child;
     struct stat *st;
 
 
@@ -35,40 +39,28 @@ int fsfuse_readdir (const char *path,
     method_trace("fsfuse_readir(%s)\n", path);
     method_trace_indent();
 
-    rc = direntry_get(path, &de);
+    filler(buf, ".", NULL, 0);
+    filler(buf, "..", NULL, 0);
 
+    rc = path_get_children(path, &first_child);
     if (!rc)
     {
-        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
-
-        if (!rc)
+        child = first_child;
+        while (child)
         {
-            filler(buf, ".", NULL, 0);
-            filler(buf, "..", NULL, 0);
-
-            rc = direntry_get_children(de, &first_child);
-            if (!rc)
+            if (direntry_get_base_name(child) && direntry_get_path(child))
             {
-                child = first_child;
-                while (child)
-                {
-                    if (direntry_get_base_name(child) && direntry_get_path(child))
-                    {
-                        st = (struct stat *)malloc(sizeof(struct stat));
-                        direntry_de2stat(st, child);
+                st = (struct stat *)malloc(sizeof(struct stat));
+                direntry_de2stat(st, child);
 
-                        filler(buf, direntry_get_base_name(child), st, 0);
-                        free(st);
-                    }
-
-                    child = direntry_get_next_sibling(child);
-                }
-
-                direntry_delete_list(first_child);
+                filler(buf, direntry_get_base_name(child), st, 0);
+                free(st);
             }
+
+            child = direntry_get_next_sibling(child);
         }
 
-        direntry_delete(CALLER_INFO de);
+        direntry_delete_list(first_child);
     }
 
     method_trace_dedent();

@@ -6,7 +6,7 @@
 # $Id$
 #
 
-DIRENTRY_CACHE := 1
+DIRENTRY_CACHE := 0
 PROGRESS_METER := 0
 DEBUG          := 1
 
@@ -19,6 +19,7 @@ default: fsfuse
 DEFINES = -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 OBJECTS := fsfuse.o                \
+           common.o                \
            buildnumber.o           \
            hash.o                  \
            trace.o                 \

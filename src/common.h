@@ -52,4 +52,9 @@
 #define FSFUSE_BLKSIZE   512
 
 
+/* General utility functions */
+extern char *fsfuse_dirname (const char *path);
+extern char *fsfuse_basename (const char *path);
+
+
 #endif /* _included_common_h */

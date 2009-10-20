@@ -37,13 +37,24 @@ static int direntry_cache_is_stale (direntry_t *de);
 static int direntry_cache_is_expired (direntry_t *de);
 
 
-void direntry_cache_init (void)
+int direntry_cache_init (void)
 {
+    direntry_t *de_root;
+
+
     direntry_cache_trace("direntry_cache_init()\n");
 
     direntry_cache_lock = rw_lock_new();
 
     direntry_cache = hash_table_new(DIRENTRY_CACHE_SIZE);
+
+    /* The cache has a permanent root node, made here, as it can't be fetched */
+    de_root = direntry_new_root();
+    direntry_cache_add(de_root);
+    direntry_delete(CALLER_INFO de_root);
+
+
+    return 0;
 }
 
 void direntry_cache_finalise (void)

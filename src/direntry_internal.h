@@ -39,4 +39,7 @@ struct _direntry_t
     struct _direntry_t        *parent;
 };
 
+
+extern direntry_t *direntry_new_root (void);
+
 #endif /* _INCLUDED_DIRENTRY_INTERNAL_H */

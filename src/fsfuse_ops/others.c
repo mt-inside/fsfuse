@@ -29,7 +29,7 @@ int fsfuse_getattr ( const char *path,
     method_trace("fsfuse_getattr(%s)\n", path);
     method_trace_indent();
 
-    rc = direntry_get(path, &de);
+    rc = path_get_direntry(path, &de);
 
     if (!rc)
     {
@@ -80,7 +80,7 @@ int fsfuse_open ( const char *path,
 
     method_trace("fsfuse_open(path==%s)\n", path);
 
-    rc = direntry_get(path, &de);
+    rc = path_get_direntry(path, &de);
 
     if (!rc)
     {
@@ -254,7 +254,7 @@ int fsfuse_opendir ( const char *path,
 
     method_trace("fsfuse_opendir(path==%s)\n", path);
 
-    rc = direntry_get(path, &de);
+    rc = path_get_direntry(path, &de);
 
     if (!rc)
     {
@@ -334,7 +334,7 @@ int fsfuse_access ( const char *path,
     method_trace("fsfuse_access(%s, %o)\n", path, mode);
     method_trace_indent();
 
-    rc = direntry_get(path, &de);
+    rc = path_get_direntry(path, &de);
 
     if (!rc)
     {
