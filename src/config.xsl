@@ -95,7 +95,7 @@
                 <xsl:apply-templates select="item" mode="items_table"/>
                 
                 <xsl:value-of select="$indent"/>
-                <xsl:text>{ NULL, 0, NULL }</xsl:text>
+                <xsl:text>{ NULL, 0, NULL, 0 }</xsl:text>
                 <xsl:value-of select="$newline"/>
                 <xsl:text>};</xsl:text>
                 <xsl:value-of select="$newline"/>
@@ -146,7 +146,7 @@
         </xsl:call-template>
         <xsl:text>, &quot;</xsl:text>
         <xsl:value-of select="xpath"/>
-        <xsl:text>&quot; },</xsl:text>
+        <xsl:text>&quot;, 0 },</xsl:text>
         <xsl:value-of select="$newline"/>
     </xsl:template>
 

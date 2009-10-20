@@ -53,7 +53,8 @@ int fetcher_init (void)
 {
     fetcher_trace("fetcher_init()\n");
 
-    curl_global_init(CURL_GLOBAL_ALL);
+    /* CURL_GLOBAL_SSL leaks memory, and isn't needed, yet... */
+    curl_global_init(CURL_GLOBAL_NOTHING);
 
 
     return 0;

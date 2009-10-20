@@ -19,6 +19,7 @@
 static char *config_path = NULL;
 
 
+static void config_items_free (void);
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
 
 
@@ -32,14 +33,15 @@ int config_init (void)
 
 void config_finalise (void)
 {
-    /* do nothing */
+    config_items_free();
+
+    free(config_path);
 }
 
 
 int config_read (void)
 {
-    unsigned i = 0;
-    config_item item;
+    config_item *item;
     char *val;
     xmlDocPtr doc;
     xmlXPathContextPtr xpathCtxt;
@@ -52,28 +54,26 @@ int config_read (void)
     {
         xpathCtxt = xmlXPathNewContext(doc);
 
-        item = config_items[i];
-        while (item.symbol)
+        for (item = config_items; item->symbol; item++)
         {
-            val = xpath_get(item.xpath, xpathCtxt);
+            val = xpath_get(item->xpath, xpathCtxt);
             if (val)
             {
-                switch (item.type)
+                switch (item->type)
                 {
                     case config_item_type_STRING:
-                        *((char **)item.symbol) = strdup(val);
+                        if (item->runtime) free(*((char **)item->symbol));
+
+                        *((char **)item->symbol) = strdup(val);
+                        item->runtime = 1;
+
                         break;
 
                     case config_item_type_NUMBER:
-                        *((int *)item.symbol) = strtoul(val, NULL, 0);
+                        *((int *)item->symbol) = strtoul(val, NULL, 0);
                         break;
-
-                    default:
-                        assert(0);
                 }
             }
-
-            item = config_items[++i];
         }
 
         xmlXPathFreeContext(xpathCtxt);
@@ -86,6 +86,25 @@ int config_read (void)
 
 
     return 0;
+}
+
+static void config_items_free (void)
+{
+    config_item *item;
+
+
+    for (item = config_items; item->symbol; item++)
+    {
+        switch (item->type)
+        {
+            case config_item_type_STRING:
+                if (item->runtime) free(*((char **)item->symbol));
+                break;
+
+            case config_item_type_NUMBER:
+                break;
+        }
+    }
 }
 
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt)

@@ -137,7 +137,7 @@ static struct fuse_operations fsfuse_oper = {
 
 int main(int argc, char *argv[])
 {
-    int rc = 1;
+    int rc = EXIT_FAILURE;
     start_action_t sa;
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
@@ -148,12 +148,14 @@ int main(int argc, char *argv[])
 
     fsfuse_splash();
 
+    xmlInitParser();
+
     /* Check system fuse version */
     if (fuse_version() < FUSE_USE_VERSION)
     {
         printf("%s error: fuse version %d required, only version %d available\n",
                progname, FUSE_USE_VERSION, fuse_version());
-        exit(EXIT_FAILURE);
+        goto pre_init_bail;
     }
 
 
@@ -188,18 +190,21 @@ int main(int argc, char *argv[])
             {
                 printf("%s error: bad or missing mount point \"%s\".\n", progname, mountpoint_raw);
                 fsfuse_usage();
-                exit(EXIT_FAILURE);
+
+                goto pre_init_bail;
             }
             break;
 
         case start_action_VERSION:
             fsfuse_versions();
-            exit(EXIT_SUCCESS);
+
+            goto pre_init_bail;
             break;
 
         case start_action_USAGE:
             fsfuse_usage();
-            exit(EXIT_SUCCESS);
+
+            goto pre_init_bail;
             break;
     }
 
@@ -225,20 +230,20 @@ int main(int argc, char *argv[])
         thread_pool_init()    )
     {
         printf("%s error: initialisation failed\n", progname);
-        exit(EXIT_FAILURE);
+        goto pre_init_bail;
     }
 
     /* Check indexnode version */
     if (indexnode_find())
     {
         printf("%s error: indexnode find error (this is not a simple indexnode not found)\n", progname);
-        exit(EXIT_FAILURE);
+        goto bail;
     }
     if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
     {
         printf("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
                progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
-        exit(EXIT_FAILURE);
+        goto bail;
     }
 
     /* Hand over to fuse */
@@ -267,9 +272,9 @@ int main(int argc, char *argv[])
             fuse_destroy(f);
         }
     }
-    fuse_opt_free_args(&fuse_args);
 
 
+bail:
     /* finalisations */
     thread_pool_finalise();
 #if FEATURE_PROGRESS_METER
@@ -282,8 +287,12 @@ int main(int argc, char *argv[])
     parser_finalise();
     fetcher_finalise();
     alarms_finalise();
-    config_finalise();
     trace_finalise();
+
+pre_init_bail:
+    config_finalise();
+    xmlCleanupParser();
+    fuse_opt_free_args(&fuse_args);
 
 
     exit(rc);

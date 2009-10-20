@@ -415,8 +415,6 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         pthread_mutex_unlock(de->lock);
         pthread_mutex_destroy(de->lock);
 
-#if !DEBUG
-
         free(de->lock);
 
         if (de->base_name) free(de->base_name);
@@ -425,7 +423,6 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         if (de->href) free(de->href);
 
         free(de);
-#endif
     }
     else
     {

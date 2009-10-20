@@ -23,7 +23,6 @@ int parser_init (void)
 {
     parser_trace("parser_init()\n");
 
-    xmlInitParser();
     LIBXML_TEST_VERSION
 
 #ifndef LIBXML_PUSH_ENABLED
@@ -37,8 +36,6 @@ int parser_init (void)
 void parser_finalise (void)
 {
     parser_trace("parser_finalise()\n");
-
-    xmlCleanupParser();
 }
 
 
