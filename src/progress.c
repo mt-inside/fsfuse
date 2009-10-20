@@ -45,7 +45,7 @@ typedef struct
 
 #define PROGRESS_CACHE_SIZE 16
 static hash_table_t *progress_cache = NULL;
-static rw_lock_t progress_cache_lock;
+static rw_lock_t *progress_cache_lock = NULL;
 
 
 static void progress_bar_draw_all (void);
@@ -68,7 +68,7 @@ int progress_init (void)
     progress_trace("progress_init()\n");
     progress_trace_indent();
 
-    if (config_opt_progress)
+    if (config_option_progress)
     {
         win = initscr();
 
@@ -81,7 +81,7 @@ int progress_init (void)
             curs_set(0);
 
 
-            rw_lock_init(&progress_cache_lock);
+            progress_cache_lock = rw_lock_new();
 
             progress_cache = hash_table_new(PROGRESS_CACHE_SIZE);
 
@@ -112,7 +112,7 @@ void progress_finalise (void)
         hash_table_delete(progress_cache);
         progress_cache = NULL;
 
-        rw_lock_destroy(&progress_cache_lock);
+        rw_lock_delete(progress_cache_lock);
     }
 }
 
@@ -125,7 +125,7 @@ void progress_update (const char *path,
 
     if (config_option_progress)
     {
-        rw_lock_wlock(&progress_cache_lock);
+        rw_lock_wlock(progress_cache_lock);
 
         p = (progress_t *)hash_table_find(progress_cache, path);
 
@@ -139,7 +139,7 @@ void progress_update (const char *path,
             hash_table_add(progress_cache, p->path, (void *)p);
         }
 
-        rw_lock_wunlock(&progress_cache_lock);
+        rw_lock_wunlock(progress_cache_lock);
 
         p->len = len;
         p->downloaded = downloaded;
@@ -153,7 +153,7 @@ void progress_delete (const char *path)
 
     if (config_option_progress)
     {
-        rw_lock_wlock(&progress_cache_lock);
+        rw_lock_wlock(progress_cache_lock);
 
         p = (progress_t *)hash_table_find(progress_cache, path);
 
@@ -164,7 +164,7 @@ void progress_delete (const char *path)
             free(p);
         }
 
-        rw_lock_wunlock(&progress_cache_lock);
+        rw_lock_wunlock(progress_cache_lock);
     }
 }
 
@@ -180,7 +180,7 @@ static void progress_bar_draw_all (void)
 
     clear();
 
-    rw_lock_rlock(&progress_cache_lock);
+    rw_lock_rlock(progress_cache_lock);
 
     iter = hash_table_iterator_new(progress_cache);
     while (!hash_table_iterator_at_end(iter))
@@ -194,7 +194,7 @@ static void progress_bar_draw_all (void)
     }
     hash_table_iterator_delete(iter);
 
-    rw_lock_runlock(&progress_cache_lock);
+    rw_lock_runlock(progress_cache_lock);
 
     refresh();
 }

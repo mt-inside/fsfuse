@@ -39,8 +39,8 @@ static void schedule_next (void);
 
 
 /* List of alarms */
-TAILQ_HEAD(, _alarm_t) alarms_list;
-rw_lock_t *alarms_list_lock = NULL;
+static TAILQ_HEAD(, _alarm_t) alarms_list;
+static rw_lock_t *alarms_list_lock = NULL;
 
 
 int alarms_init (void)

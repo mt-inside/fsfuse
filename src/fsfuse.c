@@ -31,7 +31,9 @@
 #include "parser.h"
 #include "download_thread_pool.h"
 #include "direntry.h"
+#if FEATURE_DIRENTRY_CACHE
 #include "direntry_cache.h"
+#endif
 #if FEATURE_PROGRESS_METER
 #include "progress.h"
 #endif
@@ -343,7 +345,9 @@ static start_action_t settings_parse (int argc, char *argv[])
 
                 TRACE_ARG(alarms)
                 TRACE_ARG(direntry)
+#if FEATURE_DIRENTRY_CACHE
                 TRACE_ARG(direntry_cache)
+#endif
                 TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)
@@ -458,16 +462,21 @@ static void fsfuse_versions (void)
     printf("Using kernel %s %s\n"
            "Using libfuse version %d.%d (using API version %d)\n"
            "Using %s\n"
-           "Using libxml2 %s\n"
-           "Using %s\n"
-           "\n",
+           "Using libxml2 %s\n",
            un.sysname,
            un.release,
            FUSE_MAJOR_VERSION, FUSE_MINOR_VERSION, FUSE_USE_VERSION,
            curl_version(),
-           LIBXML_DOTTED_VERSION, /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
+           LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
+          );
+
+#if FEATURE_PROGRESS_METER
+    printf("Using %s\n",
            curses_version()
           );
+#endif
+
+    printf("\n");
 }
 
 static void fsfuse_usage (void)
