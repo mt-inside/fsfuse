@@ -303,7 +303,8 @@ static void direntry_attribute_add (
         de->size = atoll(value);
         parser_trace("adding attribute size==%llu\n", de->size);
     }
-    else if (!strcmp(name, "fs2-linkcount"))
+    else if (!strcmp(name, "fs2-linkcount") ||
+             !strcmp(name, "fs2-alternativescount"))
     {
         de->link_count = atol(value);
         parser_trace("adding attribute link_count==%lu\n", de->link_count);
@@ -522,6 +523,7 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
 
     st->st_uid = (uid == -1) ? getuid() : (unsigned)uid;
     st->st_gid = (gid == -1) ? getgid() : (unsigned)gid;
+    st->st_nlink = de->link_count;
 
     switch (de->type)
     {
@@ -533,9 +535,6 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
             st->st_blksize = FSFUSE_BLKSIZE;
             st->st_blocks = (de->size / 512) + 1;
 
-            /* indexnode doesn't supply link counts for files */
-            st->st_nlink = 1;
-
             break;
         case direntry_type_DIRECTORY:
             st->st_mode = S_IFDIR | config_attr_mode_dir;
@@ -543,8 +542,6 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
             /* indexnode supplies directory's tree size - not what a unix fs
              * wants */
             st->st_size = 0;
-
-            st->st_nlink = de->link_count;
 
             break;
     }
