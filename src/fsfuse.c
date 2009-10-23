@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
 
     /* Inits */
     if (trace_init()          ||
+        common_init()         ||
         alarms_init()         ||
         fetcher_init()        ||
         parser_init()         ||
@@ -287,6 +288,7 @@ bail:
     parser_finalise();
     fetcher_finalise();
     alarms_finalise();
+    common_finalise();
     trace_finalise();
 
 pre_init_bail:

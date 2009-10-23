@@ -8,9 +8,33 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "common.h"
 
+
+static pthread_key_t thread_index_key;
+static unsigned next_thread_index = 1;
+
+
+static void thread_index_destroy (void *i);
+
+
+int common_init (void)
+{
+    int rc;
+
+
+    rc = pthread_key_create(&thread_index_key, &thread_index_destroy);
+
+
+    return rc;
+}
+
+void common_finalise (void)
+{
+    pthread_key_delete(thread_index_key);
+}
 
 /* There are versions of these functions glibc, but they're not thread-safe */
 char *fsfuse_dirname (const char *path)
@@ -57,4 +81,25 @@ char *fsfuse_basename (const char *path)
 
 
     return base;
+}
+
+unsigned fsfuse_get_thread_index (void)
+{
+    unsigned *i = (unsigned *)pthread_getspecific(thread_index_key);
+
+
+    if (!i)
+    {
+        i = (unsigned *)malloc(sizeof(unsigned));
+        *i = next_thread_index++;
+        pthread_setspecific(thread_index_key, (void *)i);
+    }
+
+
+    return *i;
+}
+
+static void thread_index_destroy (void *i)
+{
+    free(i);
 }

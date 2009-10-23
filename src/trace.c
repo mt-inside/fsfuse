@@ -11,6 +11,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <semaphore.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 
 #include "common.h"
 #include "trace.h"
@@ -116,7 +119,10 @@ static void emitter_printf_emitter (emitter_flags_t flags,
 
     if (!(flags & emitter_flag_NO_PREFIX))
     {
-        printf("%s[%lu %s] ", tabs, (unsigned long)pthread_self(), prefix);
+        printf("%s[%u %s] ",
+                tabs,
+                fsfuse_get_thread_index(),
+                prefix);
     }
     vprintf(fmt, ap);
 
@@ -153,7 +159,11 @@ static void emitter_logfile_emitter (emitter_flags_t flags,
 
     if (!(flags & emitter_flag_NO_PREFIX))
     {
-        fprintf(log_file, "%s [%lu %s] ", tabs, (unsigned long)pthread_self(), prefix);
+        fprintf(log_file,
+                "%s[%u %s] ",
+                tabs,
+                fsfuse_get_thread_index(),
+                prefix);
     }
     vfprintf(log_file, fmt, ap);
 

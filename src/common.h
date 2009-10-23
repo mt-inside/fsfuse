@@ -53,8 +53,13 @@
 
 
 /* General utility functions */
+extern int common_init (void);
+extern void common_finalise (void);
+
 extern char *fsfuse_dirname (const char *path);
 extern char *fsfuse_basename (const char *path);
+
+extern unsigned fsfuse_get_thread_index (void);
 
 
 #endif /* _included_common_h */

@@ -51,7 +51,7 @@ static void hash_table_iterator_find_first (hash_table_iterator_t *iter);
 
 hash_table_t *hash_table_new (unsigned size)
 {
-    hash_table_t *tbl = (hash_table_t *)malloc(sizeof(hash_table_t));
+    hash_table_t *tbl = (hash_table_t *)calloc(sizeof(hash_table_t), 1);
 
 
     tbl->size = size;
