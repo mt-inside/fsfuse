@@ -46,11 +46,8 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     parser = parser_new();
 
     /* fetch the stats page and feed it into the parser */
-    fetcher_rc = fetcher_fetch("stats",
-                               fetcher_url_type_t_PLAIN,
-                               NULL,
-                               (curl_write_callback)&parser_consumer,
-                               (void *)parser);
+    fetcher_rc = fetcher_fetch_stats((curl_write_callback)&parser_consumer,
+                                     (void *)parser);
 
     if (fetcher_rc == 0)
     {

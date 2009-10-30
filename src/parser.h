@@ -15,6 +15,7 @@
 #include <libxml/xpathInternals.h>
 
 #include "common.h"
+#include "direntry.h"
 
 
 TRACE_DECLARE(parser)
@@ -30,5 +31,10 @@ extern size_t parser_consumer (void *buf, size_t size, size_t nmemb, void *userp
 extern xmlDocPtr parser_done (xmlParserCtxtPtr ctxt);
 
 extern xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath);
+
+extern int parser_fetch_listing (
+    const char * const url,
+    listing_list_t **lis
+);
 
 #endif /* _INCLUDED_PARSER_H */

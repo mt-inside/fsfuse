@@ -99,4 +99,16 @@
         <default>0</default>
         <xpath>/config/options/progress/text()</xpath>
     </item>
+    <item>
+        <symbol>peers_favourites</symbol>
+        <type>string_collection</type>
+        <default>NULL</default>
+        <xpath>/config/peers/favourites/favourite/text()</xpath>
+    </item>
+    <item>
+        <symbol>peers_blocked</symbol>
+        <type>string_collection</type>
+        <default>NULL</default>
+        <xpath>/config/peers/blocked/block/text()</xpath>
+    </item>
 </items>

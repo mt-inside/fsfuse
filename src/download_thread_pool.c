@@ -478,16 +478,18 @@ static void *downloader_thread_main (void *arg)
             }
         }
 
-        sprintf(range, "%ld-", thread->current_chunk->start);
+        if (thread->current_chunk->start)
+        {
+            sprintf(range, "%ld-", thread->current_chunk->start);
+        }
         thread->download_offset = thread->current_chunk->start;
         dtp_trace("fetching range \"%s\"\n", range);
 
         /* begin the download */
-        rc = fetcher_fetch(direntry_get_hash(thread->de),
-                           fetcher_url_type_t_DOWNLOAD,
-                           range,
-                           (curl_write_callback)&thread_pool_consumer,
-                           (void *)thread                              );
+        rc = fetcher_fetch_file(direntry_get_hash(thread->de),
+                                (thread->current_chunk->start) ? range : NULL,
+                                (curl_write_callback)&thread_pool_consumer,
+                                (void *)thread                              );
     } while (rc == 0);
 
     if (rc == 0)

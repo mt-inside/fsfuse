@@ -11,8 +11,6 @@
 
 struct _direntry_t
 {
-    /* External properties */
-
     char                      *base_name;
     /* These are stored normalised. Fuse doesn't give us ".."s, but we don't
      * generate e.g. "//". It would be easier in places to not care if we make
@@ -28,7 +26,6 @@ struct _direntry_t
 #endif
     char                      *href;
 
-    /* Private properties */
     struct _direntry_t        *children; /* directories in fs2 are never empty,
                                             so NULL children means we haven't
                                             looked yet */
@@ -39,6 +36,19 @@ struct _direntry_t
     struct _direntry_t        *parent;
 };
 
+struct _listing_t
+{
+    char                      *name;
+    char                      *hash;
+    direntry_type_t            type;
+    off_t                      size; /* st_size in struct stat is off_t */
+    unsigned long              link_count;
+    char                      *href;
+    char                      *client;
+
+    unsigned                   ref_count;
+    pthread_mutex_t           *lock;
+};
 
 extern direntry_t *direntry_new_root (void);
 

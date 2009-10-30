@@ -14,13 +14,6 @@
 #include "common.h"
 
 
-typedef enum
-{
-    fetcher_url_type_t_PLAIN, /* no prefix */
-    fetcher_url_type_t_BROWSE,
-    fetcher_url_type_t_DOWNLOAD
-} fetcher_url_type_t;
-
 typedef struct
 {
     CURL *eh;
@@ -34,12 +27,30 @@ TRACE_DECLARE(fetcher)
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
-extern int fetcher_fetch (const char * const   path,
-                          fetcher_url_type_t   url_type,
-                           const char * const   range,
-                          curl_write_callback  cb,
-                          void                *cb_data);
+extern int fetcher_fetch_file (const char * const   path,
+                               const char * const   range,
+                               curl_write_callback  cb,
+                               void                *cb_data);
+
+extern int fetcher_fetch_stats (curl_write_callback  cb,
+                                void                *cb_data);
+
+extern int fetcher_fetch_internal (const char * const   url,
+                                   const char * const   range,
+                                   curl_write_callback  cb,
+                                   void                *cb_data);
+
 extern double fetcher_get_indexnode_version (void);
 extern int http2errno (int http_code);
+
+extern char *make_url (
+    const char * const path_prefix,
+    const char * const resource
+);
+extern char *make_escaped_url (
+    const char * const path_prefix,
+    const char * const resource
+);
+
 
 #endif /* _INCLUDED_FETCHER_H */

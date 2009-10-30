@@ -290,12 +290,10 @@ static int direntry_cache_is_stale (direntry_t *de)
     }
 
     /* Does it no longer exist? */
-    rc = fetcher_fetch(direntry_get_path(de),
-                       fetcher_url_type_t_BROWSE,
-                       NULL,
-                       NULL,
-                       NULL
-                      );
+    rc = fetcher_fetch_listing(direntry_get_path(de),
+                               NULL,
+                               NULL
+                              );
 
     if (rc)
     {

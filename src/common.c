@@ -36,6 +36,7 @@ void common_finalise (void)
     pthread_key_delete(thread_index_key);
 }
 
+
 /* There are versions of these functions glibc, but they're not thread-safe */
 char *fsfuse_dirname (const char *path)
 {
@@ -82,6 +83,7 @@ char *fsfuse_basename (const char *path)
 
     return base;
 }
+
 
 unsigned fsfuse_get_thread_index (void)
 {

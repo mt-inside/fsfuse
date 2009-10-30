@@ -34,6 +34,7 @@ OBJECTS := fsfuse.o                \
            config_define.o         \
            alarms.o                \
            locks.o                 \
+           peerstats.o             \
            fsfuse_ops/readdir.o    \
            fsfuse_ops/read.o       \
            fsfuse_ops/statfs.o     \

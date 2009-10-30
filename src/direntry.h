@@ -26,11 +26,19 @@ typedef enum
 } direntry_type_t;
 
 typedef struct _direntry_t direntry_t;
+typedef struct _listing_t listing_t;
+
+typedef struct
+{
+    unsigned count;
+    listing_t **items;
+} listing_list_t;
 
 
 extern int direntry_init (void);
 extern void direntry_finalise (void);
 
+extern direntry_t *direntry_new  (CALLER_DECL_ONLY);
 extern void direntry_post        (CALLER_DECL direntry_t *de);
 extern void direntry_delete      (CALLER_DECL direntry_t *de);
 extern void direntry_delete_list (direntry_t *de);
@@ -38,6 +46,7 @@ extern void direntry_delete_list (direntry_t *de);
 extern direntry_t *direntry_get_parent       (direntry_t *de);
 extern direntry_t *direntry_get_first_child  (direntry_t *de);
 extern direntry_t *direntry_get_next_sibling (direntry_t *de);
+extern direntry_t *direntry_set_next_sibling (direntry_t *de, direntry_t *sibling);
 
 extern char *          direntry_get_path         (direntry_t *de);
 extern char *          direntry_get_base_name    (direntry_t *de);
@@ -52,6 +61,19 @@ extern int             direntry_de2stat          (struct stat *st, direntry_t *d
 extern void            direntry_still_exists     (direntry_t *de);
 extern void            direntry_no_longer_exists (direntry_t *de);
 
+
+extern listing_t *listing_new (CALLER_DECL_ONLY);
+extern void listing_delete (CALLER_DECL listing_t *li);
+extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
+
+extern char *          listing_get_name          (listing_t *li);
+extern char *          listing_get_hash          (listing_t *li);
+extern direntry_type_t listing_get_type          (listing_t *li);
+extern off_t           listing_get_size          (listing_t *li);
+extern unsigned long   listing_get_link_count    (listing_t *li);
+extern char *          listing_get_href          (listing_t *li);
+extern char *          listing_get_client        (listing_t *li);
+
 extern int path_get_direntry (
     char const * const path,
     direntry_t **direntry
@@ -59,6 +81,16 @@ extern int path_get_direntry (
 extern int path_get_children (
     char const * const path,
     direntry_t **dirents
+);
+extern void direntry_attribute_add (
+    direntry_t * const de,
+    const char *name,
+    const char *value
+);
+void listing_attribute_add (
+    listing_t * const li,
+    const char *name,
+    const char *value
 );
 
 

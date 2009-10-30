@@ -1,7 +1,8 @@
 typedef enum
 {
     config_item_type_STRING,
-    config_item_type_NUMBER
+    config_item_type_NUMBER,
+    config_item_type_STRING_COLLECTION
 } config_item_type_t;
 
 typedef struct

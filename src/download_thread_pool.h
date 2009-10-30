@@ -10,7 +10,6 @@
 #define _included_download_thread_pool_h
 
 #include <sys/types.h>
-#include <semaphore.h>
 
 #include "common.h"
 #include "direntry.h"

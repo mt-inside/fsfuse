@@ -10,7 +10,6 @@
 #include <stdarg.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <semaphore.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -113,16 +112,17 @@ static void emitter_printf_emitter (emitter_flags_t flags,
     char *tabs;
 
 
+    NOT_USED(prefix);
+
     pthread_mutex_lock(&trace_mutex);
 
     tabs = trace_get_tabs();
 
     if (!(flags & emitter_flag_NO_PREFIX))
     {
-        printf("%s[%u %s] ",
+        printf("%s[%u] ",
                 tabs,
-                fsfuse_get_thread_index(),
-                prefix);
+                fsfuse_get_thread_index());
     }
     vprintf(fmt, ap);
 
@@ -153,6 +153,8 @@ static void emitter_logfile_emitter (emitter_flags_t flags,
     char *tabs;
 
 
+    NOT_USED(prefix);
+
     pthread_mutex_lock(&trace_mutex);
 
     tabs = trace_get_tabs();
@@ -160,10 +162,9 @@ static void emitter_logfile_emitter (emitter_flags_t flags,
     if (!(flags & emitter_flag_NO_PREFIX))
     {
         fprintf(log_file,
-                "%s[%u %s] ",
+                "%s[%u] ",
                 tabs,
-                fsfuse_get_thread_index(),
-                prefix);
+                fsfuse_get_thread_index());
     }
     vfprintf(log_file, fmt, ap);
 

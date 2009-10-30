@@ -37,6 +37,7 @@
 #if FEATURE_PROGRESS_METER
 #include "progress.h"
 #endif
+#include "peerstats.h"
 #include "indexnode.h"
 
 #include "fsfuse_ops/readdir.h"
@@ -228,6 +229,7 @@ int main(int argc, char *argv[])
 #if FEATURE_PROGRESS_METER
         progress_init()       ||
 #endif
+        peerstats_init()      ||
         thread_pool_init()    )
     {
         printf("%s error: initialisation failed\n", progname);
@@ -278,6 +280,7 @@ int main(int argc, char *argv[])
 bail:
     /* finalisations */
     thread_pool_finalise();
+    peerstats_finalise();
 #if FEATURE_PROGRESS_METER
     progress_finalise();
 #endif
@@ -369,6 +372,7 @@ static start_action_t settings_parse (int argc, char *argv[])
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)
                 TRACE_ARG(parser)
+                TRACE_ARG(peerstats)
 #if FEATURE_PROGRESS_METER
                 TRACE_ARG(progress)
 #endif

@@ -12,7 +12,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <curl/curl.h>
-#include <err.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -22,6 +21,7 @@
 #include "fetcher.h"
 #include "parser.h"
 #include "indexnode.h"
+#include "peerstats.h"
 #include "fsfuse_ops/read.h"
 
 
@@ -35,12 +35,6 @@ static CURL *curl_eh_new (void);
 static void curl_eh_delete (CURL *eh);
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream);
-
-static char *make_url (const char * const path, fetcher_url_type_t url_type, CURL *eh);
-
-static char *make_plain_url (const char * const path, CURL *eh);
-static char *make_browse_url (const char * const path, CURL *eh);
-static char *make_download_url (const char * const hash, CURL *eh);
 
 static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp);
 
@@ -70,16 +64,72 @@ void fetcher_finalise (void)
 /*      File Operations                                                       */
 /* ========================================================================== */
 
-/* Actual fetcher function. Returns the UNIX errno code if the operation "completed" -
- * either with success or error (indicated by the HTTP code). Returns 0 when the
- * operation didn't complete for "benign" reasons - try again */
-int fetcher_fetch (const char * const   path,
-                   fetcher_url_type_t   url_type,
-                   const char * const   range,
-                   curl_write_callback  cb,
-                   void                *cb_data)
+int fetcher_fetch_file (const char * const   hash,
+                        const char * const   range,
+                        curl_write_callback  cb,
+                        void                *cb_data)
 {
-    char *url, *redirect_target, *error_buffer;
+    int rc;
+    char *url;
+    listing_list_t *lis;
+    listing_t *li;
+
+
+    assert(hash); assert(*hash);
+
+    fetcher_trace("fetcher_fetch_file(hash: %s, range: \"%s\")\n", hash, range);
+    fetcher_trace_indent();
+
+
+    /* Find alternatives */
+    url = make_url("/alternatives", hash);
+    rc = parser_fetch_listing(url, &lis);
+    li = peerstats_chose_alternative(lis);
+
+
+    /* Get the file */
+    if (li)
+    {
+        rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
+    }
+    else
+    {
+        rc = -EBUSY;
+        /* TODO sort out handling of this whole area */
+    }
+
+    fetcher_trace_dedent();
+
+
+    return rc;
+}
+
+int fetcher_fetch_stats (curl_write_callback  cb,
+                         void                *cb_data)
+{
+    int rc;
+    char *url;
+
+
+    fetcher_trace("fetcher_fetch_stats()\n");
+    fetcher_trace_indent();
+
+    url = make_url("", "stats");
+
+    rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
+
+    fetcher_trace_dedent();
+
+
+    return rc;
+}
+
+int fetcher_fetch_internal (const char * const   url,
+                            const char * const   range,
+                            curl_write_callback  cb,
+                            void                *cb_data)
+{
+    char *redirect_target, *error_buffer;
     char s[1024]; /* TODO: security */
     int rc = -EIO, curl_rc;
     long http_code = 0;
@@ -88,9 +138,9 @@ int fetcher_fetch (const char * const   path,
     fetcher_cb_data_t cb_data_real;
 
 
-    assert(path); assert(*path);
+    assert(url); assert(*url);
 
-    fetcher_trace("fetcher_fetch(path==%s, url_type==%d, range==\"%s\")\n", path, url_type, range);
+    fetcher_trace("fetcher_fetch_internal(url: %s, range: \"%s\")\n", url, range);
     fetcher_trace_indent();
 
 
@@ -109,7 +159,6 @@ int fetcher_fetch (const char * const   path,
     cb_data_real.cb_data = cb_data;
 
     /* URL */
-    url = make_url(path, url_type, eh);
     curl_easy_setopt(eh, CURLOPT_URL, url);
     fetcher_trace("fetching url \"%s\"\n", url);
 
@@ -166,7 +215,7 @@ int fetcher_fetch (const char * const   path,
 
         case CURLE_WRITE_ERROR:
             /* assume benign atm - i.e. we caused it for a seek or timeout, so
-             * the appropriat flag will be set */
+             * the appropriate flag will be set */
             rc = 0;
             break;
 
@@ -194,7 +243,7 @@ int fetcher_fetch (const char * const   path,
     curl_eh_delete(eh);
     curl_slist_free_all(slist);
     free(error_buffer);
-    free(url);
+    free((char *)url);
 
 
     fetcher_trace_dedent();
@@ -224,7 +273,7 @@ double fetcher_get_indexnode_version (void)
     }
 
     /* URL */
-    url = make_url("/", fetcher_url_type_t_BROWSE, eh);
+    url = make_escaped_url("/browse", "/");
     curl_easy_setopt(eh, CURLOPT_URL, url);
 
     /* Other headers */
@@ -393,78 +442,47 @@ static void curl_eh_delete (CURL *eh)
 }
 
 /* ========================================================================== */
-/* First level interface, switched on url type                                */
+/* API to make URLs                                                           */
 /* ========================================================================== */
 
-static char *make_url (const char * const path, fetcher_url_type_t url_type, CURL *eh)
-{
-    switch (url_type)
-    {
-        case fetcher_url_type_t_PLAIN:
-            return make_plain_url(path, eh);
-            break;
-        case fetcher_url_type_t_BROWSE:
-            return make_browse_url(path, eh);
-            break;
-        case fetcher_url_type_t_DOWNLOAD:
-            return make_download_url(path, eh);
-            break;
-        default:
-            assert(0);
-    }
-}
-
-/* ========================================================================== */
-/* Second level interface, makes actual URLs                                  */
-/* ========================================================================== */
-
-static char *make_plain_url (const char * const resource, CURL *eh)
+char *make_url (
+    const char * const path_prefix,
+    const char * const resource
+)
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://[%s]:%s/%s";
-    size_t len = strlen(host) + strlen(port) + strlen(resource) + strlen(fmt) + 1;
+    char fmt[] = "http://[%s]:%s%s/%s";
+    size_t len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource) + strlen(fmt) + 1;
     char *url = (char *)malloc(len * sizeof(*url));
 
 
-    NOT_USED(eh);
-
-    sprintf(url, fmt, indexnode_host(), indexnode_port(), resource);
+    sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource);
 
 
     return url;
 }
 
-static char *make_browse_url (const char * const path, CURL *eh)
+char *make_escaped_url (
+    const char * const path_prefix,
+    const char * const resource
+)
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://[%s]:%s/browse/%s";
-    char *path_esc, *url;
+    char fmt[] = "http://[%s]:%s%s/%s";
+    char *resource_esc, *url;
     size_t len;
+    CURL *eh = curl_eh_new();
 
 
-    /* we escape from path + 1 and render the first '/' ourselves because the
-     * indexnode insists on it being real */
-    path_esc = curl_easy_escape(eh, path + 1, 0);
-    len = strlen(host) + strlen(port) + strlen(path_esc) + strlen(fmt) + 1;
+    /* we escape from resource + 1 and render the first '/' ourselves because
+     * the indexnode insists on it being real */
+    resource_esc = curl_easy_escape(eh, resource + 1, 0);
+    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
     url = (char *)malloc(len * sizeof(*url));
-    sprintf(url, fmt, indexnode_host(), indexnode_port(), path_esc);
-    curl_free(path_esc);
+    sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource_esc);
+    curl_free(resource_esc);
 
-
-    return url;
-}
-
-static char *make_download_url (const char * const hash, CURL *eh)
-{
-    char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://[%s]:%s/download/%s";
-    size_t len = strlen(host) + strlen(port) + strlen(hash) + strlen(fmt) + 1;
-    char *url = (char *)malloc(len * sizeof(*url));
-
-
-    NOT_USED(eh);
-
-    sprintf(url, fmt, indexnode_host(), indexnode_port(), hash);
+    curl_eh_delete(eh);
 
 
     return url;

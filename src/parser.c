@@ -7,6 +7,8 @@
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <string.h>
 
 #include "common.h"
 #include "parser.h"
@@ -14,6 +16,16 @@
 
 
 TRACE_DEFINE(parser)
+
+
+static int filelist_entries_parse (
+    xmlNodeSetPtr nodes,
+    listing_list_t **lis
+);
+static int filelist_entry_parse (
+    xmlElementPtr node,
+    listing_t *li
+);
 
 
 /* ========================================================================== */
@@ -113,4 +125,143 @@ xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath)
 
 
     return xpathObj;
+}
+
+
+
+
+int parser_fetch_listing (
+    const char * const url,
+    listing_list_t **lis
+)
+{
+    int rc;
+    xmlParserCtxtPtr parser = parser_new();
+    xmlXPathObjectPtr xpathObj;
+    xmlDocPtr doc;
+
+
+
+    assert(url); assert(*url);
+
+    parser_trace("parser_fetch_listing(url: %s)\n", url);
+    parser_trace_indent();
+
+    rc = fetcher_fetch_internal(url, NULL, (curl_write_callback)&parser_consumer, (void *)parser);
+
+    if (rc == 0)
+    {
+        /* The fetcher has returned, so that's all the document.
+         * Indicate to the parser that that's it */
+        doc = parser_done(parser);
+
+        xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name]");
+        if (xpathObj->type == XPATH_NODESET)
+        {
+            rc = filelist_entries_parse(xpathObj->nodesetval, lis);
+        }
+
+        xmlXPathFreeObject(xpathObj);
+        xmlFreeDoc(doc);
+    }
+
+    parser_delete(parser);
+
+    parser_trace_dedent();
+
+
+    return rc;
+}
+
+/* Parse a nodeset representing the A tags in an fs2-filelist,
+ * building direntries */
+static int filelist_entries_parse (
+    xmlNodeSetPtr nodes,
+    listing_list_t **lis_out
+)
+{
+    listing_t *li;
+    listing_list_t *lis;
+    int rc = 0, size, i;
+
+
+    size = (nodes) ? nodes->nodeNr : 0;
+
+    parser_trace("filelist_entries_parse(): enumerating %d nodes\n", size);
+    parser_trace_indent();
+
+    if (size)
+    {
+        lis = (listing_list_t *)malloc(sizeof(listing_list_t));
+        lis->count = size;
+        lis->items = (listing_t **)malloc(size * sizeof(listing_t *));
+
+        /* Enumerate the A elements */
+        for (i = 0; i < size && !rc; i++)
+        {
+            if (!(li = listing_new(CALLER_INFO_ONLY)))
+            {
+                rc = -EIO;
+                break;
+            }
+
+            rc = filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i],
+                                      li);
+
+            lis->items[i] = li;
+        }
+    }
+
+    *lis_out = lis;
+
+    parser_trace_dedent();
+
+
+    return rc;
+}
+
+static int filelist_entry_parse (
+    xmlElementPtr node,
+    listing_t *li
+)
+{
+    xmlAttributePtr curAttr = NULL;
+
+
+    assert(node);
+    assert(li);
+
+    parser_trace("filelist_entry_parse(element content==%s)\n", node->children->content);
+    parser_trace_indent();
+
+    if (node->type != XML_ELEMENT_NODE ||
+        strcmp((char *)node->name, "a"))
+    {
+        return -EIO;
+    }
+
+    /* Enumerate the element's attributes */
+    curAttr = (xmlAttributePtr)node->attributes;
+    while (curAttr)
+    {
+        if (curAttr->type == XML_ATTRIBUTE_NODE &&
+            curAttr->children &&
+            curAttr->children->type == XML_TEXT_NODE &&
+            !curAttr->children->next)
+        {
+            /* ignore what the indexnode says the path is for now */
+            if (strcmp((char *)curAttr->name, "fs2-path"))
+            {
+                parser_trace("Attribute %s == %s\n", curAttr->name, curAttr->children->content);
+                listing_attribute_add(li, (char *)curAttr->name, (char *)curAttr->children->content);
+            }
+        }
+
+        curAttr = (xmlAttributePtr)curAttr->next;
+    }
+
+    parser_trace_dedent();
+
+
+    return 0;
 }

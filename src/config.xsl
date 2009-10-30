@@ -161,6 +161,9 @@
             <xsl:when test="$type = 'string'">
                 <xsl:text>config_item_type_STRING</xsl:text>
             </xsl:when>
+            <xsl:when test="$type = 'string_collection'">
+                <xsl:text>config_item_type_STRING_COLLECTION</xsl:text>
+            </xsl:when>
         </xsl:choose>
     </xsl:template>
 
@@ -173,6 +176,9 @@
             </xsl:when>
             <xsl:when test="$type = 'string'">
                 <xsl:text>char *</xsl:text>
+            </xsl:when>
+            <xsl:when test="$type = 'string_collection'">
+                <xsl:text>char **</xsl:text>
             </xsl:when>
         </xsl:choose>
     </xsl:template>

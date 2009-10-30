@@ -21,6 +21,8 @@ static char *config_path = NULL;
 
 static void config_items_free (void);
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
+static char **xpath_get_array (const char *xpath, xmlXPathContextPtr xpathCtxt);
+static void string_collection_free (char **strcol);
 
 
 int config_init (void)
@@ -42,7 +44,7 @@ void config_finalise (void)
 int config_read (void)
 {
     config_item *item;
-    char *val;
+    char *val, **val_array;
     xmlDocPtr doc;
     xmlXPathContextPtr xpathCtxt;
 
@@ -56,23 +58,43 @@ int config_read (void)
 
         for (item = config_items; item->symbol; item++)
         {
-            val = xpath_get(item->xpath, xpathCtxt);
-            if (val)
+            switch (item->type)
             {
-                switch (item->type)
-                {
-                    case config_item_type_STRING:
+                case config_item_type_STRING:
+                    val = xpath_get(item->xpath, xpathCtxt);
+
+                    if (val)
+                    {
                         if (item->runtime) free(*((char **)item->symbol));
 
                         *((char **)item->symbol) = strdup(val);
                         item->runtime = 1;
+                    }
 
-                        break;
+                    break;
 
-                    case config_item_type_NUMBER:
+                case config_item_type_NUMBER:
+                    val = xpath_get(item->xpath, xpathCtxt);
+
+                    if (val)
+                    {
                         *((int *)item->symbol) = strtoul(val, NULL, 0);
-                        break;
-                }
+                    }
+
+                    break;
+
+                case config_item_type_STRING_COLLECTION:
+                    val_array = xpath_get_array(item->xpath, xpathCtxt);
+
+                    if (val_array)
+                    {
+                        if (item->runtime) string_collection_free(*((char ***)item->symbol));
+
+                        *((char ***)item->symbol) = val_array;
+                        item->runtime = 1;
+                    }
+
+                    break;
             }
         }
 
@@ -102,6 +124,10 @@ static void config_items_free (void)
                 break;
 
             case config_item_type_NUMBER:
+                break;
+
+            case config_item_type_STRING_COLLECTION:
+                if (item->runtime) string_collection_free(*((char ***)item->symbol));
                 break;
         }
     }
@@ -133,6 +159,63 @@ static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt)
 
 
     return ret;
+}
+
+static char **xpath_get_array (const char *xpath, xmlXPathContextPtr xpathCtxt)
+{
+    int i;
+    xmlXPathObjectPtr xpathObj;
+    xmlNodeSetPtr nodeset;
+    xmlNodePtr node;
+    char **ret = NULL;
+
+
+    xpathObj = xmlXPathEvalExpression(BAD_CAST xpath, xpathCtxt);
+    if (xpathObj && xpathObj->type == XPATH_NODESET)
+    {
+        nodeset = xpathObj->nodesetval;
+        if (nodeset)
+        {
+            ret = (char **)malloc((nodeset->nodeNr + 1) * sizeof(char *));
+
+            for (i = 0; i < nodeset->nodeNr; i++)
+            {
+                node = (xmlNodePtr)nodeset->nodeTab[i];
+                if (node && node->type == XML_TEXT_NODE)
+                {
+                    ret[i] = strdup((char *)node->content);
+                }
+            }
+            ret[nodeset->nodeNr] = NULL;
+        }
+    }
+
+    xmlXPathFreeObject(xpathObj);
+
+
+    /* If we didn't get any real results, allocate an array containing just an
+     * end marker to make code that uses this value easier */
+    if (!ret)
+    {
+        ret = (char **)calloc(1, sizeof(char *));
+    }
+
+
+    return ret;
+}
+
+static void string_collection_free (char **strcol)
+{
+    unsigned i = 0;
+
+
+    while (strcol[i])
+    {
+        free(strcol[i]);
+        i++;
+    }
+
+    free(strcol);
 }
 
 char *config_path_get (void)
