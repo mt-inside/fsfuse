@@ -39,7 +39,7 @@ int indexnode_find (void)
     int s4_ok = 0, s6_ok = 0;
     int their_rc, rc = 1;
     socklen_t socklen;
-    char buf[1024], version_str[1024];
+    char buf[1024];
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
     fd_set r_fds;
@@ -191,8 +191,7 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    sscanf(buf, "%[^:]:%s", version_str, port);
-                    version = indexnode_parse_version(version_str);
+                    indexnode_parse_advert_packet(buf, &version, port);
 
                     if (inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
                     {
@@ -210,8 +209,7 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    sscanf(buf, "%[^:]:%s", version_str, port);
-                    version = indexnode_parse_version(version_str);
+                    indexnode_parse_advert_packet(buf, &version, port);
 
                     if (inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
                     {
@@ -232,6 +230,15 @@ int indexnode_find (void)
     if (s6_ok) close(s6);
 
     return rc;
+}
+
+void indexnode_parse_advert_packet (char *buf, double *version, char *port)
+{
+    char version_str[1024]; /* TODO: security */
+
+
+    sscanf(buf, "%[^:]:%[^:]:*", version_str, port);
+    *version = indexnode_parse_version(version_str);
 }
 
 double indexnode_parse_version (char *s)

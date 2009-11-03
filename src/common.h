@@ -24,7 +24,7 @@
 
 /* Greatest protocol version that we know we support */
 #define PROTO_MINIMUM 0.5f
-#define PROTO_MAXIMUM 0.6f
+#define PROTO_MAXIMUM 0.71f
 
 #define NOT_USED(x) (void)x
 #define DO_NOTHING NOT_USED(0)

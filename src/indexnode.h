@@ -11,6 +11,7 @@
 
 extern int indexnode_find (void);
 
+extern void indexnode_parse_advert_packet (char *buf, double *version, char *port);
 extern double indexnode_parse_version (char *s);
 extern char *indexnode_host (void);
 extern char *indexnode_port (void);
