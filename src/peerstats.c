@@ -49,6 +49,9 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
     unsigned i;
 
 
+    assert(alts);
+
+
     srandom(time(NULL));
 
 

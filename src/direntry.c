@@ -111,7 +111,7 @@ int path_get_children (
     unsigned i;
     char *url, *path;
     listing_list_t *lis;
-    direntry_t *de, *prev = NULL;
+    direntry_t *de = NULL, *prev = NULL;
 
 
     direntry_trace("path_get_children(%s)\n", parent);
@@ -120,35 +120,39 @@ int path_get_children (
     url = make_escaped_url("/browse", parent);
     rc = parser_fetch_listing(url, &lis);
 
-    /* turn array of li's into linked list of de's, adding path info to each one
-     * */
-    for (i = 0; i < lis->count; ++i)
+    if (lis)
     {
-        de = direntry_new(CALLER_INFO_ONLY);
+        /* turn array of li's into linked list of de's, adding path info to each one
+         * */
+        for (i = 0; i < lis->count; ++i)
+        {
+            de = direntry_new(CALLER_INFO_ONLY);
 
-        listing_to_direntry(lis->items[i], de);
+            listing_to_direntry(lis->items[i], de);
 
-        /* Currently, the indexnode gives us paths for directories, but not
-         * files. In addition, the paths is offers up for directories are
-         * bollocks, so we ignore them and make our own paths for both */
-        path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
+            /* Currently, the indexnode gives us paths for directories, but not
+             * files. In addition, the paths is offers up for directories are
+             * bollocks, so we ignore them and make our own paths for both */
+            path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
 
-        direntry_trace("constructing path: parent==%s, /, de->base_name==%s\n", parent, direntry_get_base_name(de));
-        strcpy(path, parent);
-        if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
-        strcat(path, direntry_get_base_name(de));
+            direntry_trace("constructing path: parent==%s, /, de->base_name==%s\n", parent, direntry_get_base_name(de));
+            strcpy(path, parent);
+            if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
+            strcat(path, direntry_get_base_name(de));
 
-        direntry_attribute_add(de, "fs2-path", path);
+            direntry_attribute_add(de, "fs2-path", path);
 
-        free(path);
+            free(path);
 
 
-        de->next = prev;
-        prev = de;
+            de->next = prev;
+            prev = de;
+        }
+
+        listing_list_delete(CALLER_INFO lis);
     }
-    *dirents = de;
 
-    listing_list_delete(CALLER_INFO lis);
+    *dirents = de;
 
 
     return rc;

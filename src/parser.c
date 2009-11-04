@@ -149,7 +149,7 @@ int parser_fetch_listing (
 
     rc = fetcher_fetch_internal(url, NULL, (curl_write_callback)&parser_consumer, (void *)parser);
 
-    if (rc == 0)
+    if (rc == 0 && lis)
     {
         /* The fetcher has returned, so that's all the document.
          * Indicate to the parser that that's it */
@@ -181,7 +181,7 @@ static int filelist_entries_parse (
 )
 {
     listing_t *li;
-    listing_list_t *lis;
+    listing_list_t *lis = NULL;
     int rc = 0, size, i;
 
 

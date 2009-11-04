@@ -72,7 +72,7 @@ int fetcher_fetch_file (const char * const   hash,
     int rc;
     char *url;
     listing_list_t *lis;
-    listing_t *li;
+    listing_t *li = NULL;
 
 
     assert(hash); assert(*hash);
@@ -84,7 +84,7 @@ int fetcher_fetch_file (const char * const   hash,
     /* Find alternatives */
     url = make_url("/alternatives", hash);
     rc = parser_fetch_listing(url, &lis);
-    li = peerstats_chose_alternative(lis);
+    if (lis) li = peerstats_chose_alternative(lis);
 
 
     /* Get the file */
