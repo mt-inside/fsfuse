@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include <string.h>
+#include <parser.h>
 
 #include "common.h"
 #include "hash.h"
@@ -50,7 +52,7 @@ int direntry_cache_init (void)
 
     /* The cache has a permanent root node, made here, as it can't be fetched */
     de_root = direntry_new_root();
-    direntry_cache_add(de_root);
+    direntry_cache_add(CALLER_INFO de_root);
     direntry_delete(CALLER_INFO de_root);
 
 
@@ -67,18 +69,16 @@ void direntry_cache_finalise (void)
     rw_lock_delete(direntry_cache_lock);
 }
 
-int direntry_cache_add (direntry_t *de)
+int direntry_cache_add (CALLER_DECL direntry_t *de)
 {
 #if DEBUG
     direntry_t *de2;
 #endif
-    direntry_t *parent;
 
 
-    direntry_cache_trace("[direntry %p] cache add\n",
-                         de);
+    direntry_cache_trace("[direntry %p] cache add (" CALLER_FORMAT ")\n",
+                         de, CALLER_PASS_ONLY);
     direntry_cache_trace_indent();
-
 
 #if DEBUG
     rw_lock_rlock(direntry_cache_lock);
@@ -86,22 +86,6 @@ int direntry_cache_add (direntry_t *de)
     rw_lock_runlock(direntry_cache_lock);
     assert(!de2); /* Shouldn't be duplicates */
 #endif
-
-
-    if (!direntry_is_root(de))
-    {
-        char *parent_path = fsfuse_dirname(direntry_get_path(de));
-        /* parent *must* exist! */
-        rw_lock_rlock(direntry_cache_lock);
-        parent = hash_table_find(direntry_cache, parent_path);
-        rw_lock_runlock(direntry_cache_lock);
-        free(parent_path);
-        assert(parent);
-
-        de->parent = parent;
-        de->next = parent->children;
-        parent->children = de;
-    }
 
 
     direntry_post(CALLER_INFO de); /* inc reference count */
@@ -118,6 +102,66 @@ int direntry_cache_add (direntry_t *de)
     return 0;
 }
 
+void direntry_cache_add_children (
+    direntry_t *parent,
+    direntry_t *new_children
+)
+{
+    direntry_t *old_children = parent->children, *new_child, *old_child;
+    int found;
+
+
+    rw_lock_wlock(direntry_cache_lock);
+
+    parent->children = new_children;
+
+    /* Transfer ownership of all child subtrees from old list to new list */
+    for (new_child = new_children; new_child; new_child = new_child->next)
+    {
+        for (old_child = old_children; old_child; old_child = old_child->next)
+        {
+            if (!strcmp(direntry_get_path(new_child), direntry_get_path(old_child)))
+            {
+                new_child->children = old_child->children;
+            }
+        }
+    }
+
+    /* Free the old list and any remaining subtrees that weren't carried over */
+    for (old_child = old_children; old_child; old_child = old_child->next)
+    {
+        found = 0;
+        for (new_child = new_children; new_child; new_child = new_child->next)
+        {
+            if (!strcmp(direntry_get_path(new_child), direntry_get_path(old_child)))
+            {
+                found = 1;
+                break;
+            }
+        }
+
+        /* Any children of old_child have not been usurped by something in the
+         * new list - discard them */
+        if (!found)
+        {
+            direntry_cache_del_descendants(old_child);
+        }
+
+        direntry_cache_del(CALLER_INFO old_child);
+    }
+
+    /* Finally, claim cache ownership of the new list (but not until the old
+     * ones have been free()d, so that the cache doesn't contain duplicates */
+    for (new_child = new_children; new_child; new_child = new_child->next)
+    {
+        new_child->parent = parent;
+        direntry_cache_add(CALLER_INFO new_child);
+    }
+
+
+    rw_lock_wunlock(direntry_cache_lock);
+}
+
 /* Get the de for path out of the cache, else return NULL */
 direntry_t *direntry_cache_get (const char * const path)
 {
@@ -127,15 +171,6 @@ direntry_t *direntry_cache_get (const char * const path)
     rw_lock_rlock(direntry_cache_lock);
     de = (direntry_t *)hash_table_find(direntry_cache, path);
     rw_lock_runlock(direntry_cache_lock);
-
-    /* You may think that it's an obvious step here to see if we've got its
-     * parent cached. If this is the case, and the parent's got a child list,
-     * yet we failed to find the direntry in the cache, then it would be
-     * tempting to assert that it doesn't exist. THIS IS NOT THE CACHE'S JOB.
-     * Just like the cache does not store a "negative" entry when we look up a
-     * path and don't find it, the cache cannot assert the non-existence of a
-     * direntry. After all, it's just a cache, and in our case it can't know if
-     * it's out of date. */
 
     direntry_cache_trace("direntry_cache_get(path==%s): %s\n",
             path, (de ? "hit" : "miss"));
@@ -164,13 +199,13 @@ direntry_t *direntry_cache_get (const char * const path)
     return de;
 }
 
-int direntry_cache_del (direntry_t *de)
+int direntry_cache_del (CALLER_DECL direntry_t *de)
 {
     int rc;
 
 
-    direntry_cache_trace("[direntry %p] cache delete\n",
-                         de);
+    direntry_cache_trace("[direntry %p] cache delete (" CALLER_FORMAT ")\n",
+                         de, CALLER_PASS_ONLY);
 
     rw_lock_wlock(direntry_cache_lock);
     rc = hash_table_del(direntry_cache, direntry_get_path(de));
@@ -217,8 +252,13 @@ void direntry_cache_notify_stale (direntry_t *de)
             direntry_get_path(parent));
 
 
-    /* purge from cache*/
+    /* parent is fine... */
+    direntry_cache_notify_still_valid(parent);
+
+    /* ...but one of its children is stale. Assume all children are
+     * stale and remove them. */
     direntry_cache_del_descendants(parent);
+    parent->children = NULL;
 
 
     direntry_cache_trace_dedent();
@@ -240,7 +280,7 @@ static void direntry_cache_del_tree (direntry_t *de)
     }
 
     /* actually remove this de from the cache */
-    direntry_cache_del(de);
+    direntry_cache_del(CALLER_INFO de);
 }
 
 /* Recursively delete all of this node's children, but *not* the node itself */
@@ -254,20 +294,9 @@ static void direntry_cache_del_descendants (direntry_t *de)
         direntry_cache_del_tree(child);
         child = direntry_get_next_sibling(child);
     }
-
-    /* This may look like a horrible hack - nulling this stuff out on the
-     * assumption that deleting the children will cause them to be free()d. It's
-     * actually not that: it doesn't matter if the children aren't free()d, the
-     * point here is that this tree structure is only maintained over direntries
-     * in the cache, which these are no longer. Re-adding them (in the correct
-     * order) would cause this info to be build again. */
-    de->children = NULL;
-    de->looked_for_children = 0;
-    /* If we've been asked to purge this de's children, it itself must be OK. */
-    de->cache_last_valid = time(NULL);
 }
 
-/* Is this direntry "stale". That is, do we no longer trust it to (probably)
+/* Is this direntry "stale"? That is, do we no longer trust it to (probably)
  * reflect accurately on the state of things. Reasons we may no longer trust a
  * direntry include:
  * - Upon querying the server, that path no longer exists.
@@ -290,10 +319,9 @@ static int direntry_cache_is_stale (direntry_t *de)
     }
 
     /* Does it no longer exist? */
-    rc = fetcher_fetch_listing(direntry_get_path(de),
-                               NULL,
-                               NULL
-                              );
+    rc = parser_fetch_listing(direntry_get_path(de),
+                              NULL
+                             );
 
     if (rc)
     {

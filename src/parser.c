@@ -127,9 +127,6 @@ xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath)
     return xpathObj;
 }
 
-
-
-
 int parser_fetch_listing (
     const char * const url,
     listing_list_t **lis
@@ -139,7 +136,6 @@ int parser_fetch_listing (
     xmlParserCtxtPtr parser = parser_new();
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr doc;
-
 
 
     assert(url); assert(*url);

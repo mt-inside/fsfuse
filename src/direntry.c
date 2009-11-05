@@ -348,10 +348,6 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
-#if FEATURE_DIRENTRY_CACHE
-        assert(!direntry_cache_get(direntry_get_path(de)));
-#endif
-
         pthread_mutex_unlock(de->lock);
         pthread_mutex_destroy(de->lock);
 
