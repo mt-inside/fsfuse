@@ -264,3 +264,9 @@ double indexnode_version (void)
 {
     return version;
 }
+
+/* Is the host address string we're returning an IP address? */
+int indexnode_host_is_ip (void)
+{
+    return (strspn(host, "0123456789.") == strlen(host));
+}

@@ -256,11 +256,14 @@ double fetcher_get_indexnode_version (void)
 {
     char *url, *error_buffer;
     char s[1024]; /* TODO: security */
-    int curl_rc;
+    int curl_rc, http_code;
     CURL *eh;
     struct curl_slist *slist = NULL;
     double version;
 
+
+    fetcher_trace("fetcher_get_indexnode_version()\n");
+    fetcher_trace_indent();
 
     /* New handle */
     eh = curl_eh_new();
@@ -296,6 +299,18 @@ double fetcher_get_indexnode_version (void)
 
     /* Do it */
     curl_rc = curl_easy_perform(eh);
+
+    fetcher_trace("curl returned %d, error: %s\n", curl_rc,
+        (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
+
+    if (curl_rc == CURLE_OK ||
+        curl_rc == CURLE_HTTP_RETURNED_ERROR)
+    {
+        curl_easy_getinfo(eh, CURLINFO_RESPONSE_CODE, &http_code);
+        fetcher_trace("http code %d\n", http_code);
+    }
+
+    fetcher_trace_dedent();
 
 
     return version;
@@ -451,9 +466,22 @@ char *make_url (
 )
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://[%s]:%s%s/%s";
-    size_t len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource) + strlen(fmt) + 1;
-    char *url = (char *)malloc(len * sizeof(*url));
+    char *fmt;
+    size_t len;
+    char *url;
+
+
+    if (indexnode_host_is_ip())
+    {
+        fmt = "http://[%s]:%s%s/%s";
+    }
+    else
+    {
+        fmt = "http://%s:%s%s/%s";
+    }
+
+    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource) + strlen(fmt) + 1;
+    url = (char *)malloc(len * sizeof(*url));
 
 
     sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource);
@@ -468,10 +496,20 @@ char *make_escaped_url (
 )
 {
     char *host = indexnode_host(), *port = indexnode_port();
-    char fmt[] = "http://[%s]:%s%s/%s";
+    char *fmt;
     char *resource_esc, *url;
     size_t len;
     CURL *eh = curl_eh_new();
+
+
+    if (indexnode_host_is_ip())
+    {
+        fmt = "http://[%s]:%s%s/%s";
+    }
+    else
+    {
+        fmt = "http://%s:%s%s/%s";
+    }
 
 
     /* we escape from resource + 1 and render the first '/' ourselves because

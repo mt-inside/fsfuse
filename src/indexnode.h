@@ -16,5 +16,6 @@ extern double indexnode_parse_version (char *s);
 extern char *indexnode_host (void);
 extern char *indexnode_port (void);
 extern double indexnode_version (void);
+extern int indexnode_host_is_ip (void);
 
 #endif /* _INCLUDED_INDEXNODE_H */
