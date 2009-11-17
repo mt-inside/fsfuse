@@ -354,7 +354,6 @@ int http2errno (int http_code)
         /* 1xx: Informational */
         case 100: /* Continue */
         case 101: /* Switching Protocols */
-            assert(0);
             break;
 
         /* 2xx: Successful */
@@ -366,7 +365,6 @@ int http2errno (int http_code)
         case 203: /* Non-Authoritative Information */
         case 204: /* No Content */
         case 205: /* Reset Content */
-            assert(0);
             break;
         case 206: /* Partial Content */
             rc = 0;
@@ -381,8 +379,6 @@ int http2errno (int http_code)
         case 305: /* Use Proxy */
         case 306: /* (Unused) */
         case 307: /* Temporary Redirect */
-            /* again, not really errors, and curl should have swallowed them */
-            assert(0);
             break;
 
         /* 4xx: Client Error */
@@ -391,7 +387,6 @@ int http2errno (int http_code)
         case 401: /* Unauthorized */
         case 402: /* Payment Required */
         case 403: /* Forbidden */
-            assert(0);
             break;
         case 404: /* Not Found */
             rc = -ENOENT;
@@ -409,14 +404,14 @@ int http2errno (int http_code)
         case 415: /* Unsupported Media Type */
         case 416: /* Requested Range Not Satisfiable */
         case 417: /* Expectation Failed */
-            assert(0);
             break;
 
         /* 5xx: Server Error */
         case 500: /* Internal Server Error */
+            rc = -EIO;
+            break;
         case 501: /* Not Implemented */
         case 502: /* Bad Gateway */
-            assert(0);
             break;
         case 503: /* Service Unavailable */
             /* Returned when sharer's upload limit has been reached */
@@ -424,12 +419,15 @@ int http2errno (int http_code)
             break;
         case 504: /* Gateway Timeout */
         case 505: /* HTTP Version Not Supported */
-            assert(0);
             break;
 
         default: /* Not in the HTTP/1.1 spec */
-            assert(0);
             break;
+    }
+
+    if (rc == -EIO)
+    {
+        error_trace("http2errno: unknown HTTP return code %d\n", http_code);
     }
 
 

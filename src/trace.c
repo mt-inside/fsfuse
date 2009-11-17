@@ -220,3 +220,15 @@ void trace_dedent (void)
 
     pthread_mutex_unlock(&trace_mutex);
 }
+
+
+/* error tracer */
+void error_trace (const char *fmt, ...)
+{
+    va_list ap;
+
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}

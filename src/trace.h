@@ -113,4 +113,6 @@ extern void trce (const char *fmt, ...); /* stupid curses. l2namespace. */
 extern void trace_indent (void);
 extern void trace_dedent (void);
 
+extern void error_trace (const char *fmt, ...);
+
 #endif /* _INCLUDED_TRACE_H */

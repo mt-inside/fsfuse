@@ -110,7 +110,7 @@ int path_get_children (
     int rc;
     unsigned i;
     char *url, *path;
-    listing_list_t *lis;
+    listing_list_t *lis = NULL;
     direntry_t *de = NULL, *prev = NULL;
 
 
@@ -120,7 +120,7 @@ int path_get_children (
     url = make_escaped_url("/browse", parent);
     rc = parser_fetch_listing(url, &lis);
 
-    if (lis)
+    if (!rc && lis)
     {
         /* turn array of li's into linked list of de's, adding path info to each one
          * */
