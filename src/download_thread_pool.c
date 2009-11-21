@@ -286,17 +286,18 @@ static chunk_t *chunk_get_next (thread_t *thread)
     dtp_trace_indent();
 
 
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = tv.tv_sec + config_timeout_chunk;
+    ts.tv_nsec = (tv.tv_usec + 1) * 1000;
+
     pthread_mutex_lock(&thread->chunk_list_mutex);
-    while (!thread->chunk_list_count)
+    while (!thread->chunk_list_count && rc == 0)
     {
-        gettimeofday(&tv, NULL);
-        ts.tv_sec = tv.tv_sec + config_timeout_chunk;
-        ts.tv_nsec = 0;
         rc = pthread_cond_timedwait(&thread->chunk_list_cond,
                                     &thread->chunk_list_mutex,
                                     &ts);
     }
-    thread->chunk_list_count--;
+    if (rc == 0) thread->chunk_list_count--;
     pthread_mutex_unlock(&thread->chunk_list_mutex);
 
     if (rc == ETIMEDOUT)
