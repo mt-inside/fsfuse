@@ -344,6 +344,7 @@ static int direntry_cache_is_expired (direntry_t *de)
     return de->cache_last_valid < time(NULL) - config_timeout_cache;
 }
 
+#if DEBUG
 /* debug functions */
 static void direntry_cache_dump_tree (direntry_t *de)
 {
@@ -397,3 +398,4 @@ static void direntry_cache_dump_dot (void)
 
     direntry_cache_dump_tree_dot(de_root);
 }
+#endif

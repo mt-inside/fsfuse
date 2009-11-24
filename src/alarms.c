@@ -188,6 +188,9 @@ static void schedule_next (void)
     alarms_trace_dedent();
 }
 
+
+#if DEBUG
+/* debug functions */
 static void dump_alarms_list (void)
 {
     alarm_t *a;
@@ -210,3 +213,4 @@ static void dump_alarms_list (void)
         }
     }
 }
+#endif

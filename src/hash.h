@@ -21,6 +21,10 @@ extern void *hash_table_find (hash_table_t *tbl, const char *key);
 extern int hash_table_del (hash_table_t *tbl, const char *key);
 extern double hash_table_get_load_factor (hash_table_t *tbl);
 
+#if DEBUG
+extern void hash_table_dump_dot (hash_table_t *tbl);
+#endif
+
 extern hash_table_iterator_t *hash_table_iterator_new (hash_table_t *tbl);
 extern void hash_table_iterator_delete (hash_table_iterator_t *iter);
 extern const char *hash_table_iterator_current_key (hash_table_iterator_t *iter);

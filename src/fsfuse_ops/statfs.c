@@ -37,10 +37,10 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     method_trace_indent();
 
     memset(stfs, 0, sizeof(struct statvfs));
-    stfs->f_bsize = FSFUSE_BLKSIZE;
-    stfs->f_frsize = FSFUSE_BLKSIZE;
-    stfs->f_flag |= ST_RDONLY | ST_NOSUID;
-    stfs->f_namemax = PATH_MAX;
+    stfs->f_bsize   = FSFUSE_BLKSIZE;
+    stfs->f_frsize  = FSFUSE_BLKSIZE;        /* Ignored by fuse */
+    stfs->f_flag    = ST_RDONLY | ST_NOSUID; /* Ignored by fuse */
+    stfs->f_namemax = ULONG_MAX;
 
     /* make a new parser for this thread */
     parser = parser_new();

@@ -20,6 +20,10 @@ OS:=$(shell uname -s)
 
 DEFINES = -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
+# This is necessary for fuse.h to be valid. We also use a lot of other features
+# that also require this macro.
+DEFINES += -D_BSD_SOURCE
+
 OBJECTS := fsfuse.o                \
            common.o                \
            buildnumber.o           \
@@ -50,7 +54,7 @@ DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))
 
 INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -isystem 3rdparty
 
-CFLAGS = -W -Wall -pedantic $(INCLUDES) $(DEFINES)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic $(INCLUDES) $(DEFINES)
 CFLAGS_OPTIM := -O2
 CFLAGS_DEBUG := -O0 -g3 -DDEBUG
 ifeq ($(OS),Darwin)

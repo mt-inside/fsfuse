@@ -164,68 +164,6 @@ double hash_table_get_load_factor (hash_table_t *tbl)
 }
 
 
-/* hash table - helpers */
-
-static void hash_table_dump_histogram (hash_table_t *tbl)
-{
-    unsigned i;
-    hash_table_entry_t *e;
-
-
-    for (i = 0; i < tbl->size; ++i)
-    {
-        printf("[%03u] ", i);
-
-        e = tbl->entries[i];
-        while (e)
-        {
-            printf("*");
-
-            e = e->next;
-        }
-
-        printf("\n");
-    }
-
-    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
-}
-
-static void hash_table_dump (hash_table_t *tbl)
-{
-    unsigned i;
-    hash_table_entry_t *e;
-
-
-    for (i = 0; i < tbl->size; ++i)
-    {
-        printf("[%03u]\n", i);
-
-        for (e = tbl->entries[i]; e; e = e->next)
-        {
-            printf("  %s\n", e->key);
-        }
-    }
-
-    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
-}
-
-void hash_table_dump_dot (hash_table_t *tbl)
-{
-    unsigned i;
-    hash_table_entry_t *e;
-
-
-    for (i = 0; i < tbl->size; ++i)
-    {
-        if (tbl->entries[i]) printf("\"%03u\" [color=red]\n", i);
-        for (e = tbl->entries[i]; e; e = e->next)
-        {
-            printf("\"%03u\" -> \"%s\" [color=red]\n", i, e->key);
-        }
-    }
-}
-
-
 /* hash table iterator - public functions */
 
 hash_table_iterator_t *hash_table_iterator_new (hash_table_t *tbl)
@@ -334,3 +272,66 @@ static hash_t hash_djb2 (const char *str)
 
 /* hash in use */
 static hash_t (*hash) (const char *str) = &hash_djb2;
+
+
+#if DEBUG
+/* hash table - debugging */
+static void hash_table_dump_histogram (hash_table_t *tbl)
+{
+    unsigned i;
+    hash_table_entry_t *e;
+
+
+    for (i = 0; i < tbl->size; ++i)
+    {
+        printf("[%03u] ", i);
+
+        e = tbl->entries[i];
+        while (e)
+        {
+            printf("*");
+
+            e = e->next;
+        }
+
+        printf("\n");
+    }
+
+    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
+}
+
+static void hash_table_dump (hash_table_t *tbl)
+{
+    unsigned i;
+    hash_table_entry_t *e;
+
+
+    for (i = 0; i < tbl->size; ++i)
+    {
+        printf("[%03u]\n", i);
+
+        for (e = tbl->entries[i]; e; e = e->next)
+        {
+            printf("  %s\n", e->key);
+        }
+    }
+
+    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
+}
+
+void hash_table_dump_dot (hash_table_t *tbl)
+{
+    unsigned i;
+    hash_table_entry_t *e;
+
+
+    for (i = 0; i < tbl->size; ++i)
+    {
+        if (tbl->entries[i]) printf("\"%03u\" [color=red]\n", i);
+        for (e = tbl->entries[i]; e; e = e->next)
+        {
+            printf("\"%03u\" -> \"%s\" [color=red]\n", i, e->key);
+        }
+    }
+}
+#endif

@@ -481,7 +481,7 @@ static void *downloader_thread_main (void *arg)
 
         if (thread->current_chunk->start)
         {
-            sprintf(range, "%ld-", thread->current_chunk->start);
+            sprintf(range, "%" PRIu64 "-", thread->current_chunk->start);
         }
         thread->download_offset = thread->current_chunk->start;
         dtp_trace("fetching range \"%s\"\n", range);
