@@ -21,6 +21,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include "common.h"
 #include "locks.h"
