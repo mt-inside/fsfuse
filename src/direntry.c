@@ -51,16 +51,16 @@ void direntry_finalise (void)
 
 int path_get_direntry (
     char const * const path,
-    direntry_t **de
+    direntry_t **de_out
 )
 {
     int rc;
-    char *parent_path;
-    direntry_t *dirents, *de_tmp;
-
-
-    rc = -EIO;
-    *de = NULL;
+    unsigned i;
+    char *parent_path = fsfuse_dirname(path),
+         *file_name   = fsfuse_basename(path),
+         *url;
+    direntry_t *de = NULL;
+    listing_list_t *lis;
 
 
     /* special case - there is nowhere whence to get metadata for "/"; it has no
@@ -69,36 +69,46 @@ int path_get_direntry (
     {
         direntry_trace("\"/\" is special\n");
 
-        *de = direntry_new_root();
-        return 0;
+        de = direntry_new_root(CALLER_INFO_ONLY);
+        rc = 0;
+        goto end;
     }
 
 
-    /* Get the direntries for the children of this path's parent */
-    parent_path = fsfuse_dirname(path);
-    rc = path_get_children(parent_path, &dirents);
-    free(parent_path);
+    /* Get listing for the children of this path's parent */
+    url = make_escaped_url("/browse", parent_path);
+    rc = parser_fetch_listing(url, &lis);
+    free(url);
 
 
-    /* Search parent's children for desired direntry */
+    /* Search parent's children for desired entry */
     if (!rc)
     {
         rc = -ENOENT;
-        for (de_tmp = dirents; de_tmp; de_tmp = direntry_get_next_sibling(de_tmp))
+        for (i = 0; i < lis->count; ++i)
         {
-            if (!strcmp(direntry_get_path(de_tmp), path))
+            if (!strcmp(listing_get_name(lis->items[i]), file_name))
             {
-                *de = de_tmp;
+                de = direntry_new(CALLER_INFO_ONLY);
+
+                listing_to_direntry(lis->items[i], de);
+
+                direntry_attribute_add(de, "fs2-path", path);
+
                 rc = 0;
                 break;
             }
         }
 
-        if (*de) direntry_post(CALLER_INFO *de);
-        direntry_delete_list(dirents);
+        listing_list_delete(CALLER_INFO lis);
     }
 
 
+end:
+    free(parent_path);
+    free(file_name);
+
+    *de_out = de;
     return rc;
 }
 
@@ -119,6 +129,7 @@ int path_get_children (
     /* fetch the directory listing from the indexnode */
     url = make_escaped_url("/browse", parent);
     rc = parser_fetch_listing(url, &lis);
+    free(url);
 
     if (!rc && lis)
     {
@@ -135,7 +146,6 @@ int path_get_children (
              * bollocks, so we ignore them and make our own paths for both */
             path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
 
-            direntry_trace("constructing path: parent==%s, /, de->base_name==%s\n", parent, direntry_get_base_name(de));
             strcpy(path, parent);
             if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
             strcat(path, direntry_get_base_name(de));
@@ -157,6 +167,7 @@ int path_get_children (
 
     return rc;
 }
+
 
 void listing_attribute_add (
     listing_t * const li,
@@ -301,9 +312,9 @@ direntry_t *direntry_new (CALLER_DECL_ONLY)
     return de;
 }
 
-direntry_t *direntry_new_root (void)
+direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 {
-    direntry_t *root = direntry_new(CALLER_INFO_ONLY);
+    direntry_t *root = direntry_new(CALLER_PASS_ONLY);
 
 
     direntry_attribute_add(root, "fs2-name", "");
@@ -527,16 +538,17 @@ void listing_delete (CALLER_DECL listing_t *li)
                    li, CALLER_PASS_ONLY);
     direntry_trace_indent();
 
-    if (li->name) free(li->name);
-    if (li->hash) free(li->hash);
-    if (li->href) free(li->href);
+    if (li->name)   free(li->name);
+    if (li->hash)   free(li->hash);
+    if (li->href)   free(li->href);
+    if (li->client) free(li->client);
 
     free(li);
 
     direntry_trace_dedent();
 }
 
-listing_list_t *listing_list_new (CALLER_DECL unsigned count)
+listing_list_t *listing_list_new (unsigned count)
 {
     listing_list_t *lis = (listing_list_t *)malloc(sizeof(listing_list_t));
 
@@ -548,7 +560,7 @@ listing_list_t *listing_list_new (CALLER_DECL unsigned count)
     return lis;
 }
 
-listing_list_t *listing_list_resize (CALLER_DECL listing_list_t *lis, unsigned new_count)
+listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count)
 {
     lis->items = (listing_t **)realloc(lis->items, new_count * sizeof(listing_t *));
 

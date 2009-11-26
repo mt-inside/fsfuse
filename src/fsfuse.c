@@ -298,6 +298,7 @@ pre_init_bail:
     config_finalise();
     xmlCleanupParser();
     fuse_opt_free_args(&fuse_args);
+    if (mountpoint) free(mountpoint);
 
 
     exit(rc);

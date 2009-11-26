@@ -50,6 +50,6 @@ struct _listing_t
     pthread_mutex_t           *lock;
 };
 
-extern direntry_t *direntry_new_root (void);
+extern direntry_t *direntry_new_root (CALLER_DECL_ONLY);
 
 #endif /* _INCLUDED_DIRENTRY_INTERNAL_H */

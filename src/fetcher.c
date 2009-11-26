@@ -243,7 +243,6 @@ int fetcher_fetch_internal (const char * const   url,
     curl_eh_delete(eh);
     curl_slist_free_all(slist);
     free(error_buffer);
-    free((char *)url);
 
 
     fetcher_trace_dedent();

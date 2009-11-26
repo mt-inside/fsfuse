@@ -51,7 +51,7 @@ int direntry_cache_init (void)
     direntry_cache = hash_table_new(DIRENTRY_CACHE_SIZE);
 
     /* The cache has a permanent root node, made here, as it can't be fetched */
-    de_root = direntry_new_root();
+    de_root = direntry_new_root(CALLER_INFO_ONLY);
     direntry_cache_add(CALLER_INFO de_root);
     direntry_delete(CALLER_INFO de_root);
 

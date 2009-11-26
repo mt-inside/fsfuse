@@ -64,6 +64,8 @@ extern void            direntry_no_longer_exists (direntry_t *de);
 
 extern listing_t *listing_new (CALLER_DECL_ONLY);
 extern void listing_delete (CALLER_DECL listing_t *li);
+extern listing_list_t *listing_list_new (unsigned count);
+extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
 extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
 
 extern char *          listing_get_name          (listing_t *li);

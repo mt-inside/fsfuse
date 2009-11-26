@@ -188,9 +188,7 @@ static int filelist_entries_parse (
 
     if (size)
     {
-        lis = (listing_list_t *)malloc(sizeof(listing_list_t));
-        lis->count = size;
-        lis->items = (listing_t **)malloc(size * sizeof(listing_t *));
+        lis = listing_list_new(size);
 
         /* Enumerate the A elements */
         for (i = 0; i < size && !rc; i++)
