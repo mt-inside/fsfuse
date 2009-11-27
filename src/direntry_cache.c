@@ -318,32 +318,22 @@ static int direntry_cache_is_stale (direntry_t *de)
     int rc = 0;
 
 
-    direntry_cache_trace("direntry_is_stale(%s)\n", direntry_get_path(de));
-    direntry_cache_trace_indent();
-
     /* Has it expired? */
     if (direntry_cache_is_expired(de))
     {
         rc = 1;
-        goto end;
     }
-
-    /* Does it no longer exist? */
-    rc = parser_fetch_listing(direntry_get_path(de),
-                              NULL
-                             );
-
-    if (rc)
+    else
     {
-        assert(rc == -ENOENT);
+        /* Does it no longer exist? */
+        rc = parser_fetch_listing(direntry_get_path(de),
+                                  NULL
+                                 );
 
-        rc = 1;
+        if (rc) rc = 1;
     }
 
-
-end:
-    direntry_cache_trace("%s\n", (rc) ? "yes" : "no");
-    direntry_cache_trace_dedent();
+    direntry_cache_trace("direntry_cache_is_stale(%s): %s\n", direntry_get_path(de), (rc) ? "yes" : "no");
 
 
     return rc;
@@ -409,5 +399,33 @@ static void direntry_cache_dump_dot (void)
     hash_table_dump_dot(direntry_cache);
 
     direntry_cache_dump_tree_dot(de_root);
+}
+
+/* Render path's cache status */
+char *direntry_cache_status (const char * const path)
+{
+    direntry_t *de = NULL;
+    char *ret = (char *)malloc(1024);
+
+
+    ret[0] = '\0';
+
+    rw_lock_rlock(direntry_cache_lock);
+    de = (direntry_t *)hash_table_find(direntry_cache, path);
+    rw_lock_runlock(direntry_cache_lock);
+
+    if (de)
+    {
+        strcat(ret, " CACHED");
+
+        /* check for expiry */
+        if (direntry_cache_is_expired(de))
+        {
+            strcat(ret, " STALE");
+        }
+    }
+
+
+    return ret;
 }
 #endif

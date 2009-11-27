@@ -60,7 +60,7 @@ int fsfuse_readdir (const char *path,
             child = direntry_get_next_sibling(child);
         }
 
-        direntry_delete_list(first_child);
+        direntry_delete_list(CALLER_INFO first_child);
     }
 
     method_trace_dedent();

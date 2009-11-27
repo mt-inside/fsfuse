@@ -40,8 +40,9 @@ extern void direntry_finalise (void);
 
 extern direntry_t *direntry_new  (CALLER_DECL_ONLY);
 extern direntry_t *direntry_post (CALLER_DECL direntry_t *de);
+extern void direntry_post_list   (CALLER_DECL direntry_t *de);
 extern void direntry_delete      (CALLER_DECL direntry_t *de);
-extern void direntry_delete_list (direntry_t *de);
+extern void direntry_delete_list (CALLER_DECL direntry_t *de);
 
 extern direntry_t *direntry_get_parent       (direntry_t *de);
 extern direntry_t *direntry_get_first_child  (direntry_t *de);

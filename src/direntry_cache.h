@@ -28,4 +28,6 @@ extern void direntry_cache_add_children (
     direntry_t *new_children
 );
 
+extern char *direntry_cache_status (const char * const path);
+
 #endif /* _INCLUDED_DIRENTRY_CACHE_H */

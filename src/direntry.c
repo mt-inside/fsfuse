@@ -175,50 +175,39 @@ void listing_attribute_add (
     const char *value
 )
 {
-    direntry_trace_indent();
-
     if (!strcmp(name, "fs2-name"))
     {
         li->name = strdup(value);
-        parser_trace("adding attribute name==%s\n", li->name);
     }
     else if (!strcmp(name, "fs2-hash"))
     {
         li->hash = strdup(value);
-        parser_trace("adding attribute hash==%s\n", li->hash);
     }
     else if (!strcmp(name, "fs2-type"))
     {
         li->type = direntry_type_from_string(value);
-        parser_trace("adding attribute type==%s\n", value);
     }
     else if (!strcmp(name, "fs2-size"))
     {
         li->size = atoll(value);
-        parser_trace("adding attribute size==%llu\n", li->size);
     }
     else if (!strcmp(name, "fs2-linkcount") ||
              !strcmp(name, "fs2-alternativescount"))
     {
         li->link_count = atol(value);
-        parser_trace("adding attribute link_count==%lu\n", li->link_count);
     }
     else if (!strcmp(name, "href"))
     {
         li->href = strdup(value);
-        parser_trace("adding attribute href==%s\n", li->href);
     }
     else if (!strcmp(name, "fs2-clientalias"))
     {
         li->client = strdup(value);
-        parser_trace("adding attribute client==%s\n", li->client);
     }
     else
     {
         direntry_trace("Unknown attribute %s == %s\n", name, value);
     }
-
-    direntry_trace_dedent();
 }
 void direntry_attribute_add (
     direntry_t * const de,
@@ -226,50 +215,39 @@ void direntry_attribute_add (
     const char *value
 )
 {
-    direntry_trace_indent();
-
     if (!strcmp(name, "fs2-name"))
     {
         de->base_name = strdup(value);
-        parser_trace("adding attribute base_name==%s\n", de->base_name);
     }
     else if (!strcmp(name, "fs2-path"))
     {
         de->path = strdup(value);
-        parser_trace("adding attribute path==%s\n", de->path);
     }
     else if (!strcmp(name, "fs2-hash"))
     {
         de->hash = strdup(value);
-        parser_trace("adding attribute hash==%s\n", de->hash);
     }
     else if (!strcmp(name, "fs2-type"))
     {
         de->type = direntry_type_from_string(value);
-        parser_trace("adding attribute type==%s\n", value);
     }
     else if (!strcmp(name, "fs2-size"))
     {
         de->size = atoll(value);
-        parser_trace("adding attribute size==%llu\n", de->size);
     }
     else if (!strcmp(name, "fs2-linkcount") ||
              !strcmp(name, "fs2-alternativescount"))
     {
         de->link_count = atol(value);
-        parser_trace("adding attribute link_count==%lu\n", de->link_count);
     }
     else if (!strcmp(name, "href"))
     {
         de->href = strdup(value);
-        parser_trace("adding attribute href==%s\n", de->href);
     }
     else
     {
         direntry_trace("Unknown attribute %s == %s\n", name, value);
     }
-
-    direntry_trace_dedent();
 }
 
 static direntry_type_t direntry_type_from_string (const char * const s)
@@ -332,6 +310,7 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
+    char trace_str[1024] = "";
     unsigned refc;
 
 
@@ -341,16 +320,37 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
     refc = ++de->ref_count;
     pthread_mutex_unlock(de->lock);
 
-    direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS refc);
-
-
-    return de;
+    sprintf(trace_str,
+            "[direntry %p] post (" CALLER_FORMAT ") ref %u",
+            de, CALLER_PASS de->ref_count);
+#if FEATURE_DIRENTRY_CACHE
+    {
+        char *stat = direntry_cache_status(direntry_get_path(de));
+        strcat(trace_str, stat);
+        free(stat);
+    }
+#endif
+    strcat(trace_str, "\n");
+    direntry_trace(trace_str);
 }
+
+void direntry_post_list (CALLER_DECL direntry_t *de)
+{
+    direntry_t *next;
+
+    while (de)
+    {
+        next = direntry_get_next_sibling(de);
+        direntry_post(CALLER_PASS de);
+        de = next;
+    }
+}
+
 
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
     unsigned refc;
+    char trace_str[1024];
 
 
     /* hacky attempt to detect overflow */
@@ -360,8 +360,19 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     refc = --de->ref_count;
     pthread_mutex_unlock(de->lock);
 
-    direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS refc);
+    sprintf(trace_str,
+            "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
+            de, CALLER_PASS de->ref_count);
+#if FEATURE_DIRENTRY_CACHE
+    {
+        char *stat = direntry_cache_status(direntry_get_path(de));
+        strcat(trace_str, stat);
+        free(stat);
+    }
+#endif
+    strcat(trace_str, "\n");
+    direntry_trace(trace_str);
+
     direntry_trace_indent();
 
     if (!refc)
@@ -382,14 +393,14 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     direntry_trace_dedent();
 }
 
-void direntry_delete_list (direntry_t *de)
+void direntry_delete_list (CALLER_DECL direntry_t *de)
 {
     direntry_t *next;
 
     while (de)
     {
         next = direntry_get_next_sibling(de);
-        direntry_delete(CALLER_INFO de);
+        direntry_delete(CALLER_PASS de);
         de = next;
     }
 }
