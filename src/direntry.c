@@ -330,14 +330,22 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
     return root;
 }
 
-void direntry_post (CALLER_DECL direntry_t *de)
+direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
+    unsigned refc;
+
+
     assert(de->ref_count);
 
-    de->ref_count++;
+    pthread_mutex_lock(de->lock);
+    refc = ++de->ref_count;
+    pthread_mutex_unlock(de->lock);
 
     direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS de->ref_count);
+                   de, CALLER_PASS refc);
+
+
+    return de;
 }
 
 void direntry_delete (CALLER_DECL direntry_t *de)
@@ -350,18 +358,17 @@ void direntry_delete (CALLER_DECL direntry_t *de)
 
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
+    pthread_mutex_unlock(de->lock);
 
     direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS de->ref_count);
+                   de, CALLER_PASS refc);
     direntry_trace_indent();
 
     if (!refc)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
-        pthread_mutex_unlock(de->lock);
         pthread_mutex_destroy(de->lock);
-
         free(de->lock);
 
         if (de->base_name) free(de->base_name);
@@ -370,10 +377,6 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         if (de->href) free(de->href);
 
         free(de);
-    }
-    else
-    {
-        pthread_mutex_unlock(de->lock);
     }
 
     direntry_trace_dedent();
@@ -526,24 +529,65 @@ listing_t *listing_new (CALLER_DECL_ONLY)
     listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
 
 
+    li->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(li->lock, NULL);
+
+    li->ref_count = 1;
+
     direntry_trace("[listing %p] new (" CALLER_FORMAT ")\n",
                    li, CALLER_PASS_ONLY);
 
     return li;
 }
 
+listing_t *listing_post (CALLER_DECL listing_t *li)
+{
+    unsigned refc;
+
+
+    assert(li->ref_count);
+
+    pthread_mutex_lock(li->lock);
+    refc = ++li->ref_count;
+    pthread_mutex_unlock(li->lock);
+
+    direntry_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
+                   li, CALLER_PASS refc);
+
+
+    return li;
+}
+
 void listing_delete (CALLER_DECL listing_t *li)
 {
-    direntry_trace("[listing %p] delete (" CALLER_FORMAT ")\n",
-                   li, CALLER_PASS_ONLY);
+    unsigned refc;
+
+
+    /* hacky attempt to detect overflow */
+    assert((signed)li->ref_count > 0);
+
+    pthread_mutex_lock(li->lock);
+    refc = --li->ref_count;
+    pthread_mutex_unlock(li->lock);
+
+    direntry_trace("[listing %p] delete (" CALLER_FORMAT ") ref %u\n",
+                   li, CALLER_PASS refc);
     direntry_trace_indent();
 
-    if (li->name)   free(li->name);
-    if (li->hash)   free(li->hash);
-    if (li->href)   free(li->href);
-    if (li->client) free(li->client);
+    if (!refc)
+    {
+        direntry_trace("refcount == 0 => free()ing\n");
 
-    free(li);
+        pthread_mutex_destroy(li->lock);
+        free(li->lock);
+
+        if (li->name)   free(li->name);
+        if (li->hash)   free(li->hash);
+        if (li->href)   free(li->href);
+        if (li->client) free(li->client);
+
+        free(li);
+    }
 
     direntry_trace_dedent();
 }

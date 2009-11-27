@@ -103,5 +103,5 @@ unsigned fsfuse_get_thread_index (void)
 
 static void thread_index_destroy (void *i)
 {
-    free(i);
+    free((unsigned *)i);
 }

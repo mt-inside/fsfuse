@@ -87,11 +87,11 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
 
     if (fav_list->count)
     {
-        ret = fav_list->items[random() % fav_list->count];
+        ret = listing_post(CALLER_INFO fav_list->items[random() % fav_list->count]);
     }
     else if (normal_list->count)
     {
-        ret = normal_list->items[random() % normal_list->count];
+        ret = listing_post(CALLER_INFO normal_list->items[random() % normal_list->count]);
     }
     else
     {
@@ -106,6 +106,11 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
     {
         peerstats_trace("no appropriate alternative\n");
     }
+
+
+    listing_list_delete(CALLER_INFO fav_list   );
+    listing_list_delete(CALLER_INFO normal_list);
+    listing_list_delete(CALLER_INFO block_list );
 
 
     return ret;
@@ -126,14 +131,9 @@ static void split_list (
     listing_list_t *fav_list, *block_list, *normal_list;
 
 
-    fav_list = (listing_list_t *)malloc(sizeof(listing_list_t));
-    fav_list->items = (listing_t **)malloc(alts->count * sizeof(listing_t *));
-
-    block_list = (listing_list_t *)malloc(sizeof(listing_list_t));
-    block_list->items = (listing_t **)malloc(alts->count * sizeof(listing_t *));
-
-    normal_list = (listing_list_t *)malloc(sizeof(listing_list_t));
-    normal_list->items = (listing_t **)malloc(alts->count * sizeof(listing_t *));
+    fav_list    = listing_list_new(alts->count);
+    block_list  = listing_list_new(alts->count);
+    normal_list = listing_list_new(alts->count);
 
 
     for (i = 0; i < alts->count; ++i)
@@ -145,7 +145,7 @@ static void split_list (
         {
             if (!strcmp(listing_get_client(alts->items[i]), favs[j]))
             {
-                fav_list->items[fav_count++] = alts->items[i];
+                fav_list->items[fav_count++] = listing_post(CALLER_INFO alts->items[i]);
                 found = 1;
                 break;
             }
@@ -159,7 +159,7 @@ static void split_list (
             {
                 if (!strcmp(listing_get_client(alts->items[i]), blocks[j]))
                 {
-                    block_list->items[block_count++] = alts->items[i];
+                    block_list->items[block_count++] = listing_post(CALLER_INFO alts->items[i]);
                     found = 1;
                     break;
                 }
@@ -169,20 +169,15 @@ static void split_list (
 
         if (!found)
         {
-            normal_list->items[normal_count++] = alts->items[i];
+            normal_list->items[normal_count++] = listing_post(CALLER_INFO alts->items[i]);
         }
     }
 
     assert(fav_count + block_count + normal_count == i);
 
-    fav_list->count = fav_count;
-    fav_list->items = (listing_t **)realloc(fav_list->items, fav_list->count * sizeof(listing_t *));
-
-    block_list->count = block_count;
-    block_list->items = (listing_t **)realloc(block_list->items, block_list->count * sizeof(listing_t *));
-
-    normal_list->count = normal_count;
-    normal_list->items = (listing_t **)realloc(normal_list->items, normal_list->count * sizeof(listing_t *));
+    listing_list_resize(fav_list,    fav_count   );
+    listing_list_resize(block_list,  block_count );
+    listing_list_resize(normal_list, normal_count);
 
 
     *fav_list_out = fav_list;

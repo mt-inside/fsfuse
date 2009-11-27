@@ -220,6 +220,7 @@ int main(int argc, char *argv[])
     if (trace_init()          ||
         common_init()         ||
         alarms_init()         ||
+        indexnode_init()      ||
         fetcher_init()        ||
         parser_init()         ||
         direntry_init()       ||
@@ -291,6 +292,7 @@ bail:
     parser_finalise();
     fetcher_finalise();
     alarms_finalise();
+    indexnode_finalise();
     common_finalise();
     trace_finalise();
 

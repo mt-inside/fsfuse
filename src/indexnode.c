@@ -30,11 +30,24 @@
 
 /* these are global, but they are written before any threads are spawned, and
  * thereafter only read */
-/* statically allocated because libcurl simply copies the pointers, so these
- * must stay in scope. */
 static char *host, *port;
 static double version = 0.0;
 
+
+int indexnode_init (void)
+{
+    host = (char *)malloc(NI_MAXHOST * sizeof(char));
+    port = (char *)malloc(NI_MAXSERV * sizeof(char));
+
+
+    return !(host && port);
+}
+
+void indexnode_finalise (void)
+{
+    free(host);
+    free(port);
+}
 
 int indexnode_find (void)
 {
@@ -54,8 +67,8 @@ int indexnode_find (void)
 
     if (!config_indexnode_autodetect)
     {
-        host = config_indexnode_host;
-        port = config_indexnode_port;
+        strcpy(host, config_indexnode_host);
+        strcpy(port, config_indexnode_port);
         version = fetcher_get_indexnode_version();
 
         printf("Static index node configured at %s:%s - version %f\n", host, port, version);
@@ -65,10 +78,6 @@ int indexnode_find (void)
 
 
     /* === Listen for an indexnode === */
-
-    host    = (char *)malloc(NI_MAXHOST * sizeof(char));
-    port    = (char *)malloc(NI_MAXSERV * sizeof(char));
-
 
     /* TODO: make this a config option */
     printf("Listening on all addresses:\n");

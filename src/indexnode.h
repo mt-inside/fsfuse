@@ -9,6 +9,9 @@
 #ifndef _INCLUDED_INDEXNODE_H
 #define _INCLUDED_INDEXNODE_H
 
+extern int indexnode_init (void);
+extern void indexnode_finalise (void);
+
 extern int indexnode_find (void);
 
 extern void indexnode_parse_advert_packet (char *buf, double *version, char *port);

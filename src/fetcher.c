@@ -69,7 +69,7 @@ int fetcher_fetch_file (const char * const   hash,
                         curl_write_callback  cb,
                         void                *cb_data)
 {
-    int rc;
+    int rc = -EIO;
     char *url;
     listing_list_t *lis;
     listing_t *li = NULL;
@@ -84,18 +84,25 @@ int fetcher_fetch_file (const char * const   hash,
     /* Find alternatives */
     url = make_url("/alternatives", hash);
     rc = parser_fetch_listing(url, &lis);
-    if (lis) li = peerstats_chose_alternative(lis);
+    free(url);
 
+    if (lis)
+    {
+        li = peerstats_chose_alternative(lis);
 
-    /* Get the file */
-    if (li)
-    {
-        rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
-    }
-    else
-    {
-        rc = -EBUSY;
-        /* TODO sort out handling of this whole area */
+        /* Get the file */
+        if (li)
+        {
+            rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
+            listing_delete(CALLER_INFO li);
+        }
+        else
+        {
+            rc = -EBUSY;
+            /* TODO sort out handling of this whole area */
+        }
+
+        listing_list_delete(CALLER_INFO lis);
     }
 
     fetcher_trace_dedent();
@@ -115,8 +122,8 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     fetcher_trace_indent();
 
     url = make_url("", "stats");
-
     rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
+    free(url);
 
     fetcher_trace_dedent();
 

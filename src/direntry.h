@@ -39,7 +39,7 @@ extern int direntry_init (void);
 extern void direntry_finalise (void);
 
 extern direntry_t *direntry_new  (CALLER_DECL_ONLY);
-extern void direntry_post        (CALLER_DECL direntry_t *de);
+extern direntry_t *direntry_post (CALLER_DECL direntry_t *de);
 extern void direntry_delete      (CALLER_DECL direntry_t *de);
 extern void direntry_delete_list (direntry_t *de);
 
@@ -63,7 +63,9 @@ extern void            direntry_no_longer_exists (direntry_t *de);
 
 
 extern listing_t *listing_new (CALLER_DECL_ONLY);
+extern listing_t *listing_post (CALLER_DECL listing_t *li);
 extern void listing_delete (CALLER_DECL listing_t *li);
+
 extern listing_list_t *listing_list_new (unsigned count);
 extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
 extern void listing_list_delete (CALLER_DECL listing_list_t *lis);

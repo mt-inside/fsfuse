@@ -34,7 +34,8 @@ static hash_table_t *direntry_cache = NULL;
 static rw_lock_t *direntry_cache_lock = NULL;
 
 
-static void direntry_cache_del_descendants (direntry_t *de);
+static void direntry_cache_del_tree (CALLER_DECL direntry_t *de);
+static void direntry_cache_del_descendants (CALLER_DECL direntry_t *de);
 static int direntry_cache_is_stale (direntry_t *de);
 static int direntry_cache_is_expired (direntry_t *de);
 
@@ -61,7 +62,14 @@ int direntry_cache_init (void)
 
 void direntry_cache_finalise (void)
 {
+    direntry_t *de_root;
+
+
     direntry_cache_trace("direntry_cache_finalise()\n");
+
+    de_root = direntry_cache_get(CALLER_INFO "/");
+    direntry_delete(CALLER_INFO de_root);
+    direntry_cache_del_tree(CALLER_INFO de_root);
 
     hash_table_delete(direntry_cache);
     direntry_cache = NULL;
@@ -144,7 +152,7 @@ void direntry_cache_add_children (
          * new list - discard them */
         if (!found)
         {
-            direntry_cache_del_descendants(old_child);
+            direntry_cache_del_descendants(CALLER_INFO old_child);
         }
 
         direntry_cache_del(CALLER_INFO old_child);
@@ -163,7 +171,7 @@ void direntry_cache_add_children (
 }
 
 /* Get the de for path out of the cache, else return NULL */
-direntry_t *direntry_cache_get (const char * const path)
+direntry_t *direntry_cache_get (CALLER_DECL const char * const path)
 {
     direntry_t *de = NULL;
 
@@ -172,8 +180,8 @@ direntry_t *direntry_cache_get (const char * const path)
     de = (direntry_t *)hash_table_find(direntry_cache, path);
     rw_lock_runlock(direntry_cache_lock);
 
-    direntry_cache_trace("direntry_cache_get(path==%s): %s\n",
-            path, (de ? "hit" : "miss"));
+    direntry_cache_trace("direntry_cache_get(%s) (" CALLER_FORMAT "): %s\n",
+            path, CALLER_PASS (de ? "hit" : "miss"));
     direntry_cache_trace_indent();
 
     if (de)
@@ -189,7 +197,7 @@ direntry_t *direntry_cache_get (const char * const path)
 
         if (de)
         {
-            direntry_post(CALLER_INFO de); /* inc reference count */
+            direntry_post(CALLER_PASS de); /* inc reference count */
         }
     }
 
@@ -211,9 +219,9 @@ int direntry_cache_del (CALLER_DECL direntry_t *de)
     rc = hash_table_del(direntry_cache, direntry_get_path(de));
     rw_lock_wunlock(direntry_cache_lock);
 
-    assert(!direntry_cache_get(direntry_get_path(de)));
+    assert(!direntry_cache_get(CALLER_INFO direntry_get_path(de)));
 
-    direntry_delete(CALLER_INFO de);
+    direntry_delete(CALLER_PASS de);
 
 
     return rc;
@@ -257,7 +265,7 @@ void direntry_cache_notify_stale (direntry_t *de)
 
     /* ...but one of its children is stale. Assume all children are
      * stale and remove them. */
-    direntry_cache_del_descendants(parent);
+    direntry_cache_del_descendants(CALLER_INFO parent);
     parent->children = NULL;
 
 
@@ -268,30 +276,32 @@ void direntry_cache_notify_stale (direntry_t *de)
 /* Delete the tree of direntries anchored at this node. */
 /* WARNING: internal function - this does not clean up any parent / sibling
  * lists, or any other metadata, that the root node is a member of */
-static void direntry_cache_del_tree (direntry_t *de)
+static void direntry_cache_del_tree (CALLER_DECL direntry_t *de)
 {
     direntry_t *child = direntry_get_first_child(de);
 
 
+    direntry_cache_trace("direntry_cache_del_tree(%s)\n", direntry_get_path(de));
+
     while (child)
     {
-        direntry_cache_del_tree(child);
+        direntry_cache_del_tree(CALLER_PASS child);
         child = direntry_get_next_sibling(child);
     }
 
     /* actually remove this de from the cache */
-    direntry_cache_del(CALLER_INFO de);
+    direntry_cache_del(CALLER_PASS de);
 }
 
 /* Recursively delete all of this node's children, but *not* the node itself */
-static void direntry_cache_del_descendants (direntry_t *de)
+static void direntry_cache_del_descendants (CALLER_DECL direntry_t *de)
 {
     direntry_t *child = direntry_get_first_child(de);
 
 
     while (child)
     {
-        direntry_cache_del_tree(child);
+        direntry_cache_del_tree(CALLER_PASS child);
         child = direntry_get_next_sibling(child);
     }
 }
@@ -341,6 +351,8 @@ end:
 
 static int direntry_cache_is_expired (direntry_t *de)
 {
+    if (direntry_is_root(de)) return 0; /* "/" never goes stale */
+
     return de->cache_last_valid < time(NULL) - config_timeout_cache;
 }
 
