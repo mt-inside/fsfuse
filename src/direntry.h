@@ -49,18 +49,19 @@ extern direntry_t *direntry_get_first_child  (direntry_t *de);
 extern direntry_t *direntry_get_next_sibling (direntry_t *de);
 extern direntry_t *direntry_set_next_sibling (direntry_t *de, direntry_t *sibling);
 
-extern char *          direntry_get_path         (direntry_t *de);
-extern char *          direntry_get_base_name    (direntry_t *de);
-extern char *          direntry_get_hash         (direntry_t *de);
-extern direntry_type_t direntry_get_type         (direntry_t *de);
-extern off_t           direntry_get_size         (direntry_t *de);
-extern unsigned long   direntry_get_link_count   (direntry_t *de);
-extern char *          direntry_get_href         (direntry_t *de);
-extern int             direntry_got_children     (direntry_t *de);
-extern int             direntry_is_root          (direntry_t *de);
-extern int             direntry_de2stat          (struct stat *st, direntry_t *de);
-extern void            direntry_still_exists     (direntry_t *de);
-extern void            direntry_no_longer_exists (direntry_t *de);
+extern char *          direntry_get_path                (direntry_t *de);
+extern char *          direntry_get_base_name           (direntry_t *de);
+extern char *          direntry_get_hash                (direntry_t *de);
+extern direntry_type_t direntry_get_type                (direntry_t *de);
+extern off_t           direntry_get_size                (direntry_t *de);
+extern unsigned long   direntry_get_link_count          (direntry_t *de);
+extern char *          direntry_get_href                (direntry_t *de);
+extern int             direntry_get_looked_for_children (direntry_t *de);
+extern void            direntry_set_looked_for_children (direntry_t *de, int val);
+extern int             direntry_is_root                 (direntry_t *de);
+extern int             direntry_de2stat                 (struct stat *st, direntry_t *de);
+extern void            direntry_still_exists            (direntry_t *de);
+extern void            direntry_no_longer_exists        (direntry_t *de);
 
 
 extern listing_t *listing_new (CALLER_DECL_ONLY);

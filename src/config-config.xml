@@ -94,6 +94,12 @@
         <xpath>/config/options/cache/text()</xpath>
     </item>
     <item>
+        <symbol>option_cache_negative</symbol>
+        <type>number</type>
+        <default>1</default>
+        <xpath>/config/options/cache_negative/text()</xpath>
+    </item>
+    <item>
         <symbol>option_progress</symbol>
         <type>number</type>
         <default>0</default>

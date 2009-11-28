@@ -67,7 +67,7 @@ void direntry_cache_finalise (void)
 
     direntry_cache_trace("direntry_cache_finalise()\n");
 
-    de_root = direntry_cache_get(CALLER_INFO "/");
+    assert(direntry_cache_get(CALLER_INFO "/", &de_root) == direntry_cache_status_HIT);
     direntry_delete(CALLER_INFO de_root);
     direntry_cache_del_tree(CALLER_INFO de_root);
 
@@ -108,6 +108,23 @@ int direntry_cache_add (CALLER_DECL direntry_t *de)
 
 
     return 0;
+}
+
+void direntry_cache_add_list (direntry_t *dirents, const char *parent)
+{
+    direntry_t *de, *de_parent;
+
+
+    assert(direntry_cache_get(CALLER_INFO parent, &de_parent) == direntry_cache_status_HIT);
+
+    for (de = dirents; de; de = direntry_get_next_sibling(de))
+    {
+        de->parent = de_parent;
+        direntry_cache_add(CALLER_INFO de);
+    }
+
+    direntry_set_looked_for_children(de_parent, 1);
+    de_parent->children = dirents;
 }
 
 void direntry_cache_add_children (
@@ -171,9 +188,11 @@ void direntry_cache_add_children (
 }
 
 /* Get the de for path out of the cache, else return NULL */
-direntry_t *direntry_cache_get (CALLER_DECL const char * const path)
+direntry_cache_status_t direntry_cache_get (CALLER_DECL const char * const path, direntry_t **de_out)
 {
-    direntry_t *de = NULL;
+    direntry_t *de = NULL, *de_parent;
+    direntry_cache_status_t stat = direntry_cache_status_UNKNOWN;
+    const char *parent = fsfuse_dirname(path);
 
 
     rw_lock_rlock(direntry_cache_lock);
@@ -197,14 +216,28 @@ direntry_t *direntry_cache_get (CALLER_DECL const char * const path)
 
         if (de)
         {
+            stat = direntry_cache_status_HIT;
             direntry_post(CALLER_PASS de); /* inc reference count */
         }
     }
+    else
+    {
+        rw_lock_rlock(direntry_cache_lock);
+        de_parent = (direntry_t *)hash_table_find(direntry_cache, parent);
+        rw_lock_runlock(direntry_cache_lock);
 
+        if (de_parent && direntry_get_looked_for_children(de_parent))
+        {
+            stat = direntry_cache_status_NOENT;
+        }
+    }
+
+    free((char *)parent);
     direntry_cache_trace_dedent();
 
 
-    return de;
+    if (de_out) *de_out = de;
+    return stat;
 }
 
 int direntry_cache_del (CALLER_DECL direntry_t *de)
@@ -219,7 +252,7 @@ int direntry_cache_del (CALLER_DECL direntry_t *de)
     rc = hash_table_del(direntry_cache, direntry_get_path(de));
     rw_lock_wunlock(direntry_cache_lock);
 
-    assert(!direntry_cache_get(CALLER_INFO direntry_get_path(de)));
+    assert(direntry_cache_get(CALLER_INFO direntry_get_path(de), NULL) != direntry_cache_status_HIT);
 
     direntry_delete(CALLER_PASS de);
 
@@ -278,15 +311,16 @@ void direntry_cache_notify_stale (direntry_t *de)
  * lists, or any other metadata, that the root node is a member of */
 static void direntry_cache_del_tree (CALLER_DECL direntry_t *de)
 {
-    direntry_t *child = direntry_get_first_child(de);
+    direntry_t *child = direntry_get_first_child(de), *next_child;
 
 
     direntry_cache_trace("direntry_cache_del_tree(%s)\n", direntry_get_path(de));
 
     while (child)
     {
+        next_child = direntry_get_next_sibling(child);
         direntry_cache_del_tree(CALLER_PASS child);
-        child = direntry_get_next_sibling(child);
+        child = next_child;
     }
 
     /* actually remove this de from the cache */
@@ -296,13 +330,14 @@ static void direntry_cache_del_tree (CALLER_DECL direntry_t *de)
 /* Recursively delete all of this node's children, but *not* the node itself */
 static void direntry_cache_del_descendants (CALLER_DECL direntry_t *de)
 {
-    direntry_t *child = direntry_get_first_child(de);
+    direntry_t *child = direntry_get_first_child(de), *next_child;
 
 
     while (child)
     {
+        next_child = direntry_get_next_sibling(child);
         direntry_cache_del_tree(CALLER_PASS child);
-        child = direntry_get_next_sibling(child);
+        child = next_child;
     }
 }
 
@@ -372,7 +407,7 @@ static void direntry_cache_dump_tree_dot_do (direntry_t *parent, direntry_t *de)
 
     printf("\"%s\" [color=%s]\n",
             direntry_get_path(de),
-            (direntry_get_type(de) == direntry_type_DIRECTORY && !direntry_got_children(de)) ? "green" : "blue"
+            (direntry_get_type(de) == direntry_type_DIRECTORY && !direntry_get_looked_for_children(de)) ? "green" : "blue"
           );
     if (parent)
     {

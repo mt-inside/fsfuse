@@ -83,7 +83,7 @@ static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
 
     size = (nodes) ? nodes->nodeNr : 0;
 
-    trce("stats_general_parse(): enumerating %d nodes\n", size);
+    parser_trace("stats_general_parse(): enumerating %d nodes\n", size);
     trace_indent();
 
     /* Enumerate the SPAN elements */
@@ -99,7 +99,7 @@ static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
                 value = (char *)xmlGetProp(curNod, BAD_CAST "value");
 
                 stfs->f_files = atoll(value);
-                trce("file-count: %llu\n", stfs->f_files);
+                parser_trace("file-count: %llu\n", stfs->f_files);
 
                 free(value);
             }
@@ -108,7 +108,7 @@ static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
                 value = (char *)xmlGetProp(curNod, BAD_CAST "value");
 
                 stfs->f_blocks = atoll(value) / stfs->f_bsize;
-                trce("total-size: %llu %lu byte blocks\n",
+                parser_trace("total-size: %llu %lu byte blocks\n",
                      stfs->f_blocks, stfs->f_bsize);
 
                 free(value);

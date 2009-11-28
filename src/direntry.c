@@ -28,6 +28,7 @@
 TRACE_DEFINE(direntry)
 
 
+static direntry_t *lis_to_dirents(listing_list_t *lis, const char *parent);
 static direntry_type_t direntry_type_from_string (const char * const s);
 static void listing_to_direntry (listing_t *li, direntry_t *de);
 
@@ -55,14 +56,30 @@ int path_get_direntry (
 )
 {
     int rc;
-    unsigned i;
     char *parent_path = fsfuse_dirname(path),
          *file_name   = fsfuse_basename(path),
          *url;
-    direntry_t *de = NULL;
+    direntry_t *de = NULL, *dirents = NULL;
     listing_list_t *lis;
+    direntry_cache_status_t cache_stat;
 
 
+#if FEATURE_DIRENTRY_CACHE
+    cache_stat = direntry_cache_get(CALLER_INFO path, &de);
+
+    if (cache_stat == direntry_cache_status_NOENT && config_option_cache_negative)
+    {
+        rc = -ENOENT;
+        goto end;
+    }
+    else if (cache_stat == direntry_cache_status_HIT)
+    {
+        rc = 0;
+        goto end;
+    }
+
+    assert(cache_stat == direntry_cache_status_UNKNOWN);
+#else
     /* special case - there is nowhere whence to get metadata for "/"; it has no
      * parent. Instead, we just make it up. */
     if (!strcmp(path, "/"))
@@ -73,6 +90,7 @@ int path_get_direntry (
         rc = 0;
         goto end;
     }
+#endif
 
 
     /* Get listing for the children of this path's parent */
@@ -81,11 +99,33 @@ int path_get_direntry (
     free(url);
 
 
-    /* Search parent's children for desired entry */
     if (!rc)
     {
+#if FEATURE_DIRENTRY_CACHE
+        direntry_cache_status_t cache_stat;
+
+        /* This make direntries for the listing, with the side effect that the
+         * dirents are encached. */
+        dirents = lis_to_dirents(lis, parent_path);
+
+        /* We actually have no interest in the dirents */
+        direntry_delete_list(CALLER_INFO dirents);
+
+        /* Our desired direntry will now be in the cache, if it exists */
+        cache_stat = direntry_cache_get(CALLER_INFO path, &de);
+        if (cache_stat == direntry_cache_status_HIT)
+        {
+            rc = 0;
+        }
+        else
+        {
+            assert(cache_stat == direntry_cache_status_NOENT);
+            rc = -ENOENT;
+        }
+#else
+        /* Search parent's children for desired entry */
         rc = -ENOENT;
-        for (i = 0; i < lis->count; ++i)
+        for (unsigned i = 0; i < lis->count; ++i)
         {
             if (!strcmp(listing_get_name(lis->items[i]), file_name))
             {
@@ -101,6 +141,7 @@ int path_get_direntry (
         }
 
         listing_list_delete(CALLER_INFO lis);
+#endif
     }
 
 
@@ -114,17 +155,35 @@ end:
 
 int path_get_children (
     char const * const parent,
-    direntry_t **dirents
+    direntry_t **dirents_out
 )
 {
-    int rc;
-    unsigned i;
-    char *url, *path;
+    int rc = -EIO;
+    char *url;
     listing_list_t *lis = NULL;
-    direntry_t *de = NULL, *prev = NULL;
+    direntry_t *de, *dirents = NULL;
+    direntry_cache_status_t cache_stat;
 
 
     direntry_trace("path_get_children(%s)\n", parent);
+
+
+#if FEATURE_DIRENTRY_CACHE
+    cache_stat = direntry_cache_get(CALLER_INFO parent, &de);
+    if (cache_stat == direntry_cache_status_HIT)
+    {
+        if (direntry_get_looked_for_children(de))
+        {
+            dirents = direntry_get_first_child(de);
+            direntry_post_list(CALLER_INFO dirents);
+            direntry_delete(CALLER_INFO de);
+            rc = 0;
+            goto end;
+        }
+        direntry_delete(CALLER_INFO de);
+    }
+#endif
+
 
     /* fetch the directory listing from the indexnode */
     url = make_escaped_url("/browse", parent);
@@ -133,41 +192,58 @@ int path_get_children (
 
     if (!rc && lis)
     {
-        /* turn array of li's into linked list of de's, adding path info to each one
-         * */
-        for (i = 0; i < lis->count; ++i)
-        {
-            de = direntry_new(CALLER_INFO_ONLY);
-
-            listing_to_direntry(lis->items[i], de);
-
-            /* Currently, the indexnode gives us paths for directories, but not
-             * files. In addition, the paths is offers up for directories are
-             * bollocks, so we ignore them and make our own paths for both */
-            path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
-
-            strcpy(path, parent);
-            if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
-            strcat(path, direntry_get_base_name(de));
-
-            direntry_attribute_add(de, "fs2-path", path);
-
-            free(path);
-
-
-            de->next = prev;
-            prev = de;
-        }
+        dirents = lis_to_dirents(lis, parent);
 
         listing_list_delete(CALLER_INFO lis);
     }
 
-    *dirents = de;
 
-
+end:
+    *dirents_out = dirents;
     return rc;
 }
 
+static direntry_t *lis_to_dirents(listing_list_t *lis, const char *parent)
+{
+    direntry_t *de, *prev = NULL;
+    char *path;
+    unsigned i;
+
+
+    assert(lis);
+
+    /* turn array of li's into linked list of de's, adding path info to each one
+     * */
+    for (i = 0; i < lis->count; ++i)
+    {
+        de = direntry_new(CALLER_INFO_ONLY);
+
+        listing_to_direntry(lis->items[i], de);
+
+        /* Currently, the indexnode gives us paths for directories, but not
+         * files. In addition, the paths is offers up for directories are
+         * bollocks, so we ignore them and make our own paths for both */
+        path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
+
+        strcpy(path, parent);
+        if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
+        strcat(path, direntry_get_base_name(de));
+
+        direntry_attribute_add(de, "fs2-path", path);
+
+        free(path);
+
+
+        de->next = prev;
+        prev = de;
+    }
+
+#if FEATURE_DIRENTRY_CACHE
+    direntry_cache_add_list(de, parent);
+#endif
+
+    return de;
+}
 
 void listing_attribute_add (
     listing_t * const li,
@@ -332,6 +408,9 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 #endif
     strcat(trace_str, "\n");
     direntry_trace(trace_str);
+
+
+    return de;
 }
 
 void direntry_post_list (CALLER_DECL direntry_t *de)
@@ -468,9 +547,14 @@ char *direntry_get_href (direntry_t *de)
     return de->href;
 }
 
-int direntry_got_children (direntry_t *de)
+int direntry_get_looked_for_children (direntry_t *de)
 {
     return de->looked_for_children;
+}
+
+void direntry_set_looked_for_children (direntry_t *de, int val)
+{
+    de->looked_for_children = val;
 }
 
 int direntry_is_root (direntry_t *de)
