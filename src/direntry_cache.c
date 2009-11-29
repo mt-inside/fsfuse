@@ -27,8 +27,6 @@
 
 TRACE_DEFINE(direntry_cache)
 
-#define DIRENTRY_CACHE_SIZE 16
-
 
 static hash_table_t *direntry_cache = NULL;
 static rw_lock_t *direntry_cache_lock = NULL;
@@ -49,7 +47,11 @@ int direntry_cache_init (void)
 
     direntry_cache_lock = rw_lock_new();
 
-    direntry_cache = hash_table_new(DIRENTRY_CACHE_SIZE);
+    direntry_cache = hash_table_new(
+        16,
+        config_tuning_direntry_cache_max_load,
+        config_tuning_direntry_cache_min_load
+    );
 
     /* The cache has a permanent root node, made here, as it can't be fetched */
     de_root = direntry_new_root(CALLER_INFO_ONLY);

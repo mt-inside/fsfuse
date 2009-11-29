@@ -43,7 +43,6 @@ typedef struct
 } progress_t;
 
 
-#define PROGRESS_CACHE_SIZE 16
 static hash_table_t *progress_cache = NULL;
 static rw_lock_t *progress_cache_lock = NULL;
 
@@ -83,7 +82,7 @@ int progress_init (void)
 
             progress_cache_lock = rw_lock_new();
 
-            progress_cache = hash_table_new(PROGRESS_CACHE_SIZE);
+            progress_cache = hash_table_new(16, 1.0f, 0.25f);
 
             alarm_schedule(0, 100000, &progress_draw_cb, NULL);
 

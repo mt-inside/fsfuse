@@ -1,7 +1,8 @@
 typedef enum
 {
     config_item_type_STRING,
-    config_item_type_NUMBER,
+    config_item_type_INTEGER,
+    config_item_type_FLOAT,
     config_item_type_STRING_COLLECTION
 } config_item_type_t;
 

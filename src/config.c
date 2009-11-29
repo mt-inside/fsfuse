@@ -73,12 +73,22 @@ int config_read (void)
 
                     break;
 
-                case config_item_type_NUMBER:
+                case config_item_type_INTEGER:
                     val = xpath_get(item->xpath, xpathCtxt);
 
                     if (val)
                     {
                         *((int *)item->symbol) = strtoul(val, NULL, 0);
+                    }
+
+                    break;
+
+                case config_item_type_FLOAT:
+                    val = xpath_get(item->xpath, xpathCtxt);
+
+                    if (val)
+                    {
+                        *((double *)item->symbol) = strtod(val, NULL);
                     }
 
                     break;
@@ -123,7 +133,8 @@ static void config_items_free (void)
                 if (item->runtime) free(*((char **)item->symbol));
                 break;
 
-            case config_item_type_NUMBER:
+            case config_item_type_INTEGER:
+            case config_item_type_FLOAT:
                 break;
 
             case config_item_type_STRING_COLLECTION:

@@ -155,8 +155,11 @@
         <xsl:param name="type"/>
 
         <xsl:choose>
-            <xsl:when test="$type = 'number'">
-                <xsl:text>config_item_type_NUMBER</xsl:text>
+            <xsl:when test="$type = 'integer'">
+                <xsl:text>config_item_type_INTEGER</xsl:text>
+            </xsl:when>
+            <xsl:when test="$type = 'float'">
+                <xsl:text>config_item_type_FLOAT</xsl:text>
             </xsl:when>
             <xsl:when test="$type = 'string'">
                 <xsl:text>config_item_type_STRING</xsl:text>
@@ -171,8 +174,11 @@
         <xsl:param name="type"/>
 
         <xsl:choose>
-            <xsl:when test="$type = 'number'">
+            <xsl:when test="$type = 'integer'">
                 <xsl:text>int</xsl:text>
+            </xsl:when>
+            <xsl:when test="$type = 'float'">
+                <xsl:text>double</xsl:text>
             </xsl:when>
             <xsl:when test="$type = 'string'">
                 <xsl:text>char *</xsl:text>

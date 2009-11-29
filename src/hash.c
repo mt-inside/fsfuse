@@ -21,6 +21,8 @@ struct _hash_table_t
 {
     unsigned size;
     unsigned count;
+    double max_load;
+    double min_load;
     hash_table_entry_t **entries;
 };
 
@@ -44,17 +46,23 @@ typedef uint32_t hash_t;
 
 static hash_t (*hash) (const char *str);
 
+static void hash_table_resize (hash_table_t *tbl, unsigned new_size);
 static void hash_table_iterator_find_first (hash_table_iterator_t *iter);
 
 
 /* hash table - public functions */
 
-hash_table_t *hash_table_new (unsigned size)
+/* Make a new hash table, initially of size size */
+hash_table_t *hash_table_new (unsigned size, double max_load, double min_load)
 {
     hash_table_t *tbl = (hash_table_t *)calloc(sizeof(hash_table_t), 1);
 
 
+    trce("hash_table_new(%u)\n", size);
+
     tbl->size = size;
+    tbl->max_load = max_load;
+    tbl->min_load = min_load;
     tbl->entries = (hash_table_entry_t **)calloc(sizeof(hash_table_entry_t *) * tbl->size, 1);
 
 
@@ -66,11 +74,6 @@ void hash_table_delete (hash_table_t *tbl)
     assert(!tbl->count);
     free(tbl->entries);
     free(tbl);
-}
-
-unsigned hash_table_get_count (hash_table_t *tbl)
-{
-    return tbl->count;
 }
 
 void hash_table_add (hash_table_t *tbl, const char *key, void *data)
@@ -87,6 +90,15 @@ void hash_table_add (hash_table_t *tbl, const char *key, void *data)
     *oe = e;
 
     ++tbl->count;
+
+
+    /* If the table's load average is above the configured maximum threshold,
+     * double its size */
+    if (hash_table_get_load_factor(tbl) > tbl->max_load)
+    {
+        trce("hash table load factor too great, doubling size to %u\n", tbl->size * 2);
+        hash_table_resize(tbl, tbl->size * 2);
+    }
 }
 
 void *hash_table_find (hash_table_t *tbl, const char *key)
@@ -152,15 +164,68 @@ int hash_table_del (hash_table_t *tbl, const char *key)
     if (rc)
     {
         --tbl->count;
+
+        /* If the table's load average is below the configured minimum
+         * threshold, half its size */
+        if (hash_table_get_load_factor(tbl) < tbl->min_load)
+        {
+            trce("hash table load factor too low, halving size to %u\n", tbl->size / 2);
+            hash_table_resize(tbl, tbl->size / 2);
+        }
     }
 
 
     return rc;
 }
 
+unsigned hash_table_get_size (hash_table_t *tbl)
+{
+    return tbl->size;
+}
+
+unsigned hash_table_get_count (hash_table_t *tbl)
+{
+    return tbl->count;
+}
+
 double hash_table_get_load_factor (hash_table_t *tbl)
 {
     return (double)tbl->count / (double)tbl->size;
+}
+
+/* Resize entries table to new_size. Add all entries from, and free, the old
+ * table. */
+static void hash_table_resize (hash_table_t *tbl, unsigned new_size)
+{
+    unsigned tmp_size;
+    hash_table_entry_t **tmp_entries;
+    hash_table_t *new_tbl = hash_table_new(new_size, tbl->max_load, tbl->min_load);
+    hash_table_iterator_t *hti = hash_table_iterator_new(tbl);
+
+
+    if (new_tbl && hti && !hash_table_iterator_at_end(hti))
+    {
+        do
+        {
+            hash_table_add(
+                new_tbl,
+                hash_table_iterator_current_key (hti),
+                hash_table_iterator_current_data(hti)
+            );
+        } while (hash_table_iterator_next(hti));
+    }
+    hash_table_iterator_delete(hti);
+
+    /* dirty */
+    assert(tbl->count == new_tbl->count);
+    tmp_size    = tbl->size;
+    tmp_entries = tbl->entries;
+    tbl->size    = new_tbl->size;
+    tbl->entries = new_tbl->entries;
+    new_tbl->size    = tmp_size;
+    new_tbl->entries = tmp_entries;
+
+    hash_table_delete(new_tbl);
 }
 
 

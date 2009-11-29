@@ -17,19 +17,19 @@
     </item>
     <item>
         <symbol>timeout_chunk</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>5</default>
         <xpath>/config/timeouts/chunk/text()</xpath>
     </item>
     <item>
         <symbol>timeout_cache</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>10</default>
         <xpath>/config/timeouts/cache/text()</xpath>
     </item>
     <item>
         <symbol>indexnode_autodetect</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>1</default>
         <xpath>/config/indexnode/autodetect/text()</xpath>
     </item>
@@ -47,61 +47,73 @@
     </item>
     <item>
         <symbol>attr_mode_file</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0444</default>
         <xpath>/config/node-attrs/mode/file/text()</xpath>
     </item>
     <item>
         <symbol>attr_mode_dir</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0555</default>
         <xpath>/config/node-attrs/mode/directory/text()</xpath>
     </item>
     <item>
         <symbol>attr_id_uid</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>-1</default>
         <xpath>/config/node-attrs/id/uid/text()</xpath>
     </item>
     <item>
         <symbol>attr_id_gid</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>-1</default>
         <xpath>/config/node-attrs/id/gid/text()</xpath>
     </item>
     <item>
         <symbol>proc_fg</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0</default>
         <xpath>/config/process/foreground/text()</xpath>
     </item>
     <item>
         <symbol>proc_singlethread</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0</default>
         <xpath>/config/process/single-thread/text()</xpath>
     </item>
     <item>
         <symbol>proc_debug</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0</default>
         <xpath>/config/process/debug/text()</xpath>
     </item>
     <item>
+        <symbol>tuning_direntry_cache_max_load</symbol>
+        <type>float</type>
+        <default>1.0</default>
+        <xpath>/config/tuning/direntry_cache/load/max/text()</xpath>
+    </item>
+    <item>
+        <symbol>tuning_direntry_cache_min_load</symbol>
+        <type>float</type>
+        <default>0.25</default>
+        <xpath>/config/tuning/direntry_cache/load/min/text()</xpath>
+    </item>
+    <item>
         <symbol>option_cache</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>1</default>
         <xpath>/config/options/cache/text()</xpath>
     </item>
     <item>
         <symbol>option_cache_negative</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>1</default>
         <xpath>/config/options/cache_negative/text()</xpath>
     </item>
     <item>
         <symbol>option_progress</symbol>
-        <type>number</type>
+        <type>integer</type>
         <default>0</default>
         <xpath>/config/options/progress/text()</xpath>
     </item>
