@@ -71,7 +71,7 @@ hash_table_t *hash_table_new (unsigned size, double max_load, double min_load)
 
 void hash_table_delete (hash_table_t *tbl)
 {
-    assert(!tbl->count);
+    //assert(!tbl->count); FIXME stop doing hash table resize the dirty way
     free(tbl->entries);
     free(tbl);
 }
@@ -170,7 +170,7 @@ int hash_table_del (hash_table_t *tbl, const char *key)
         if (hash_table_get_load_factor(tbl) < tbl->min_load)
         {
             trce("hash table load factor too low, halving size to %u\n", tbl->size / 2);
-            hash_table_resize(tbl, tbl->size / 2);
+            //hash_table_resize(tbl, tbl->size / 2); FIXME
         }
     }
 

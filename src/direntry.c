@@ -99,7 +99,7 @@ int path_get_direntry (
     free(url);
 
 
-    if (!rc)
+    if (!rc && lis)
     {
 #if FEATURE_DIRENTRY_CACHE
         direntry_cache_status_t cache_stat;
