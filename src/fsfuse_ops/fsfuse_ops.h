@@ -1,13 +1,13 @@
 /*
- * Declarations for misc. filesystem operations.
+ * Declarations for all filesystem implementations.
  *
  * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
  *
  * $Id$
  */
 
-#ifndef _INCLUDED_OTHERS_H
-#define _INCLUDED_OTHERS_H
+#ifndef _INCLUDED_FSFUSE_OPS_H
+#define _INCLUDED_FSFUSE_OPS_H
 
 #include <fuse.h>
 
@@ -16,6 +16,11 @@
 
 
 TRACE_DECLARE(method)
+TRACE_DECLARE(read)
+
+
+/* fsfuse filesystem methods vtable */
+extern struct fuse_operations fsfuse_oper;
 
 
 extern int fsfuse_getattr ( const char *path,
@@ -24,9 +29,6 @@ extern int fsfuse_getattr ( const char *path,
 extern int fsfuse_readlink ( const char *path,
                              char * buf,
                              size_t len );
-
-extern int fsfuse_open ( const char *path,
-                         struct fuse_file_info *fi );
 
 extern int fsfuse_mknod ( const char *path,
                           mode_t mode,
@@ -58,23 +60,40 @@ extern int fsfuse_chown ( const char *path,
 extern int fsfuse_truncate ( const char *path,
                              off_t offset      );
 
+extern int fsfuse_open ( const char *path,
+                         struct fuse_file_info *fi );
+
+extern int fsfuse_read ( const char *path,
+                         char *buf,
+                         size_t size,
+                         off_t offset,
+                         struct fuse_file_info *fi);
+
 extern int fsfuse_write ( const char *path,
                           const char *buf,
                           size_t size,
                           off_t off,
                           struct fuse_file_info *fi );
 
+extern int fsfuse_statfs ( const char *path, struct statvfs *buf );
+
 extern int fsfuse_flush ( const char *path,
-                   struct fuse_file_info *fi );
+                          struct fuse_file_info *fi );
 
 extern int fsfuse_release ( const char *path,
-                     struct fuse_file_info *fi );
+                            struct fuse_file_info *fi );
 
 extern int fsfuse_fsync ( const char *path,
                           int datasync,
                           struct fuse_file_info *fi );
 
 extern int fsfuse_opendir ( const char *path,
+                            struct fuse_file_info *fi );
+
+extern int fsfuse_readdir ( const char *path,
+                            void *buf,
+                            fuse_fill_dir_t filler,
+                            off_t offset,
                             struct fuse_file_info *fi );
 
 extern int fsfuse_releasedir ( const char * path,
@@ -95,8 +114,8 @@ extern int fsfuse_ftruncate ( const char *path,
 extern int fsfuse_access ( const char *path,
                            int mode          );
 
-extern int fsfuse_bmap (const char *,
-                        size_t blocksize,
-                        uint64_t *idx);
+extern int fsfuse_bmap ( const char *,
+                         size_t blocksize,
+                         uint64_t *idx );
 
-#endif /* _INCLUDED_OTHERS_H */
+#endif /* _INCLUDED_FSFUSE_OPS_H */

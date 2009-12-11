@@ -38,19 +38,23 @@ OBJECTS := fsfuse.o                \
            config_define.o         \
            alarms.o                \
            locks.o                 \
-           peerstats.o             \
-           fsfuse_ops/readdir.o    \
-           fsfuse_ops/read.o       \
-           fsfuse_ops/statfs.o     \
-           fsfuse_ops/others.o
+           peerstats.o
+
+OPS_FILES = $(wildcard fsfuse_ops/*.c)
+OPS_OBJECTS = $(patsubst %.c,%.o,$(OPS_FILES))
+OBJECTS += $(OPS_OBJECTS)
 
 CONFIGS := config_declare.h \
            config_define.c
 
+#This variable must be set unconditionally, otherwise the .d files will never
+#be cleaned
 DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))
+ifeq "$(findstring clean,$(MAKECMDGOALS))" ""
 #this will cause an attempt to build all included files (although it will still
 #moan they don't exist first, just before building them, if given the chance)
 -include $(DEPENDS)
+endif
 
 INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -isystem 3rdparty
 

@@ -18,12 +18,16 @@
 TRACE_DECLARE(dtp)
 
 
+typedef void (*chunk_done_cb_t)(void *ctxt, int rc);
+
+
 extern int thread_pool_init (void);
 extern void thread_pool_finalise (void);
 extern void thread_pool_chunk_add (direntry_t *de,
                                    off_t start,
                                    off_t end,
                                    char *buf,
-                                   void *ctxt      );
+                                   chunk_done_cb_t cb,
+                                   void *ctxt          );
 
 #endif /* _included_download_thread_pool_h */

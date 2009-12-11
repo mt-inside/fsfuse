@@ -9,17 +9,12 @@
 #include <string.h>
 #include <errno.h>
 #include <fuse.h>
-#include <curl/curl.h>
 #include <stdlib.h>
 
 #include "common.h"
 #include "locks.h"
-#include "read.h"
-#include "fsfuse_ops/others.h"
+#include "fsfuse_ops/fsfuse_ops.h"
 #include "direntry.h"
-#include "direntry_cache.h"
-#include "fetcher.h"
-#include "indexnode.h"
 #include "download_thread_pool.h"
 
 
@@ -31,6 +26,9 @@ typedef struct
     pthread_mutex_t filled_mutex;
     int rc;
 } read_context_t;
+
+
+static void chunk_done (void *ctxt, int rc);
 
 
 /* MUST return as many bytes as were asked for, unless error or EOF.
@@ -86,7 +84,7 @@ int fsfuse_read (const char *path,
             pthread_mutex_lock(&read_ctxt->filled_mutex);
 
 
-            thread_pool_chunk_add(de, offset, offset + size, buf, (void *)read_ctxt);
+            thread_pool_chunk_add(de, offset, offset + size, buf, &chunk_done, (void *)read_ctxt);
 
             /* wait until the downloader thread pool has filled buf */
             read_trace("fsfuse_read() waiting on full buffer...\n");
@@ -131,7 +129,7 @@ int fsfuse_read (const char *path,
     return rc;
 }
 
-void read_signal_chunk_done (int rc, void *ctxt)
+static void chunk_done (void *ctxt, int rc)
 {
     read_context_t *read_ctxt = (read_context_t *)ctxt;
 

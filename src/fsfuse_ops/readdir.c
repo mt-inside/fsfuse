@@ -13,9 +13,7 @@
 
 #include "common.h"
 #include "direntry.h"
-#include "fsfuse_ops/readdir.h"
-#include "fsfuse_ops/others.h"
-#include "fetcher.h"
+#include "fsfuse_ops/fsfuse_ops.h"
 
 
 /* The FUSE docs assert that readdir() will only be called on existing, valid

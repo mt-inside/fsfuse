@@ -22,7 +22,6 @@
 #include "parser.h"
 #include "indexnode.h"
 #include "peerstats.h"
-#include "fsfuse_ops/read.h"
 
 
 #define URL_LEN 1024
