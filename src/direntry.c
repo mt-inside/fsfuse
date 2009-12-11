@@ -398,7 +398,7 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 
     sprintf(trace_str,
             "[direntry %p] post (" CALLER_FORMAT ") ref %u",
-            de, CALLER_PASS de->ref_count);
+            (void *)de, CALLER_PASS de->ref_count);
 #if FEATURE_DIRENTRY_CACHE
     {
         char *stat = direntry_cache_status(direntry_get_path(de));
@@ -441,7 +441,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
 
     sprintf(trace_str,
             "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
-            de, CALLER_PASS de->ref_count);
+            (void *)de, CALLER_PASS de->ref_count);
 #if FEATURE_DIRENTRY_CACHE
     {
         char *stat = direntry_cache_status(direntry_get_path(de));

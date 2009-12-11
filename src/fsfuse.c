@@ -39,6 +39,7 @@
 #endif
 #include "peerstats.h"
 #include "indexnode.h"
+#include "localei.h"
 
 #include "fsfuse_ops/fsfuse_ops.h"
 
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
     /* Inits */
     if (trace_init()          ||
         common_init()         ||
+        locale_init()         ||
         alarms_init()         ||
         indexnode_init()      ||
         fetcher_init()        ||
@@ -220,6 +222,7 @@ bail:
     fetcher_finalise();
     alarms_finalise();
     indexnode_finalise();
+    locale_finalise();
     common_finalise();
     trace_finalise();
 
@@ -307,6 +310,7 @@ static start_action_t settings_parse (int argc, char *argv[])
                 TRACE_ARG(progress)
 #endif
                 TRACE_ARG(read)
+                TRACE_ARG(locale)
 
                 break;
 

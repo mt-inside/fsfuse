@@ -38,7 +38,7 @@
 #define CALLER_INFO_ONLY __FILE__, __LINE__
 #define CALLER_PASS file, line_num,
 #define CALLER_PASS_ONLY file, line_num
-#define CALLER_FORMAT "%s:%d"
+#define CALLER_FORMAT "%s:%zu"
 #else
 #define CALLER_DECL
 #define CALLER_DECL_ONLY void

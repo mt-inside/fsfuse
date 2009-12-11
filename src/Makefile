@@ -38,6 +38,7 @@ OBJECTS := fsfuse.o                \
            config_define.o         \
            alarms.o                \
            locks.o                 \
+           localei.o               \
            peerstats.o
 
 OPS_FILES = $(wildcard fsfuse_ops/*.c)
