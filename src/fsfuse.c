@@ -82,8 +82,8 @@ int main(int argc, char *argv[])
     /* Check system fuse version */
     if (fuse_version() < FUSE_USE_VERSION)
     {
-        printf("%s error: fuse version %d required, only version %d available\n",
-               progname, FUSE_USE_VERSION, fuse_version());
+        trace_warn("%s error: fuse version %d required, only version %d available\n",
+                   progname, FUSE_USE_VERSION, fuse_version());
         goto pre_init_bail;
     }
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
         case start_action_MOUNT:
             if (!mountpoint)
             {
-                printf("%s error: bad or missing mount point \"%s\".\n", progname, mountpoint_raw);
+                trace_error("%s error: bad or missing mount point \"%s\".\n", progname, mountpoint_raw);
                 fsfuse_usage();
 
                 goto pre_init_bail;
@@ -162,20 +162,20 @@ int main(int argc, char *argv[])
         peerstats_init()      ||
         thread_pool_init()    )
     {
-        printf("%s error: initialisation failed\n", progname);
+        trace_error("initialisation failed\n");
         goto pre_init_bail;
     }
 
     /* Check indexnode version */
     if (indexnode_find())
     {
-        printf("%s error: indexnode find error (this is not a simple indexnode not found)\n", progname);
+        trace_error("indexnode find error (this is not a simple indexnode not found)\n");
         goto bail;
     }
     if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
     {
-        printf("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
-               progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
+        trace_error("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
+                    progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
         goto bail;
     }
 
@@ -189,7 +189,6 @@ int main(int argc, char *argv[])
             fuse_daemonize(config_proc_fg);
 
             /* Go! */
-            printf("handing over to fuse_loop*()...\n");
             if (config_proc_singlethread)
             {
                 rc = fuse_loop(f);
@@ -328,7 +327,6 @@ static start_action_t settings_parse (int argc, char *argv[])
                 break;
 
             default:
-                printf("getopt returned character %c\n", c);
                 assert(0);
         }
     }
@@ -345,6 +343,8 @@ static start_action_t settings_parse (int argc, char *argv[])
 
         if (optind < argc)
         {
+            trace_warn("Unknown command line arguments.\n");
+
             printf("non-option argv elements: ");
             while (optind < argc)
             {

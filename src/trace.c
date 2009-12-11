@@ -222,13 +222,41 @@ void trace_dedent (void)
 }
 
 
-/* error tracer */
-void error_trace (const char *fmt, ...)
+/* "console" printing support */
+static void trace_print (const char *prefix, const char *fmt, va_list ap)
+{
+    fprintf(stderr, "%s | ", prefix);
+    vfprintf(stderr, fmt, ap);
+}
+
+void trace_error (const char *fmt, ...)
 {
     va_list ap;
 
 
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    trace_print("ERROR", fmt, ap);
+    va_end(ap);
+
+    exit(1);
+}
+
+void trace_warn (const char *fmt, ...)
+{
+    va_list ap;
+
+
+    va_start(ap, fmt);
+    trace_print("WARN", fmt, ap);
+    va_end(ap);
+}
+
+void trace_info (const char *fmt, ...)
+{
+    va_list ap;
+
+
+    va_start(ap, fmt);
+    trace_print("INFO", fmt, ap);
     va_end(ap);
 }

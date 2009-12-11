@@ -25,7 +25,7 @@ int locale_init (void)
 
     if (!setlocale(LC_CTYPE, ""))
     {
-        trce("Can't set the specified locale! Check LANG, LC_CTYPE, LC_ALL.\n");
+        trace_warn("Can't set the specified locale! Check LANG, LC_CTYPE, LC_ALL.\n");
         return 1;
     }
 
@@ -36,7 +36,7 @@ int locale_init (void)
 
     if (rc)
     {
-        trce("Encoding %s unsupported!\n", nl_langinfo(CODESET));
+        trace_error("Encoding %s unsupported!\n", nl_langinfo(CODESET));
     }
 
 

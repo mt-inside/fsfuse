@@ -71,7 +71,7 @@ int indexnode_find (void)
         strcpy(port, config_indexnode_port);
         version = fetcher_get_indexnode_version();
 
-        printf("Static index node configured at %s:%s - version %f\n", host, port, version);
+        trace_info("Static index node configured at %s:%s - version %f\n", host, port, version);
 
         return 0;
     }
@@ -80,12 +80,12 @@ int indexnode_find (void)
     /* === Listen for an indexnode === */
 
     /* TODO: make this a config option */
-    printf("Listening on all addresses:\n");
+    trace_info("Listening on all addresses:\n");
 
     errno = 0;
     if (getifaddrs(&ifaddr) == -1)
     {
-        printf("Cannot get interface addresses: %s\n", strerror(errno));
+        trace_warn("Cannot get interface addresses: %s\n", strerror(errno));
     }
 
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next)
@@ -104,19 +104,19 @@ int indexnode_find (void)
 
             if (s)
             {
-                printf("Cannot getnameinfo(): %s\n", gai_strerror(s));
+                trace_warn("Cannot getnameinfo(): %s\n", gai_strerror(s));
             }
 
-            printf("\t%s (%s, %s)\n",
-                    host,
-                    ifa->ifa_name,
-                    (family == AF_INET)   ? "AF_INET" :
-                    (family == AF_INET6)  ? "AF_INET6" :
-                    ""
-                );
+            trace_info("\t%s (%s, %s)\n",
+                       host,
+                       ifa->ifa_name,
+                       (family == AF_INET)   ? "AF_INET" :
+                       (family == AF_INET6)  ? "AF_INET6" :
+                       ""
+                      );
         }
     }
-    printf("\n");
+    trace_info("\n");
 
     freeifaddrs(ifaddr);
 
@@ -137,16 +137,16 @@ int indexnode_find (void)
         if (!their_rc)
         {
             s4_ok = 1;
-            printf("Listening for index node on udp4 port %d...\n", ntohs(sa4.sin_port));
+            trace_info("Listening for index node on udp4 port %d...\n", ntohs(sa4.sin_port));
         }
         else
         {
-            printf("Cannot bind to udp4 indexnode listener socket: %s\n", strerror(errno));
+            trace_warn("Cannot bind to udp4 indexnode listener socket: %s\n", strerror(errno));
         }
     }
     else
     {
-        printf("Cannot create udp4 indexnode listener socket: %s\n", strerror(errno));
+        trace_warn("Cannot create udp4 indexnode listener socket: %s\n", strerror(errno));
     }
 
 
@@ -166,16 +166,16 @@ int indexnode_find (void)
         if (!their_rc)
         {
             s6_ok = 1;
-            printf("Listening for index node on udp6 port %d...\n", ntohs(sa6.sin6_port));
+            trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa6.sin6_port));
         }
         else
         {
-            printf("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
+            trace_warn("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
         }
     }
     else
     {
-        printf("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
+        trace_warn("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
     }
 
 
@@ -189,10 +189,10 @@ int indexnode_find (void)
     switch (their_rc)
     {
         case -1:
-            printf("Error waiting for indexnode broadcast: %s\n", strerror(errno));
+            trace_warn("Error waiting for indexnode broadcast: %s\n", strerror(errno));
             break;
         case 0:
-            printf("Not found\n");
+            trace_warn("Not found\n");
             break;
         default:
             if (FD_ISSET(s4, &r_fds))
@@ -209,7 +209,7 @@ int indexnode_find (void)
                     if (inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
                     {
                         rc = 0;
-                        printf("Found index node, version %f, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %f, at %s:%s\n", version, host, port);
                     }
                 }
             }
@@ -227,7 +227,7 @@ int indexnode_find (void)
                     if (inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
                     {
                         rc = 0;
-                        printf("Found index node, version %f, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %f, at %s:%s\n", version, host, port);
                     }
                 }
             }

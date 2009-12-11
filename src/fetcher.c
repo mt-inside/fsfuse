@@ -432,7 +432,7 @@ int http2errno (int http_code)
 
     if (rc == -EIO)
     {
-        error_trace("http2errno: unknown HTTP return code %d\n", http_code);
+        trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
     }
 
 
