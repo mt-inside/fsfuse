@@ -171,7 +171,9 @@ void direntry_cache_add_children (
          * new list - discard them */
         if (!found)
         {
+            rw_lock_wlock(direntry_cache_lock);
             direntry_cache_del_descendants(CALLER_INFO old_child);
+            rw_lock_wunlock(direntry_cache_lock);
         }
 
         direntry_cache_del(CALLER_INFO old_child);
@@ -300,7 +302,9 @@ void direntry_cache_notify_stale (direntry_t *de)
 
     /* ...but one of its children is stale. Assume all children are
      * stale and remove them. */
+    rw_lock_wlock(direntry_cache_lock);
     direntry_cache_del_descendants(CALLER_INFO parent);
+    rw_lock_wunlock(direntry_cache_lock);
     parent->children = NULL;
 
 

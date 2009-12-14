@@ -71,16 +71,16 @@ hash_table_t *hash_table_new (unsigned size, double max_load, double min_load)
 
 void hash_table_delete (hash_table_t *tbl)
 {
-    //assert(!tbl->count); FIXME stop doing hash table resize the dirty way
+    assert(!tbl->count);
     free(tbl->entries);
     free(tbl);
 }
 
-void hash_table_add (hash_table_t *tbl, const char *key, void *data)
+static void add_to_entries (hash_table_entry_t **entries, unsigned entries_len, const char *key, void *data)
 {
     hash_t h = hash(key);
     hash_table_entry_t  *e  = (hash_table_entry_t *)malloc(sizeof(hash_table_entry_t)),
-                       **oe = &(tbl->entries[h % tbl->size]);
+                       **oe = &(entries[h % entries_len]);
 
 
     e->key  = key;
@@ -88,6 +88,11 @@ void hash_table_add (hash_table_t *tbl, const char *key, void *data)
     e->next = *oe;
 
     *oe = e;
+}
+
+void hash_table_add (hash_table_t *tbl, const char *key, void *data)
+{
+    add_to_entries(tbl->entries, tbl->size, key, data);
 
     ++tbl->count;
 
@@ -124,38 +129,39 @@ void *hash_table_find (hash_table_t *tbl, const char *key)
 int hash_table_del (hash_table_t *tbl, const char *key)
 {
     hash_t h = hash(key);
-    hash_table_entry_t **e = &(tbl->entries[h % tbl->size]),
+    hash_table_entry_t **oe = &(tbl->entries[h % tbl->size]),
+                        *e = *oe,
                         *e_del;
     int rc = 0;
 
 
     /* does the list contain anything at all? */
-    if (*e)
+    if (e)
     {
         /* is it first? */
-        if (!strcmp((*e)->key, key))
+        if (!strcmp(e->key, key))
         {
-            e_del = *e;
-            *e = (*e)->next;
+            e_del = e;
+            *oe = e->next;
             free(e_del);
 
             rc = 1;
         }
         else
         {
-            while ((*e)->next)
+            while (e->next)
             {
-                if (!strcmp((*e)->next->key, key))
+                if (!strcmp(e->next->key, key))
                 {
-                    e_del = (*e)->next;
-                    (*e)->next = (*e)->next->next;
+                    e_del = e->next;
+                    e->next = e->next->next;
                     free(e_del);
 
                     rc = 1;
                     break;
                 }
 
-                *e = (*e)->next;
+                e = e->next;
             }
         }
     }
@@ -170,8 +176,14 @@ int hash_table_del (hash_table_t *tbl, const char *key)
         if (hash_table_get_load_factor(tbl) < tbl->min_load)
         {
             trce("hash table load factor too low, halving size to %u\n", tbl->size / 2);
-            //hash_table_resize(tbl, tbl->size / 2); FIXME
+            hash_table_resize(tbl, tbl->size / 2);
         }
+    }
+    else
+    {
+        /* FIXME: while debugging direntry_cache issues, it's useful to check
+         * we're not trying to remove something that doesn't exist */
+        assert(0);
     }
 
 
@@ -197,35 +209,31 @@ double hash_table_get_load_factor (hash_table_t *tbl)
  * table. */
 static void hash_table_resize (hash_table_t *tbl, unsigned new_size)
 {
-    unsigned tmp_size;
-    hash_table_entry_t **tmp_entries;
-    hash_table_t *new_tbl = hash_table_new(new_size, tbl->max_load, tbl->min_load);
+    hash_table_entry_t **entries = (hash_table_entry_t **)calloc(sizeof(hash_table_entry_t *) * new_size, 1);
     hash_table_iterator_t *hti = hash_table_iterator_new(tbl);
+    unsigned count = 0;
 
 
-    if (new_tbl && hti && !hash_table_iterator_at_end(hti))
+    if (entries && hti)
     {
-        do
+        for ( ; !hash_table_iterator_at_end(hti); hash_table_iterator_next(hti))
         {
-            hash_table_add(
-                new_tbl,
+            add_to_entries(
+                entries,
+                new_size,
                 hash_table_iterator_current_key (hti),
                 hash_table_iterator_current_data(hti)
             );
-        } while (hash_table_iterator_next(hti));
+            ++count;
+        }
     }
     hash_table_iterator_delete(hti);
 
-    /* dirty */
-    assert(tbl->count == new_tbl->count);
-    tmp_size    = tbl->size;
-    tmp_entries = tbl->entries;
-    tbl->size    = new_tbl->size;
-    tbl->entries = new_tbl->entries;
-    new_tbl->size    = tmp_size;
-    new_tbl->entries = tmp_entries;
 
-    hash_table_delete(new_tbl);
+    assert(count == tbl->count);
+    free(tbl->entries);
+    tbl->size    = new_size;
+    tbl->entries = entries;
 }
 
 
@@ -274,11 +282,14 @@ int hash_table_iterator_next (hash_table_iterator_t *iter)
         return 1;
     }
 
-    while (!(e = tbl->entries[s++]) && s < tbl->size);
-
-    if (s < tbl->size || e)
+    while (s < tbl->size && !(e = tbl->entries[s]))
     {
-        iter->slot = s - 1;
+        s++;
+    }
+
+    if (s < tbl->size)
+    {
+        iter->slot = s;
         iter->entry = e;
         return 1;
     }
@@ -347,6 +358,13 @@ static void hash_table_dump_histogram (hash_table_t *tbl)
     hash_table_entry_t *e;
 
 
+    printf("hash table %p. size: %u, entries: %u, load factor: %f\n",
+       (void *)tbl,
+       hash_table_get_size(tbl),
+       hash_table_get_count(tbl),
+       (double)hash_table_get_load_factor(tbl)
+    );
+
     for (i = 0; i < tbl->size; ++i)
     {
         printf("[%03u] ", i);
@@ -361,8 +379,6 @@ static void hash_table_dump_histogram (hash_table_t *tbl)
 
         printf("\n");
     }
-
-    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
 }
 
 static void hash_table_dump (hash_table_t *tbl)
@@ -370,6 +386,13 @@ static void hash_table_dump (hash_table_t *tbl)
     unsigned i;
     hash_table_entry_t *e;
 
+
+    printf("hash table %p. size: %u, entries: %u, load factor: %f\n",
+       (void *)tbl,
+       hash_table_get_size(tbl),
+       hash_table_get_count(tbl),
+       (double)hash_table_get_load_factor(tbl)
+    );
 
     for (i = 0; i < tbl->size; ++i)
     {
@@ -380,8 +403,18 @@ static void hash_table_dump (hash_table_t *tbl)
             printf("  %s\n", e->key);
         }
     }
+}
 
-    printf("load factor: %f\n", (double)hash_table_get_load_factor(tbl));
+static void hash_table_dump_row (hash_table_entry_t *e)
+{
+    for ( ; e; e = e->next)
+    {
+        printf("[entry %p] key: %s; data: %p\n",
+            (void *)e,
+            e->key,
+            e->data
+        );
+    }
 }
 
 void hash_table_dump_dot (hash_table_t *tbl)
