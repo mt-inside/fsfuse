@@ -94,7 +94,7 @@ int path_get_direntry (
 
 
     /* Get listing for the children of this path's parent */
-    url = make_escaped_url("/browse", parent_path);
+    url = make_url("browse", parent_path + 1);
     rc = parser_fetch_listing(url, &lis);
     free(url);
 
@@ -186,7 +186,7 @@ int path_get_children (
 
 
     /* fetch the directory listing from the indexnode */
-    url = make_escaped_url("/browse", parent);
+    url = make_url("browse", parent + 1);
     rc = parser_fetch_listing(url, &lis);
     free(url);
 

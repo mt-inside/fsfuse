@@ -81,7 +81,7 @@ int fetcher_fetch_file (const char * const   hash,
 
 
     /* Find alternatives */
-    url = make_url("/alternatives", hash);
+    url = make_url("alternatives", hash);
     rc = parser_fetch_listing(url, &lis);
     free(url);
 
@@ -120,7 +120,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    url = make_url("", "stats");
+    url = make_url("stats", "");
     rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
     free(url);
 
@@ -281,7 +281,7 @@ double fetcher_get_indexnode_version (void)
     }
 
     /* URL */
-    url = make_escaped_url("/browse", "/");
+    url = make_url("browse", "");
     curl_easy_setopt(eh, CURLOPT_URL, url);
 
     /* Other headers */
@@ -470,36 +470,6 @@ char *make_url (
 {
     char *host = indexnode_host(), *port = indexnode_port();
     char *fmt;
-    size_t len;
-    char *url;
-
-
-    if (indexnode_host_is_ip())
-    {
-        fmt = "http://[%s]:%s%s/%s";
-    }
-    else
-    {
-        fmt = "http://%s:%s%s/%s";
-    }
-
-    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource) + strlen(fmt) + 1;
-    url = (char *)malloc(len * sizeof(*url));
-
-
-    sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource);
-
-
-    return url;
-}
-
-char *make_escaped_url (
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    char *host = indexnode_host(), *port = indexnode_port();
-    char *fmt;
     char *resource_esc, *url;
     size_t len;
     CURL *eh = curl_eh_new();
@@ -507,17 +477,17 @@ char *make_escaped_url (
 
     if (indexnode_host_is_ip())
     {
-        fmt = "http://[%s]:%s%s/%s";
+        fmt = "http://[%s]:%s/%s/%s";
     }
     else
     {
-        fmt = "http://%s:%s%s/%s";
+        fmt = "http://%s:%s/%s/%s";
     }
 
 
     /* we escape from resource + 1 and render the first '/' ourselves because
      * the indexnode insists on it being real */
-    resource_esc = curl_easy_escape(eh, resource + 1, 0);
+    resource_esc = curl_easy_escape(eh, resource, 0);
     len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
     url = (char *)malloc(len * sizeof(*url));
     sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource_esc);
