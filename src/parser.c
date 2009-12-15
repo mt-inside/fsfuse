@@ -186,24 +186,21 @@ static int filelist_entries_parse (
     parser_trace("filelist_entries_parse(): enumerating %d nodes\n", size);
     parser_trace_indent();
 
-    if (size)
+    lis = listing_list_new(size);
+
+    /* Enumerate the A elements */
+    for (i = 0; i < size && !rc; i++)
     {
-        lis = listing_list_new(size);
-
-        /* Enumerate the A elements */
-        for (i = 0; i < size && !rc; i++)
+        if (!(li = listing_new(CALLER_INFO_ONLY)))
         {
-            if (!(li = listing_new(CALLER_INFO_ONLY)))
-            {
-                rc = -EIO;
-                break;
-            }
-
-            rc = filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i],
-                                      li);
-
-            lis->items[i] = li;
+            rc = -EIO;
+            break;
         }
+
+        rc = filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i],
+                                  li);
+
+        lis->items[i] = li;
     }
 
     *lis_out = lis;

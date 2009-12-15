@@ -205,7 +205,7 @@ end:
 
 static direntry_t *lis_to_dirents(listing_list_t *lis, const char *parent)
 {
-    direntry_t *de, *prev = NULL;
+    direntry_t *de = NULL, *prev = NULL;
     char *path;
     unsigned i;
 
