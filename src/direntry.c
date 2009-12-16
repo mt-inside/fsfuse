@@ -396,6 +396,7 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
     refc = ++de->ref_count;
     pthread_mutex_unlock(de->lock);
 
+#if DEBUG
     sprintf(trace_str,
             "[direntry %p] post (" CALLER_FORMAT ") ref %u",
             (void *)de, CALLER_PASS de->ref_count);
@@ -405,9 +406,10 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
         strcat(trace_str, stat);
         free(stat);
     }
-#endif
+#endif /* FEATURE_DIRENTRY_CACHE */
     strcat(trace_str, "\n");
     direntry_trace(trace_str);
+#endif /* DEBUG */
 
 
     return de;
@@ -439,6 +441,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     refc = --de->ref_count;
     pthread_mutex_unlock(de->lock);
 
+#if DEBUG
     sprintf(trace_str,
             "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
             (void *)de, CALLER_PASS de->ref_count);
@@ -448,9 +451,10 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         strcat(trace_str, stat);
         free(stat);
     }
-#endif
+#endif /* FEATURE_DIRENTRY_CACHE */
     strcat(trace_str, "\n");
     direntry_trace(trace_str);
+#endif /* DEBUG */
 
     direntry_trace_indent();
 
@@ -629,8 +633,8 @@ listing_t *listing_new (CALLER_DECL_ONLY)
 
     li->ref_count = 1;
 
-    direntry_trace("[listing %p] new (" CALLER_FORMAT ")\n",
-                   li, CALLER_PASS_ONLY);
+    direntry_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
+                   li, CALLER_PASS li->ref_count);
 
     return li;
 }

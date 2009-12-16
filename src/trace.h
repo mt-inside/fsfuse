@@ -41,6 +41,8 @@ extern emitter_t active_emitter;
     extern void area##_trace_indent (void);                               \
     extern void area##_trace_dedent (void);
 
+#if DEBUG
+
 #define TRACE_DEFINE(area)                                                \
                                                                           \
     int area##_trace_active = 0;                                          \
@@ -81,20 +83,33 @@ extern emitter_t active_emitter;
         area##_trace_active = 0;                                          \
     }                                                                     \
                                                                           \
-void area##_trace_indent (void)                                           \
-{                                                                         \
-    if (area##_trace_active)                                              \
+    void area##_trace_indent (void)                                       \
     {                                                                     \
-        trace_dent += 2;                                                  \
+        if (area##_trace_active)                                          \
+        {                                                                 \
+            trace_dent += 2;                                              \
+        }                                                                 \
     }                                                                     \
-}                                                                         \
-void area##_trace_dedent (void)                                           \
-{                                                                         \
-    if (area##_trace_active)                                              \
+                                                                          \
+    void area##_trace_dedent (void)                                       \
     {                                                                     \
-        if (trace_dent) trace_dent -= 2;                                  \
-    }                                                                     \
-}
+        if (area##_trace_active)                                          \
+        {                                                                 \
+            if (trace_dent) trace_dent -= 2;                              \
+        }                                                                 \
+    }
+
+#else /* DEBUG */
+
+#define TRACE_DEFINE(area)                                                \
+    void area##_trace (const char *fmt, ...) { NOT_USED(fmt); }           \
+    void area##_trace_np (const char *fmt, ...) { NOT_USED(fmt); }        \
+    void area##_trace_on (void) { }                                       \
+    void area##_trace_off (void) { }                                      \
+    void area##_trace_indent (void) { }                                   \
+    void area##_trace_dedent (void) { }
+
+#endif /* DEBUG */
 
 
 extern int trace_init (void);

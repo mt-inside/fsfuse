@@ -59,9 +59,9 @@ endif
 
 INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -isystem 3rdparty
 
-CFLAGS = -std=c99 -Wall -Wextra -pedantic $(INCLUDES) $(DEFINES)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic $(INCLUDES) -DDEBUG=$(DEBUG) $(DEFINES)
 CFLAGS_OPTIM := -O2
-CFLAGS_DEBUG := -O0 -g3 -DDEBUG
+CFLAGS_DEBUG := -O0 -g3
 ifeq ($(OS),Darwin)
     CFLAGS += -mmacosx-version-min=10.5
 endif
