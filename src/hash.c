@@ -209,26 +209,31 @@ double hash_table_get_load_factor (hash_table_t *tbl)
  * table. */
 static void hash_table_resize (hash_table_t *tbl, unsigned new_size)
 {
-    hash_table_entry_t **entries = (hash_table_entry_t **)calloc(sizeof(hash_table_entry_t *) * new_size, 1);
-    hash_table_iterator_t *hti = hash_table_iterator_new(tbl);
-    unsigned count = 0;
+    hash_table_entry_t **entries = (hash_table_entry_t **)calloc(sizeof(hash_table_entry_t *) * new_size, 1),
+                       *e, *e_prev;
+    unsigned count = 0, i;
 
 
-    if (entries && hti)
+    if (!entries) return;
+
+
+    for (i = 0; i < tbl->size; ++i)
     {
-        for ( ; !hash_table_iterator_at_end(hti); hash_table_iterator_next(hti))
+        e_prev = NULL;
+        for (e = tbl->entries[i]; e; e = e->next)
         {
             add_to_entries(
                 entries,
                 new_size,
-                hash_table_iterator_current_key (hti),
-                hash_table_iterator_current_data(hti)
+                e->key,
+                e->data
             );
+            free(e_prev);
+            e_prev = e;
             ++count;
         }
+        free(e_prev);
     }
-    hash_table_iterator_delete(hti);
-
 
     assert(count == tbl->count);
     free(tbl->entries);

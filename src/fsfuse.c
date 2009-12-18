@@ -51,13 +51,20 @@ typedef enum
     start_action_USAGE
 } start_action_t;
 
+typedef struct
+{
+    char *real;
+    char *raw;
+    char *error;
+} mountpoint_t;
 
-static char *mountpoint = NULL;
-static char *mountpoint_raw = NULL;
+
 static char *progname = NULL;
+static mountpoint_t mountpoint;
 
 
-static start_action_t settings_parse (int argc, char *argv[]);
+static void settings_get_config_file              (int argc, char *argv[]);
+static start_action_t settings_parse_command_line (int argc, char *argv[]);
 static void fuse_args_set (struct fuse_args *fuse_args);
 static void fsfuse_splash (void);
 static void fsfuse_versions (void);
@@ -67,6 +74,7 @@ static void fsfuse_usage (void);
 int main(int argc, char *argv[])
 {
     int rc = EXIT_FAILURE;
+    char **myargv = malloc(argc * sizeof(char *));
     start_action_t sa;
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
@@ -88,6 +96,19 @@ int main(int argc, char *argv[])
     }
 
 
+    /* Perfunctory parse of the command line just to find the name of the config
+     * file, if specified. This has to be done first, so we can then load
+     * settings from it, /before/ parsing the command line proper, over-writing
+     * any config settings with higher-priority command line values */
+    memcpy(myargv, argv, argc * sizeof(char *));
+    settings_get_config_file(argc, myargv);
+    free(myargv);
+
+
+    config_init();
+    config_read();
+
+
     /* Parse cmdline args */
     /* fuse *really* wants you to use its parsing mechanism. It ignores
      * fuse_args.argv[0], as if it's the program name - i.e. it's expecting a
@@ -99,14 +120,7 @@ int main(int argc, char *argv[])
      * free()d a lot. fuse_opt_parse() must do this implicitly.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
-    settings_parse(argc, argv);
-
-
-    config_init();
-    config_read();
-
-
-    sa = settings_parse(argc, argv);
+    sa = settings_parse_command_line(argc, argv);
 
 
     fuse_args_set(&fuse_args);
@@ -115,9 +129,9 @@ int main(int argc, char *argv[])
     switch (sa)
     {
         case start_action_MOUNT:
-            if (!mountpoint)
+            if (!mountpoint.real)
             {
-                trace_error("%s error: bad or missing mount point \"%s\".\n", progname, mountpoint_raw);
+                trace_error("bad or missing mount point \"%s\": %s.\n", mountpoint.raw, mountpoint.error);
                 fsfuse_usage();
 
                 goto pre_init_bail;
@@ -174,13 +188,13 @@ int main(int argc, char *argv[])
     }
     if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
     {
-        trace_error("%s error: indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
+        trace_error("indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
                     progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
         goto bail;
     }
 
     /* Hand over to fuse */
-    if ((ch = fuse_mount(mountpoint, &fuse_args)))
+    if ((ch = fuse_mount(mountpoint.real, &fuse_args)))
     {
         if ((f = fuse_new(ch, &fuse_args, &fsfuse_oper, sizeof(fsfuse_oper), NULL)))
         {
@@ -200,7 +214,7 @@ int main(int argc, char *argv[])
 
             /* Teardown */
             fuse_remove_signal_handlers(fuse_get_session(f));
-            fuse_unmount(mountpoint, ch);
+            fuse_unmount(mountpoint.real, ch);
             fuse_destroy(f);
         }
     }
@@ -229,13 +243,48 @@ pre_init_bail:
     config_finalise();
     xmlCleanupParser();
     fuse_opt_free_args(&fuse_args);
-    if (mountpoint) free(mountpoint);
+    if (mountpoint.real) free(mountpoint.real);
+    if (mountpoint.error) free(mountpoint.error);
 
 
     exit(rc);
 }
 
-static start_action_t settings_parse (int argc, char *argv[])
+static void settings_get_config_file (int argc, char *argv[])
+{
+    int c, option_index = 0;
+    struct option long_options[] =
+    {
+        {"config",         required_argument, NULL, 'c'},
+        {0, 0, 0, 0}
+    };
+
+
+    optind = 0;
+    opterr = 0;
+
+    while (1)
+    {
+        c = getopt_long(argc, argv, "c:", long_options, &option_index);
+        if (c == -1) break;
+
+        switch (c)
+        {
+            case 'c':
+                /* config file */
+                config_path_set(strdup(optarg));
+                break;
+
+            case '?':
+                break;
+
+            default:
+                assert(0);
+        }
+    }
+}
+
+static start_action_t settings_parse_command_line (int argc, char *argv[])
 {
     start_action_t rc = start_action_MOUNT;
     int c, option_index = 0;
@@ -254,6 +303,7 @@ static start_action_t settings_parse (int argc, char *argv[])
 
 
     optind = 0;
+    opterr = 1;
 
     while (1)
     {
@@ -263,8 +313,7 @@ static start_action_t settings_parse (int argc, char *argv[])
         switch (c)
         {
             case 'c':
-                /* config file */
-                config_path_set(strdup(optarg));
+                /* config file - dealt with in settings_get_config_file() */
                 break;
 
             case 'd':
@@ -337,8 +386,10 @@ static start_action_t settings_parse (int argc, char *argv[])
          * - argv[1] is "what" to mount - ignored
          * - argv[2] is "where" to mount - mountpoint */
         optind++;
-        mountpoint_raw = argv[optind];
-        mountpoint = realpath(argv[optind], NULL);
+        errno = 0;
+        mountpoint.raw = argv[optind];
+        mountpoint.real = realpath(argv[optind], NULL);
+        if (!mountpoint.real) mountpoint.error = strdup(strerror(errno));
         optind++;
 
         if (optind < argc)

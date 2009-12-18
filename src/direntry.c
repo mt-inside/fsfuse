@@ -104,7 +104,7 @@ int path_get_direntry (
 #if FEATURE_DIRENTRY_CACHE
         direntry_cache_status_t cache_stat;
 
-        /* This make direntries for the listing, with the side effect that the
+        /* This makes direntries for the listing, with the side effect that the
          * dirents are encached. */
         dirents = lis_to_dirents(lis, parent_path);
 
@@ -139,9 +139,8 @@ int path_get_direntry (
                 break;
             }
         }
-
-        listing_list_delete(CALLER_INFO lis);
 #endif
+        listing_list_delete(CALLER_INFO lis);
     }
 
 

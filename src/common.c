@@ -33,6 +33,9 @@ int common_init (void)
 
 void common_finalise (void)
 {
+    unsigned *i = (unsigned *)pthread_getspecific(thread_index_key);
+    thread_index_destroy((void *)i);
+
     pthread_key_delete(thread_index_key);
 }
 

@@ -113,7 +113,7 @@ int config_read (void)
     }
     else
     {
-        trce("Unable to read / parse config file %s\n", config_path_get());
+        trace_warn("Unable to read / parse config file %s\n", config_path_get());
     }
 
 

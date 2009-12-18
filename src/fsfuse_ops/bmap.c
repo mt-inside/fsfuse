@@ -23,10 +23,8 @@ int fsfuse_bmap (const char *path,
 {
     method_trace("fsfuse_bmap(path==%s, blocksize=%zu, idx==%lu)\n",
          path, blocksize, idx);
-    trce("bmap would seem rather pointless... Anything calling it is likely to malfunction pretty quickly\n");
-    assert(0); /* bmap? Presumably, someone could call this and then try to
-                  write to some "underlying" block device, not that we report
-                  one, at which point things will go horribly wrong. */
+
+    trace_warn("bmap would seem rather pointless... Anything calling it is likely to malfunction pretty quickly\n");
 
 
     return 0;
