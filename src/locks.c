@@ -23,7 +23,7 @@ struct _rw_lock_t
     int writer_writing;
     pthread_mutex_t mutex;
     pthread_cond_t lock_free;
-    pid_t locking_thread;
+    pthread_t locking_thread;
 };
 
 
@@ -54,7 +54,7 @@ int rw_lock_delete (rw_lock_t *mutex)
 int rw_lock_rlock (rw_lock_t *mutex)
 {
     if (mutex->locking_thread &&
-        mutex->locking_thread == syscall(SYS_gettid))
+        pthread_equal(mutex->locking_thread, pthread_self()))
     {
         return 0;
     }
@@ -67,7 +67,7 @@ int rw_lock_rlock (rw_lock_t *mutex)
     }
     mutex->readers_reading++;
 
-    mutex->locking_thread = syscall(SYS_gettid);
+    mutex->locking_thread = pthread_self();
 
     pthread_mutex_unlock(&(mutex->mutex));
 
@@ -109,7 +109,7 @@ int rw_lock_runlock (rw_lock_t *mutex)
 int rw_lock_wlock (rw_lock_t *mutex)
 {
     if (mutex->locking_thread &&
-        mutex->locking_thread == syscall(SYS_gettid))
+        pthread_equal(mutex->locking_thread, pthread_self()))
     {
         return 0;
     }
@@ -122,7 +122,7 @@ int rw_lock_wlock (rw_lock_t *mutex)
     }
     mutex->writer_writing++;
 
-    mutex->locking_thread = syscall(SYS_gettid);
+    mutex->locking_thread = pthread_self();
 
     pthread_mutex_unlock(&(mutex->mutex));
 
