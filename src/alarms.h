@@ -10,6 +10,9 @@
 #define _INCLUDED_ALARMS_H
 
 TRACE_DECLARE(alarms)
+#define alarms_trace(...) TRACE(alarms,__VA_ARGS__)
+#define alarms_trace_indent() TRACE_INDENT(alarms)
+#define alarms_trace_dedent() TRACE_DEDENT(alarms)
 
 
 typedef void (*alarm_cb_t)(void *cb_data);

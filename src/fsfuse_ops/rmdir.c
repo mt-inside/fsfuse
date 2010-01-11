@@ -16,6 +16,8 @@
 
 int fsfuse_rmdir ( const char *path )
 {
+    NOT_USED(path);
+
     method_trace("fsfuse_rmdir(path==%s)\n", path);
 
 

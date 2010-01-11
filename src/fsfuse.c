@@ -153,11 +153,6 @@ int main(int argc, char *argv[])
 
 
 
-    if (config_proc_debug)
-    {
-        trace_on();
-    }
-
     /* Inits */
     if (trace_init()          ||
         common_init()         ||
@@ -338,11 +333,15 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 
             case 't':
                 /* trace */
+#if DEBUG
 #define TRACE_ARG(aREA)                          \
                 if (!strcmp(optarg, #aREA))      \
                 {                                \
                     aREA##_trace_on();           \
                 }
+#else
+#define TRACE_ARG(aREA)
+#endif
 
                 TRACE_ARG(alarms)
                 TRACE_ARG(direntry)

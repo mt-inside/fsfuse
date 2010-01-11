@@ -17,6 +17,9 @@
 int fsfuse_link ( const char *from,
                   const char *to    )
 {
+    NOT_USED(from);
+    NOT_USED(to);
+
     method_trace("fsfuse_link(from==%s, to==%s)\n", from, to);
 
 

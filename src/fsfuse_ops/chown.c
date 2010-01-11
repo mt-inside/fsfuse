@@ -18,6 +18,10 @@ int fsfuse_chown ( const char *path,
                    uid_t user,
                    gid_t group       )
 {
+    NOT_USED(path);
+    NOT_USED(user);
+    NOT_USED(group);
+
     method_trace("fsfuse_chown(path==%s, user=%d, group=%d)\n", path, user, group);
 
 

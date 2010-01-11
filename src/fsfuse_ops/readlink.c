@@ -18,6 +18,7 @@ int fsfuse_readlink ( const char *path,
                       char * buf,
                       size_t len )
 {
+    NOT_USED(path);
     NOT_USED(buf);
     NOT_USED(len);
 

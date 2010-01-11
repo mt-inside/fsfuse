@@ -21,6 +21,10 @@ int fsfuse_bmap (const char *path,
                  size_t blocksize,
                  uint64_t *idx)
 {
+    NOT_USED(path);
+    NOT_USED(blocksize);
+    NOT_USED(idx);
+
     method_trace("fsfuse_bmap(path==%s, blocksize=%zu, idx==%lu)\n",
          path, blocksize, idx);
 

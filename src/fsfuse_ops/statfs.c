@@ -32,6 +32,8 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     int rc = -EIO, fetcher_rc;
 
 
+    NOT_USED(path);
+
     method_trace("fsfuse_statfs(path==%s)\n", path);
     method_trace_indent();
 

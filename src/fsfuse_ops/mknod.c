@@ -18,6 +18,10 @@ int fsfuse_mknod ( const char *path,
                    mode_t mode,
                    dev_t dev         )
 {
+    NOT_USED(path);
+    NOT_USED(mode);
+    NOT_USED(dev);
+
     method_trace("fsfuse_mknod(path==%s, mode=%#x, dev=%#x)\n", path, mode, dev);
 
 

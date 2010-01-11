@@ -18,9 +18,11 @@ int fsfuse_create ( const char *path,
                     mode_t mode,
                     struct fuse_file_info *fi )
 {
-    method_trace("fsfuse_create(path==%s, mode==%#x)\n", path, mode);
-
+    NOT_USED(path);
+    NOT_USED(mode);
     NOT_USED(fi);
+
+    method_trace("fsfuse_create(path==%s, mode==%#x)\n", path, mode);
 
 
     return -EROFS;

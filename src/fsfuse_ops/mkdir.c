@@ -17,6 +17,9 @@
 int fsfuse_mkdir ( const char *path,
                    mode_t mode       )
 {
+    NOT_USED(path);
+    NOT_USED(mode);
+
     method_trace("fsfuse_mkdir(path==%s, mode=%#x)\n", path, mode);
 
 

@@ -16,7 +16,14 @@
 
 
 TRACE_DECLARE(method)
+#define method_trace(...) TRACE(method,__VA_ARGS__)
+#define method_trace_indent() TRACE_INDENT(method)
+#define method_trace_dedent() TRACE_DEDENT(method)
+
 TRACE_DECLARE(read)
+#define read_trace(...) TRACE(read,__VA_ARGS__)
+#define read_trace_indent() TRACE_INDENT(read)
+#define read_trace_dedent() TRACE_DEDENT(read)
 
 
 /* fsfuse filesystem methods vtable */

@@ -13,6 +13,9 @@
 
 
 TRACE_DECLARE(locale)
+#define locale_trace(...) TRACE(locale,__VA_ARGS__)
+#define locale_trace_indent() TRACE_INDENT(locale)
+#define locale_trace_dedent() TRACE_DEDENT(locale)
 
 
 extern int locale_init (void);

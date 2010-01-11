@@ -13,6 +13,9 @@
 
 
 TRACE_DECLARE(direntry_cache)
+#define direntry_cache_trace(...) TRACE(direntry_cache,__VA_ARGS__)
+#define direntry_cache_trace_indent() TRACE_INDENT(direntry_cache)
+#define direntry_cache_trace_dedent() TRACE_DEDENT(direntry_cache)
 
 
 typedef enum

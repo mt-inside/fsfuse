@@ -18,6 +18,10 @@
 
 
 TRACE_DECLARE(direntry)
+#define direntry_trace(...) TRACE(direntry,__VA_ARGS__)
+#define direntry_trace_indent() TRACE_INDENT(direntry)
+#define direntry_trace_dedent() TRACE_DEDENT(direntry)
+
 
 typedef enum
 {

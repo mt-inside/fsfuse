@@ -14,6 +14,9 @@
 
 
 TRACE_DECLARE(peerstats)
+#define peerstats_trace(...) TRACE(peerstats,__VA_ARGS__)
+#define peerstats_trace_indent() TRACE_INDENT(peerstats)
+#define peerstats_trace_dedent() TRACE_DEDENT(peerstats)
 
 
 extern int peerstats_init (void);

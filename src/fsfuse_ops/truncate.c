@@ -17,6 +17,9 @@
 int fsfuse_truncate ( const char *path,
                       off_t offset      )
 {
+    NOT_USED(path);
+    NOT_USED(offset);
+
     method_trace("fsfuse_truncate(path==%s, offset=%ju)\n", path, offset);
 
 

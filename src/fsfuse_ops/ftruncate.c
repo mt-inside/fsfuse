@@ -18,9 +18,11 @@ int fsfuse_ftruncate ( const char *path,
                        off_t offset,
                        struct fuse_file_info *fi )
 {
-    method_trace("fsfuse_ftruncate(path==%s, offset=%ju)\n", path, offset);
-
+    NOT_USED(path);
+    NOT_USED(offset);
     NOT_USED(fi);
+
+    method_trace("fsfuse_ftruncate(path==%s, offset=%ju)\n", path, offset);
 
 
     return -EROFS;

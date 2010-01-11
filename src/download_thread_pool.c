@@ -114,10 +114,6 @@ static void chunk_list_empty (thread_t *thread, int rc);
 static size_t thread_pool_consumer (void *buf, size_t size, size_t nmemb, void *userp);
 static void signal_read_thread (chunk_t *chunk, int rc);
 
-/* debugging */
-static void dump_chunk (chunk_t *chunk);
-static void dump_chunk_list (thread_t *thread);
-
 
 int thread_pool_init (void)
 {
@@ -339,8 +335,6 @@ static chunk_t *chunk_get_next (thread_t *thread)
 
         /* remove the chunk from the list */
         TAILQ_REMOVE(&thread->chunk_list, chunk, entries);
-        dtp_trace("removed entry from chunk list. List now:");
-        dump_chunk_list(thread);
 
         pthread_mutex_unlock(&(thread->mutex));
     }
@@ -412,8 +406,6 @@ static void thread_chunk_list_add_chunk (thread_t *thread,
             TAILQ_INSERT_TAIL(&thread->chunk_list, c, entries);
         }
     }
-    dtp_trace("added entry to chunk list. List now:");
-    dump_chunk_list(thread);
 
     /* increment the chunk list count */
     pthread_mutex_lock(&thread->chunk_list_mutex);
@@ -702,9 +694,11 @@ static void signal_read_thread (chunk_t *chunk, int rc)
     chunk->cb(chunk->ctxt, rc);
 }
 
+
+#if DEBUG
 static void dump_chunk (chunk_t *chunk)
 {
-    dtp_trace_np("%#x -> %#x -> %#x", chunk->start, chunk->bytes_used, chunk->end);
+    trace_np("%#x -> %#x -> %#x", chunk->start, chunk->bytes_used, chunk->end);
 }
 
 static void dump_chunk_list (thread_t *thread)
@@ -715,15 +709,16 @@ static void dump_chunk_list (thread_t *thread)
 
     if (TAILQ_EMPTY(&thread->chunk_list))
     {
-        dtp_trace_np("  <empty>\n");
+        trace_np("  <empty>\n");
     }
     else
     {
         TAILQ_FOREACH(curr, &thread->chunk_list, entries)
         {
-            dtp_trace_np("  [%u] ", i++);
+            trace_np("  [%u] ", i++);
             dump_chunk(curr);
         }
-        dtp_trace_np("\n");
+        trace_np("\n");
     }
 }
+#endif /* DEBUG */

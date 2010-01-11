@@ -13,6 +13,9 @@
 
 
 TRACE_DECLARE(progress)
+#define progress_trace(...) TRACE(progress,__VA_ARGS__)
+#define progress_trace_indent() TRACE_INDENT(progress)
+#define progress_trace_dedent() TRACE_DEDENT(progress)
 
 
 extern int progress_init (void);

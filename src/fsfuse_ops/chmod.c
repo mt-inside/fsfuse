@@ -17,6 +17,9 @@
 int fsfuse_chmod ( const char *path,
                    mode_t mode       )
 {
+    NOT_USED(path);
+    NOT_USED(mode);
+
     method_trace("fsfuse_chmod(path==%s, mode=%#x)\n", path, mode);
 
 

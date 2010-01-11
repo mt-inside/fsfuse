@@ -20,11 +20,13 @@ int fsfuse_write ( const char *path,
                    off_t off,
                    struct fuse_file_info *fi )
 {
-    method_trace("fsfuse_write(path==%s, size==%zd, off==%ju)\n", path, size, off);
-
+    NOT_USED(path);
     NOT_USED(buf);
+    NOT_USED(size);
     NOT_USED(off);
     NOT_USED(fi);
+
+    method_trace("fsfuse_write(path==%s, size==%zd, off==%ju)\n", path, size, off);
 
 
     return -EROFS;

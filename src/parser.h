@@ -19,6 +19,9 @@
 
 
 TRACE_DECLARE(parser)
+#define parser_trace(...) TRACE(parser,__VA_ARGS__)
+#define parser_trace_indent() TRACE_INDENT(parser)
+#define parser_trace_dedent() TRACE_DEDENT(parser)
 
 
 extern int parser_init (void);

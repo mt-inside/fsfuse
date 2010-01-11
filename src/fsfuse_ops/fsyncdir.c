@@ -18,9 +18,11 @@ int fsfuse_fsyncdir ( const char *path,
                       int datasync,
                       struct fuse_file_info *fi )
 {
-    method_trace("fsfuse_fsyncdir(path==%s, datasync==%d)\n", path, datasync);
-
+    NOT_USED(path);
+    NOT_USED(datasync);
     NOT_USED(fi);
+
+    method_trace("fsfuse_fsyncdir(path==%s, datasync==%d)\n", path, datasync);
 
 
     return -EROFS;

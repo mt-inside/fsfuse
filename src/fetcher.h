@@ -22,6 +22,9 @@ typedef struct
 
 
 TRACE_DECLARE(fetcher)
+#define fetcher_trace(...) TRACE(fetcher,__VA_ARGS__)
+#define fetcher_trace_indent() TRACE_INDENT(fetcher)
+#define fetcher_trace_dedent() TRACE_DEDENT(fetcher)
 
 
 extern int fetcher_init (void);

@@ -16,6 +16,8 @@
 
 int fsfuse_unlink ( const char *path )
 {
+    NOT_USED(path);
+
     method_trace("fsfuse_unlink(path==%s)\n", path);
 
 

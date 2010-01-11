@@ -19,9 +19,10 @@
 int fsfuse_flush ( const char *path,
                    struct fuse_file_info *fi )
 {
-    method_trace("fsfuse_flush(path==%s)\n", path);
-
+    NOT_USED(path);
     NOT_USED(fi);
+
+    method_trace("fsfuse_flush(path==%s)\n", path);
 
 
     return 0;

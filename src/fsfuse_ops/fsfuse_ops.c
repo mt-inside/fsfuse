@@ -8,6 +8,8 @@ TRACE_DEFINE(method)
 
 static void *fsfuse_init (struct fuse_conn_info *conn)
 {
+    NOT_USED(conn);
+
     method_trace("fsfuse_init()\n");
 
     method_trace_indent();
@@ -30,9 +32,9 @@ static void *fsfuse_init (struct fuse_conn_info *conn)
 
 static void fsfuse_destroy (void *private_data)
 {
-    method_trace("fsfuse_destroy()\n");
-
     NOT_USED(private_data);
+
+    method_trace("fsfuse_destroy()\n");
 }
 
 

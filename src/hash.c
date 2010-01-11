@@ -341,11 +341,11 @@ static void hash_table_iterator_find_first (hash_table_iterator_t *iter)
 static hash_t hash_djb2 (const char *str)
 {
     hash_t hash = 5381;
-    char c;
 
-    while ((c = *str++))
+    while (*str)
     {
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+        hash = ((hash << 5) + hash) + *str; /* hash * 33 + c */
+        str++;
     }
 
     return hash;
