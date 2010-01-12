@@ -56,7 +56,7 @@ char *fsfuse_dirname (const char *path)
     dir = (char *)malloc((dir_len + 1) * sizeof(char));
     if (dir)
     {
-        strncpy(dir, path, dir_len);
+        memcpy(dir, path, dir_len);
         dir[dir_len] = '\0';
     }
 
@@ -64,22 +64,26 @@ char *fsfuse_dirname (const char *path)
     return dir;
 }
 
+#ifndef _GNU_SOURCE
+#define memrchr(s,c,n) strrchr(s,c)
+#endif
 char *fsfuse_basename (const char *path)
 {
-    char *loc = strrchr(path, '/');
+    size_t path_len = strlen(path);
+    char *loc = memrchr(path, '/', path_len);
     unsigned base_len;
     char *base = NULL;
 
 
     if (!loc) return strdup(path);
 
-    base_len = strlen(path) - (loc - path) + 1;
+    base_len = path_len - (loc - path) + 1;
     if (!base_len) return strdup("");
 
     base = (char *)malloc((base_len + 1) * sizeof(char));
     if (base)
     {
-        strncpy(base, loc + 1, base_len);
+        memcpy(base, loc + 1, base_len);
         base[base_len] = '\0';
     }
 
