@@ -181,10 +181,11 @@ int main(int argc, char *argv[])
         trace_error("indexnode find error (this is not a simple indexnode not found)\n");
         goto bail;
     }
-    if (PROTO_MINIMUM > indexnode_version() || indexnode_version() > PROTO_MAXIMUM)
+    if (compare_dotted_version(PROTO_MINIMUM, indexnode_version()) > 0 ||
+        compare_dotted_version(indexnode_version(), PROTO_MAXIMUM) < 0)
     {
-        trace_error("indexnode reports to be version %f, only versions %f <= x <= %f are supported\n",
-                    progname, indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
+        trace_error("indexnode reports to be version %s, only versions %s <= x <= %s are supported\n",
+                    indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
         goto bail;
     }
 

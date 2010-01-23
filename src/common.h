@@ -23,8 +23,8 @@
 #define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2009\n"
 
 /* Greatest protocol version that we know we support */
-#define PROTO_MINIMUM 0.5f
-#define PROTO_MAXIMUM 0.8f
+#define PROTO_MINIMUM "0.5"
+#define PROTO_MAXIMUM "0.10"
 
 #define NOT_USED(x) (void)x
 #define DO_NOTHING NOT_USED(0)
@@ -60,6 +60,8 @@ extern char *fsfuse_dirname (const char *path);
 extern char *fsfuse_basename (const char *path);
 
 extern unsigned fsfuse_get_thread_index (void);
+
+extern int compare_dotted_version (const char *ver, const char *cmp);
 
 
 #endif /* _included_common_h */

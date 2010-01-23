@@ -30,23 +30,27 @@
 
 /* these are global, but they are written before any threads are spawned, and
  * thereafter only read */
-static char *host, *port;
-static double version = 0.0;
+static char *host, *port, *version;
+
+
+static void indexnode_parse_advert_packet (char *buf);
 
 
 int indexnode_init (void)
 {
     host = (char *)malloc(NI_MAXHOST * sizeof(char));
     port = (char *)malloc(NI_MAXSERV * sizeof(char));
+    version = (char *)malloc(1024 * sizeof(char));
 
 
-    return !(host && port);
+    return !(host && port && version);
 }
 
 void indexnode_finalise (void)
 {
     free(host);
     free(port);
+    free(version);
 }
 
 int indexnode_find (void)
@@ -69,9 +73,9 @@ int indexnode_find (void)
     {
         strcpy(host, config_indexnode_host);
         strcpy(port, config_indexnode_port);
-        version = fetcher_get_indexnode_version();
+        fetcher_get_indexnode_version();
 
-        trace_info("Static index node configured at %s:%s - version %f\n", host, port, version);
+        trace_info("Static index node configured at %s:%s - version %s\n", host, port, version);
 
         return 0;
     }
@@ -204,12 +208,12 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    indexnode_parse_advert_packet(buf, &version, port);
+                    indexnode_parse_advert_packet(buf);
 
                     if (inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
                     {
                         rc = 0;
-                        trace_info("Found index node, version %f, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %s, at %s:%s\n", version, host, port);
                     }
                 }
             }
@@ -222,12 +226,12 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    indexnode_parse_advert_packet(buf, &version, port);
+                    indexnode_parse_advert_packet(buf);
 
                     if (inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
                     {
                         rc = 0;
-                        trace_info("Found index node, version %f, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %s, at %s:%s\n", version, host, port);
                     }
                 }
             }
@@ -245,22 +249,18 @@ int indexnode_find (void)
     return rc;
 }
 
-void indexnode_parse_advert_packet (char *buf, double *version, char *port)
+static void indexnode_parse_advert_packet (char *buf)
 {
-    char version_str[1024]; /* TODO: security */
+    /* TODO: security */
+    char s[1024];
 
-
-    sscanf(buf, "%[^:]:%[^:]:*", version_str, port);
-    *version = indexnode_parse_version(version_str);
+    sscanf(buf, "%[^:]:%[^:]:*", s, port);
+    indexnode_parse_version(s);
 }
 
-double indexnode_parse_version (char *s)
+void indexnode_parse_version (char *buf)
 {
-    char version_str[1024]; /* TODO: security */
-
-
-    sscanf(s, "fs2protocol-%s", version_str);
-    return strtod(version_str, NULL);
+    sscanf(buf, "fs2protocol-%s", version);
 }
 
 char *indexnode_host (void)
@@ -273,7 +273,7 @@ char *indexnode_port (void)
     return port;
 }
 
-double indexnode_version (void)
+char *indexnode_version (void)
 {
     return version;
 }

@@ -14,7 +14,7 @@ DEBUG          := 1
 # == Basics ==
 
 default: fsfuse
-.PHONY: clean count
+.PHONY: objects clean count
 
 OS:=$(shell uname -s)
 
@@ -115,10 +115,12 @@ buildnumber.c:
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
-fsfuse: $(CONFIGS) $(OBJECTS)
+fsfuse: $(CONFIGS) objects
 	@$(MAKE) buildnumber.o
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
+
+objects: ${OBJECTS}
 
 clean:
 	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) buildnumber.c gmon.out fsfuse.log

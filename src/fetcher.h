@@ -43,7 +43,7 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern double fetcher_get_indexnode_version (void);
+extern void fetcher_get_indexnode_version (void);
 extern int http2errno (int http_code);
 
 extern char *make_url (

@@ -112,3 +112,23 @@ static void thread_index_destroy (void *i)
 {
     free((unsigned *)i);
 }
+
+/* assumes both strings are well-formed */
+int compare_dotted_version (const char *ver, const char *cmp)
+{
+    int n1, n2;
+
+    while (1)
+    {
+        n1 = strtol(ver, (char **)&ver, 0);
+        n2 = strtol(cmp, (char **)&cmp, 0);
+
+        if (n1 < n2) return -1;
+        if (n1 > n2) return 1;
+
+        if (*ver == '\0' && *cmp == '\0') return 0;
+
+        if (*ver) ver++;
+        if (*cmp) cmp++;
+    }
+}

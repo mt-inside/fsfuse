@@ -257,14 +257,13 @@ int fetcher_fetch_internal (const char * const   url,
     return rc;
 }
 
-double fetcher_get_indexnode_version (void)
+void fetcher_get_indexnode_version (void)
 {
     char *url, *error_buffer;
     char s[1024]; /* TODO: security */
     int curl_rc, http_code;
     CURL *eh;
     struct curl_slist *slist = NULL;
-    double version;
 
 
     fetcher_trace("fetcher_get_indexnode_version()\n");
@@ -297,7 +296,6 @@ double fetcher_get_indexnode_version (void)
 
     /* Header consumer */
     curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_version_header_cb);
-    curl_easy_setopt(eh, CURLOPT_HEADERDATA, &version);
 
     /* Do a HEAD request */
     curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
@@ -316,9 +314,6 @@ double fetcher_get_indexnode_version (void)
     }
 
     fetcher_trace_dedent();
-
-
-    return version;
 }
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
@@ -326,10 +321,12 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     char *header = (char *)ptr;
 
 
+    NOT_USED(stream);
+
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        *((double *)stream) = indexnode_parse_version(header);
+        indexnode_parse_version(header);
     }
 
 
