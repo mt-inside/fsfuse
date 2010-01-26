@@ -114,19 +114,27 @@ int direntry_cache_add (CALLER_DECL direntry_t *de)
 
 void direntry_cache_add_list (direntry_t *dirents, const char *parent)
 {
+    int rc = 0;
     direntry_t *de, *de_parent;
 
 
-    assert(direntry_cache_get(CALLER_INFO parent, &de_parent) == direntry_cache_status_HIT);
-
-    for (de = dirents; de; de = direntry_get_next_sibling(de))
+    if (direntry_cache_get(CALLER_INFO parent, &de_parent) != direntry_cache_status_HIT)
     {
-        de->parent = de_parent;
-        direntry_cache_add(CALLER_INFO de);
+        rc = path_get_direntry(parent, &de_parent);
+    }
+
+    if (!rc)
+    {
+        for (de = dirents; de; de = direntry_get_next_sibling(de))
+        {
+            de->parent = de_parent;
+            direntry_cache_add(CALLER_INFO de);
+        }
     }
 
     direntry_set_looked_for_children(de_parent, 1);
     de_parent->children = dirents;
+    direntry_delete(CALLER_INFO de_parent);
 }
 
 void direntry_cache_add_children (
@@ -345,6 +353,8 @@ static void direntry_cache_del_descendants (CALLER_DECL direntry_t *de)
         direntry_cache_del_tree(CALLER_PASS child);
         child = next_child;
     }
+
+    direntry_set_looked_for_children(de, 0);
 }
 
 /* Is this direntry "stale"? That is, do we no longer trust it to (probably)
