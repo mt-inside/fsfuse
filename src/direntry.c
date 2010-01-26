@@ -2,7 +2,7 @@
  * This file deals with "direntries" - "entries in a directory". This is
  * basically our internal file system tree implementation.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
  *
  * $Id$
  */
@@ -59,9 +59,12 @@ int path_get_direntry (
     char *parent_path = fsfuse_dirname(path),
          *file_name   = fsfuse_basename(path),
          *url;
-    direntry_t *de = NULL, *dirents = NULL;
+    direntry_t *de = NULL;
     listing_list_t *lis;
+#if FEATURE_DIRENTRY_CACHE
+    direntry_t *dirents = NULL;
     direntry_cache_status_t cache_stat;
+#endif
 
 
 #if FEATURE_DIRENTRY_CACHE
@@ -160,8 +163,11 @@ int path_get_children (
     int rc = -EIO;
     char *url;
     listing_list_t *lis = NULL;
-    direntry_t *de, *dirents = NULL;
+    direntry_t *dirents = NULL;
+#if FEATURE_DIRENTRY_CACHE
+    direntry_t *de;
     direntry_cache_status_t cache_stat;
+#endif
 
 
     direntry_trace("path_get_children(%s)\n", parent);
@@ -197,7 +203,9 @@ int path_get_children (
     }
 
 
+#if FEATURE_DIRENTRY_CACHE
 end:
+#endif
     *dirents_out = dirents;
     return rc;
 }
