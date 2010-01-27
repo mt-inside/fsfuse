@@ -13,8 +13,8 @@ vpath %.xml $(HERE)
 vpath %.xsl $(HERE)
 
 # Explicitly listed as not everything in this directory is built all the time
-OUR_OBJS := fsfuse.o                \
-            common.o                \
+# fsfuse.o isn't listed because it isn't always wanted.
+OUR_OBJS := common.o                \
             buildnumber.o           \
             hash.o                  \
             trace.o                 \

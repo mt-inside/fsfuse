@@ -15,6 +15,8 @@ DIRENTRY_CACHE ?= 1
 PROGRESS_METER ?= 0
 DEBUG ?= 1
 
+MAIN_OBJECT ?= fsfuse.o
+
 
 # == Basics ==
 
@@ -58,6 +60,8 @@ endif
 
 
 # == Optional Features ==
+
+OBJECTS += $(MAIN_OBJECT)
 
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o

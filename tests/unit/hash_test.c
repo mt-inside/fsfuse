@@ -1,9 +1,18 @@
+/*
+ * Hash module unit tests
+ *
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
+ *
+ * $Id: alarms.c 407 2009-11-24 10:36:55Z matt $
+ */
+
 #include <stdio.h>
 
+#include "common.h"
 #include "hash.h"
 
 
-int main (int argc, char *argv[])
+int hash_test (void)
 {
     char *ak = "one",
          *bk = "two",
@@ -14,45 +23,45 @@ int main (int argc, char *argv[])
          *cd = "three datas";
 
 
-    hash_table_t *tbl = hash_new(16);
-    hash_iterator_t *iter;
+    hash_table_t *tbl = hash_table_new(16, 0.5f, 1.0f);
+    hash_table_iterator_t *iter;
 
-    hash_add(tbl, ak, (void *)ad);
-    hash_add(tbl, bk, (void *)bd);
-    hash_add(tbl, ck, (void *)cd);
+    hash_table_add(tbl, ak, (void *)ad);
+    hash_table_add(tbl, bk, (void *)bd);
+    hash_table_add(tbl, ck, (void *)cd);
 
-    printf("one: %s\n", (char *)hash_find(tbl, ak));
-    printf("two: %s\n", (char *)hash_find(tbl, bk));
-    printf("three: %s\n", (char *)hash_find(tbl, ck));
+    assert(!strcmp((char *)hash_table_find(tbl, ak), ad));
+    assert(!strcmp((char *)hash_table_find(tbl, bk), bd));
+    assert(!strcmp((char *)hash_table_find(tbl, ck), cd));
 
-    hash_del(tbl, ak);
+    assert(hash_table_del(tbl, ak) == 1);
 
-    printf("one: %s\n", (char *)hash_find(tbl, ak));
-    printf("two: %s\n", (char *)hash_find(tbl, bk));
-    printf("three: %s\n", (char *)hash_find(tbl, ck));
+    assert(hash_table_find(tbl, ak) == NULL);
+    assert(!strcmp((char *)hash_table_find(tbl, bk), bd));
+    assert(!strcmp((char *)hash_table_find(tbl, ck), cd));
 
-    hash_del(tbl, ak);
-    hash_del(tbl, bk);
-    hash_del(tbl, ck);
+    assert(hash_table_del(tbl, ak) == 0);
+    assert(hash_table_del(tbl, bk) == 1);
+    assert(hash_table_del(tbl, ck) == 1);
 
-    printf("one: %s\n", (char *)hash_find(tbl, ak));
-    printf("two: %s\n", (char *)hash_find(tbl, bk));
-    printf("three: %s\n", (char *)hash_find(tbl, ck));
+    assert(hash_table_find(tbl, ak) == NULL);
+    assert(hash_table_find(tbl, bk) == NULL);
+    assert(hash_table_find(tbl, ck) == NULL);
 
-    hash_add(tbl, ak, (void *)ad);
-    hash_add(tbl, bk, (void *)bd);
-    hash_add(tbl, ck, (void *)cd);
+    hash_table_add(tbl, ak, (void *)ad);
+    hash_table_add(tbl, bk, (void *)bd);
+    hash_table_add(tbl, ck, (void *)cd);
 
-    iter = hash_iterator_new(tbl);
+    iter = hash_table_iterator_new(tbl);
 
-    while (!hash_iterator_at_end(iter))
+    while (!hash_table_iterator_at_end(iter))
     {
         printf("%s: %s\n",
-                hash_iterator_current_key(iter),
-                hash_iterator_current_data(iter)
+                hash_table_iterator_current_key(iter),
+                hash_table_iterator_current_data(iter)
               );
 
-        hash_iterator_next(iter);
+        hash_table_iterator_next(iter);
     }
 
 

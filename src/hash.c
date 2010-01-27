@@ -181,9 +181,9 @@ int hash_table_del (hash_table_t *tbl, const char *key)
     }
     else
     {
-        /* FIXME: while debugging direntry_cache issues, it's useful to check
-         * we're not trying to remove something that doesn't exist */
-        assert(0);
+        /* It can be useful, when debugging clients of the hash table, to
+         * check that we don't try to delete anything that doesn't exist */
+        /* assert(0); */
     }
 
 
