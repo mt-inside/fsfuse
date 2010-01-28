@@ -40,7 +40,10 @@ void common_finalise (void)
 }
 
 
-/* There are versions of these functions glibc, but they're not thread-safe */
+/* There are versions of these functions glibc, but they're not thread-safe.
+ * These implementations are not complete, e.g. they don't drop trailing '/'s,
+ * but this isn't needed as we always deal in normalised paths.
+ * These functions are called often, so should aim to be fast. */
 char *fsfuse_dirname (const char *path)
 {
     char *loc = strrchr(path, '/');

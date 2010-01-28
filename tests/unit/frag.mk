@@ -10,6 +10,7 @@ HERE := $(ROOT)/tests/unit
 
 vpath %.c $(HERE)
 
-TEST_OBJS := hash_test.o
+TEST_OBJS := hash_test.o   \
+	     common_test.o
 
 OBJECTS += $(TEST_OBJS)

@@ -6,13 +6,14 @@
  * $Id: alarms.c 407 2009-11-24 10:36:55Z matt $
  */
 
-#include <stdio.h>
+#include <string.h>
 
 #include "common.h"
+#include "tests.h"
 #include "hash.h"
 
 
-int hash_test (void)
+void hash_test (void)
 {
     char *ak = "one",
          *bk = "two",
@@ -24,7 +25,6 @@ int hash_test (void)
 
 
     hash_table_t *tbl = hash_table_new(16, 0.5f, 1.0f);
-    hash_table_iterator_t *iter;
 
     hash_table_add(tbl, ak, (void *)ad);
     hash_table_add(tbl, bk, (void *)bd);
@@ -52,18 +52,6 @@ int hash_test (void)
     hash_table_add(tbl, bk, (void *)bd);
     hash_table_add(tbl, ck, (void *)cd);
 
-    iter = hash_table_iterator_new(tbl);
 
-    while (!hash_table_iterator_at_end(iter))
-    {
-        printf("%s: %s\n",
-                hash_table_iterator_current_key(iter),
-                hash_table_iterator_current_data(iter)
-              );
-
-        hash_table_iterator_next(iter);
-    }
-
-
-    return 0;
+    /* TODO: iterator tests */
 }
