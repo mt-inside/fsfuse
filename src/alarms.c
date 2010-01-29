@@ -191,7 +191,7 @@ static void schedule_next (void)
 
 #if DEBUG
 /* debug functions */
-static void dump_alarms_list (void)
+void dump_alarms_list (void)
 {
     alarm_t *a;
     unsigned i = 0;

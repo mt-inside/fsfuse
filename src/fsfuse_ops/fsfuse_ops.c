@@ -77,5 +77,9 @@ struct fuse_operations fsfuse_oper =
     NULL,                /* fgetattr */
     NULL,                /* lock */
     NULL,                /* utimens */
-    &fsfuse_bmap         /* bmap */
+    &fsfuse_bmap,        /* bmap */
+    0,                   /* flag: nullpath_ok */
+    0,                   /* reserved flags */
+    NULL,                /* ioctl */
+    NULL                 /* poll */
 };

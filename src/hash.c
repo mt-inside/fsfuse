@@ -357,7 +357,7 @@ static hash_t (*hash) (const char *str) = &hash_djb2;
 
 #if DEBUG
 /* hash table - debugging */
-static void hash_table_dump_histogram (hash_table_t *tbl)
+void hash_table_dump_histogram (hash_table_t *tbl)
 {
     unsigned i;
     hash_table_entry_t *e;
@@ -386,7 +386,7 @@ static void hash_table_dump_histogram (hash_table_t *tbl)
     }
 }
 
-static void hash_table_dump (hash_table_t *tbl)
+void hash_table_dump (hash_table_t *tbl)
 {
     unsigned i;
     hash_table_entry_t *e;
@@ -410,7 +410,7 @@ static void hash_table_dump (hash_table_t *tbl)
     }
 }
 
-static void hash_table_dump_row (hash_table_entry_t *e)
+void hash_table_dump_row (hash_table_entry_t *e)
 {
     for ( ; e; e = e->next)
     {

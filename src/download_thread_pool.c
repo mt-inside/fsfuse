@@ -696,12 +696,12 @@ static void signal_read_thread (chunk_t *chunk, int rc)
 
 
 #if DEBUG
-static void dump_chunk (chunk_t *chunk)
+void dump_chunk (chunk_t *chunk)
 {
     trace_np("%#x -> %#x -> %#x", chunk->start, chunk->bytes_used, chunk->end);
 }
 
-static void dump_chunk_list (thread_t *thread)
+void dump_chunk_list (thread_t *thread)
 {
     chunk_t *curr;
     unsigned i = 0;

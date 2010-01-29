@@ -3,7 +3,7 @@
  *
  * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
  *
- * $Id: alarms.c 407 2009-11-24 10:36:55Z matt $
+ * $Id$
  */
 
 #include <string.h>

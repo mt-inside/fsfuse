@@ -3,7 +3,7 @@
 #
 # Copyright (C) Matthew Turner 2008-2010. All rights reserved.
 #
-# $Id: Makefile 464 2010-01-23 01:01:14Z matt $
+# $Id$
 #
 
 ROOT ?= ..
@@ -36,7 +36,7 @@ CONFIGS := config_declare.h \
 
 INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
 
-CFLAGS = -std=c99 -Wall -Wextra -pedantic $(INCLUDES) -DDEBUG=$(DEBUG) $(DEFINES)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror $(INCLUDES) -DDEBUG=$(DEBUG) $(DEFINES)
 CFLAGS_OPTIM := -O2
 CFLAGS_DEBUG := -O0 -g3
 ifeq ($(OS),Darwin)

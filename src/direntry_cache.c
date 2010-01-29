@@ -399,7 +399,7 @@ static int direntry_cache_is_expired (direntry_t *de)
 
 #if DEBUG
 /* debug functions */
-static void direntry_cache_dump_tree (direntry_t *de)
+void direntry_cache_dump_tree (direntry_t *de)
 {
     static unsigned indent = 0;
     unsigned i;
@@ -416,7 +416,7 @@ static void direntry_cache_dump_tree (direntry_t *de)
     }
 }
 
-static void direntry_cache_dump_tree_dot_do (direntry_t *parent, direntry_t *de)
+void direntry_cache_dump_tree_dot_do (direntry_t *parent, direntry_t *de)
 {
     direntry_t *child;
 
@@ -436,13 +436,13 @@ static void direntry_cache_dump_tree_dot_do (direntry_t *parent, direntry_t *de)
     }
 }
 
-static void direntry_cache_dump_tree_dot (direntry_t *de)
+void direntry_cache_dump_tree_dot (direntry_t *de)
 {
     direntry_cache_dump_tree_dot_do(NULL, de);
 }
 
 /* special, amalgamated view of both tree structure and hash table structure */
-static void direntry_cache_dump_dot (void)
+void direntry_cache_dump_dot (void)
 {
     direntry_t *de_root = hash_table_find(direntry_cache, "/");
 
