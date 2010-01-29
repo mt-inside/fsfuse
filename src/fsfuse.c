@@ -466,12 +466,12 @@ static void fsfuse_versions (void)
     uname(&un);
 
     printf("Using kernel %s %s\n"
-           "Using libfuse version %d.%d (using API version %d)\n"
+           "Using libfuse version %d (built against %d, using API version %d)\n"
            "Using %s\n"
            "Using libxml2 %s\n",
            un.sysname,
            un.release,
-           FUSE_MAJOR_VERSION, FUSE_MINOR_VERSION, FUSE_USE_VERSION,
+           fuse_version(), FUSE_VERSION, FUSE_USE_VERSION,
            curl_version(),
            LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
           );

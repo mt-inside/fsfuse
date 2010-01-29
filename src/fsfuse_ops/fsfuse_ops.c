@@ -71,15 +71,21 @@ struct fuse_operations fsfuse_oper =
     &fsfuse_fsyncdir,    /* fsyncdir */
     &fsfuse_init,        /* init */
     &fsfuse_destroy,     /* destroy */
+#if FUSE_VERSION >= 25
     &fsfuse_access,      /* access */
     &fsfuse_create,      /* create */
     &fsfuse_ftruncate,   /* ftruncate */
     NULL,                /* fgetattr */
+#if FUSE_VERSION >= 26
     NULL,                /* lock */
     NULL,                /* utimens */
     &fsfuse_bmap,        /* bmap */
+#if FUSE_VERSION >= 28
     0,                   /* flag: nullpath_ok */
     0,                   /* reserved flags */
     NULL,                /* ioctl */
     NULL                 /* poll */
+#endif /* FUSE_VERSION >= 28 */
+#endif /* FUSE_VERSION >= 26 */
+#endif /* FUSE_VERSION >= 25 */
 };
