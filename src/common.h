@@ -2,7 +2,7 @@
  * Common header file, including important constants and over-rides. To be
  * included by every source file.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
  *
  * $Id$
  */
@@ -18,9 +18,9 @@
 
 
 #define FSFUSE_NAME      "fsfuse"
-#define FSFUSE_VERSION   "0.3.0"
-#define FSFUSE_DATE      "(beta)"
-#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2009\n"
+#define FSFUSE_VERSION   "0.4.0 beta"
+#define FSFUSE_DATE      "February 2010"
+#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2010\n"
 
 /* Greatest protocol version that we know we support */
 #define PROTO_MINIMUM "0.5"
