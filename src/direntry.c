@@ -393,7 +393,9 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
+#if DEBUG
     char trace_str[1024] = "";
+#endif
     unsigned refc;
 
 
@@ -438,7 +440,9 @@ void direntry_post_list (CALLER_DECL direntry_t *de)
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
     unsigned refc;
+#if DEBUG
     char trace_str[1024];
+#endif
 
 
     /* hacky attempt to detect overflow */

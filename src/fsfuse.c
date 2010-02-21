@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
         goto bail;
     }
     if (compare_dotted_version(PROTO_MINIMUM, indexnode_version()) > 0 ||
-        compare_dotted_version(indexnode_version(), PROTO_MAXIMUM) < 0)
+        compare_dotted_version(indexnode_version(), PROTO_MAXIMUM) > 0)
     {
         trace_error("indexnode reports to be version %s, only versions %s <= x <= %s are supported\n",
                     indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);

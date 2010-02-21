@@ -24,14 +24,14 @@
 
 /* Greatest protocol version that we know we support */
 #define PROTO_MINIMUM "0.5"
-#define PROTO_MAXIMUM "0.10"
+#define PROTO_MAXIMUM "0.13"
 
 #define NOT_USED(x) (void)x
 #define DO_NOTHING NOT_USED(0)
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
-#if 1
+#if DEBUG
 #define CALLER_DECL const char *const file, size_t line_num,
 #define CALLER_DECL_ONLY const char *const file, size_t line_num
 #define CALLER_INFO __FILE__, __LINE__,

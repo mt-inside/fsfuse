@@ -261,7 +261,8 @@ void fetcher_get_indexnode_version (void)
 {
     char *url, *error_buffer;
     char s[1024]; /* TODO: security */
-    int curl_rc, http_code;
+    int curl_rc;
+    long http_code;
     CURL *eh;
     struct curl_slist *slist = NULL;
 
