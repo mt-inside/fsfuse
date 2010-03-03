@@ -257,7 +257,7 @@ int fetcher_fetch_internal (const char * const   url,
     return rc;
 }
 
-void fetcher_get_indexnode_version (void)
+void fetcher_get_indexnode_version (indexnode_t *in)
 {
     char *url, *error_buffer;
     char s[1024]; /* TODO: security */
@@ -267,7 +267,7 @@ void fetcher_get_indexnode_version (void)
     struct curl_slist *slist = NULL;
 
 
-    fetcher_trace("fetcher_get_indexnode_version()\n");
+    fetcher_trace("fetcher_get_indexnode_version(%p)\n", in);
     fetcher_trace_indent();
 
     /* New handle */
@@ -297,6 +297,7 @@ void fetcher_get_indexnode_version (void)
 
     /* Header consumer */
     curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_version_header_cb);
+    curl_easy_setopt(eh, CURLOPT_HEADERDATA, in);
 
     /* Do a HEAD request */
     curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
@@ -319,7 +320,10 @@ void fetcher_get_indexnode_version (void)
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
 {
+    indexnode_t *in = (indexnode_t *)stream;
     char *header = (char *)ptr;
+    //FIXME: security
+    char version[1024];
 
 
     NOT_USED(stream);
@@ -327,7 +331,8 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        indexnode_parse_version(header);
+        indexnode_parse_version(header, version);
+        indexnode_set_version(in, version);
     }
 
 
@@ -466,14 +471,15 @@ char *make_url (
     const char * const resource
 )
 {
-    char *host = indexnode_host(), *port = indexnode_port();
+    indexnode_t *in = g_indexnode;
+    char *host = indexnode_get_host(in), *port = indexnode_get_port(in);
     char *fmt;
     char *resource_esc, *url;
     size_t len;
     CURL *eh = curl_eh_new();
 
 
-    if (indexnode_host_is_ip())
+    if (is_ip4_address(host) || is_ip6_address(host))
     {
         fmt = "http://[%s]:%s/%s/%s";
     }
@@ -488,7 +494,7 @@ char *make_url (
     resource_esc = curl_easy_escape(eh, resource, 0);
     len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
     url = (char *)malloc(len * sizeof(*url));
-    sprintf(url, fmt, indexnode_host(), indexnode_port(), path_prefix, resource_esc);
+    sprintf(url, fmt, indexnode_get_host(in), indexnode_get_port(in), path_prefix, resource_esc);
     curl_free(resource_esc);
 
     curl_eh_delete(eh);

@@ -135,3 +135,15 @@ int compare_dotted_version (const char *ver, const char *cmp)
         if (*cmp) cmp++;
     }
 }
+
+/* Is this string IPv4 address? */
+int is_ip4_address (const char *s)
+{
+    return (strspn(s, "0123456789.") == strlen(s));
+}
+
+/* Is this string IPv6 address? */
+int is_ip6_address (const char *s)
+{
+    return (strspn(s, "0123456789abcdefABCDEF:") == strlen(s));
+}

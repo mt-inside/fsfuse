@@ -28,39 +28,92 @@
 #include "fetcher.h"
 
 
-/* these are global, but they are written before any threads are spawned, and
- * thereafter only read */
-static char *host, *port, *version;
+struct _indexnode_t
+{
+    char *host;
+    char *port;
+    char *version;
+};
 
 
-static void indexnode_parse_advert_packet (char *buf);
+static void parse_advert_packet (char *buf, char *port, char *version);
+
+
+indexnode_t *g_indexnode;
 
 
 int indexnode_init (void)
 {
-    host = (char *)malloc(NI_MAXHOST * sizeof(char));
-    port = (char *)malloc(NI_MAXSERV * sizeof(char));
-    version = (char *)malloc(1024 * sizeof(char));
-
-
-    return !(host && port && version);
+    return 0;
 }
 
 void indexnode_finalise (void)
 {
-    free(host);
-    free(port);
-    free(version);
+    if (g_indexnode)
+    {
+        indexnode_delete(g_indexnode);
+    }
 }
 
-int indexnode_find (void)
+
+static indexnode_t *indexnode_new (void)
 {
-    /* TODO: security */
+    indexnode_t *in;
+
+
+    if (g_indexnode) assert(0);
+
+
+    in = malloc(sizeof(indexnode_t));
+    in->host    = (char *)malloc(NI_MAXHOST * sizeof(char));
+    in->port    = (char *)malloc(NI_MAXSERV * sizeof(char));
+    in->version = (char *)malloc(1024       * sizeof(char));
+
+
+    g_indexnode = in;
+
+
+    return in;
+}
+
+void indexnode_delete (indexnode_t *in)
+{
+    free(in->host);
+    free(in->port);
+    free(in->version);
+
+    free(in);
+}
+
+
+static indexnode_t *indexnode_from_config (void)
+{
+    indexnode_t *in = indexnode_new();
+
+
+    if (in)
+    {
+        strcpy(in->host, config_indexnode_host);
+        strcpy(in->port, config_indexnode_port);
+        fetcher_get_indexnode_version(in);
+
+        trace_info("Static index node configured at %s:%s - version %s\n",
+            in->host, in->port, in->version);
+    }
+
+
+    return in;
+}
+
+static indexnode_t *indexnode_listen (void)
+{
+    /* FIXME: security */
+    indexnode_t *in;
     int s4 = -1, s6 = -1;
     int s4_ok = 0, s6_ok = 0;
-    int their_rc, rc = 1;
+    int their_rc;
     socklen_t socklen;
-    char buf[1024];
+    char buf[1024], host[NI_MAXHOST];
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
     fd_set r_fds;
@@ -69,22 +122,11 @@ int indexnode_find (void)
     const int one = 1;
 
 
-    if (!config_indexnode_autodetect)
-    {
-        strcpy(host, config_indexnode_host);
-        strcpy(port, config_indexnode_port);
-        fetcher_get_indexnode_version();
-
-        trace_info("Static index node configured at %s:%s - version %s\n", host, port, version);
-
-        return 0;
-    }
-
-
-    /* === Listen for an indexnode === */
-
     /* TODO: make this a config option */
     trace_info("Listening on all addresses:\n");
+
+
+    /* ==== Show interface addresses ==== */
 
     errno = 0;
     if (getifaddrs(&ifaddr) == -1)
@@ -125,10 +167,12 @@ int indexnode_find (void)
     freeifaddrs(ifaddr);
 
 
+    /* ==== Set up sockets ==== */
+
     /* IPv4 */
     memset(&sa4, 0, sizeof(sa4));
     sa4.sin_family      = AF_INET;
-    sa4.sin_port        = htons(42444);
+    sa4.sin_port        = htons(42444); /* TODO: config option */
     sa4.sin_addr.s_addr = INADDR_ANY;
 
     errno = 0;
@@ -157,7 +201,7 @@ int indexnode_find (void)
     /* IPv6 */
     memset(&sa6, 0, sizeof(sa6));
     sa6.sin6_family = AF_INET6;
-    sa6.sin6_port   = htons(42444);
+    sa6.sin6_port   = htons(42444); /* TODO: config option */
     sa6.sin6_addr   = in6addr_any;
 
     errno = 0;
@@ -183,10 +227,13 @@ int indexnode_find (void)
     }
 
 
+    /* ==== Wait for packets ==== */
+
     FD_ZERO(&r_fds);
     if (s4_ok) FD_SET(s4, &r_fds);
     if (s6_ok) FD_SET(s6, &r_fds);
 
+    /* TODO: timeout */
     errno = 0;
     their_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
 
@@ -199,6 +246,8 @@ int indexnode_find (void)
             trace_warn("Not found\n");
             break;
         default:
+            in = indexnode_new();
+
             if (FD_ISSET(s4, &r_fds))
             {
                 socklen = sizeof(sa4);
@@ -208,12 +257,11 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    indexnode_parse_advert_packet(buf);
+                    parse_advert_packet(buf, in->port, in->version);
 
-                    if (inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
+                    if (inet_ntop(AF_INET, &(sa4.sin_addr), in->host, NI_MAXHOST))
                     {
-                        rc = 0;
-                        trace_info("Found index node, version %s, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %s, at %s:%s\n", in->version, in->host, in->port);
                     }
                 }
             }
@@ -226,12 +274,11 @@ int indexnode_find (void)
                 {
                     buf[their_rc] = '\0';
 
-                    indexnode_parse_advert_packet(buf);
+                    parse_advert_packet(buf, in->port, in->version);
 
-                    if (inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
+                    if (inet_ntop(AF_INET6, &(sa6.sin6_addr), in->host, NI_MAXHOST))
                     {
-                        rc = 0;
-                        trace_info("Found index node, version %s, at %s:%s\n", version, host, port);
+                        trace_info("Found index node, version %s, at %s:%s\n", in->version, in->host, in->port);
                     }
                 }
             }
@@ -246,40 +293,61 @@ int indexnode_find (void)
     if (s4_ok) close(s4);
     if (s6_ok) close(s6);
 
-    return rc;
+    return in;
 }
 
-static void indexnode_parse_advert_packet (char *buf)
+indexnode_t *indexnode_find (void)
+{
+    if (!config_indexnode_autodetect)
+    {
+        return indexnode_from_config();
+    }
+    else
+    {
+        return indexnode_listen();
+    }
+}
+
+static void parse_advert_packet (char *buf, char *port, char *version)
 {
     /* TODO: security */
     char s[1024];
 
     sscanf(buf, "%[^:]:%[^:]:*", s, port);
-    indexnode_parse_version(s);
+    indexnode_parse_version(s, version);
 }
 
-void indexnode_parse_version (char *buf)
+void indexnode_parse_version (char *buf, char *version)
 {
     sscanf(buf, "fs2protocol-%s", version);
 }
 
-char *indexnode_host (void)
+void indexnode_set_host (indexnode_t *in, char *host)
 {
-    return host;
+    in->host = strdup(host);
 }
 
-char *indexnode_port (void)
+char *indexnode_get_host (indexnode_t *in)
 {
-    return port;
+    return in->host;
 }
 
-char *indexnode_version (void)
+void indexnode_set_port (indexnode_t *in, char *port)
 {
-    return version;
+    in->port = strdup(port);
 }
 
-/* Is the host address string we're returning an IP address? */
-int indexnode_host_is_ip (void)
+char *indexnode_get_port (indexnode_t *in)
 {
-    return (strspn(host, "0123456789.") == strlen(host));
+    return in->port;
+}
+
+void indexnode_set_version (indexnode_t *in, char *version)
+{
+    in->version = strdup(version);
+}
+
+char *indexnode_get_version (indexnode_t *in)
+{
+    return in->version;
 }

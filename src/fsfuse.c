@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
     struct fuse *f;
+    indexnode_t *indexnode;
 
 
     progname = argv[0];
@@ -176,16 +177,16 @@ int main(int argc, char *argv[])
     }
 
     /* Check indexnode version */
-    if (indexnode_find())
+    if (!(indexnode = indexnode_find()))
     {
         trace_error("indexnode find error (this is not a simple indexnode not found)\n");
         goto bail;
     }
-    if (compare_dotted_version(PROTO_MINIMUM, indexnode_version()) > 0 ||
-        compare_dotted_version(indexnode_version(), PROTO_MAXIMUM) > 0)
+    if (compare_dotted_version(PROTO_MINIMUM, indexnode_get_version(indexnode)) > 0 ||
+        compare_dotted_version(indexnode_get_version(indexnode), PROTO_MAXIMUM) > 0)
     {
         trace_error("indexnode reports to be version %s, only versions %s <= x <= %s are supported\n",
-                    indexnode_version(), PROTO_MINIMUM, PROTO_MAXIMUM);
+                    indexnode_get_version(indexnode), PROTO_MINIMUM, PROTO_MAXIMUM);
         goto bail;
     }
 

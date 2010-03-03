@@ -63,5 +63,7 @@ extern unsigned fsfuse_get_thread_index (void);
 
 extern int compare_dotted_version (const char *ver, const char *cmp);
 
+extern int is_ip4_address (const char *s);
+extern int is_ip6_address (const char *s);
 
 #endif /* _included_common_h */

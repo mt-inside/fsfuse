@@ -12,6 +12,7 @@
 #include <curl/curl.h>
 
 #include "common.h"
+#include "indexnode.h"
 
 
 typedef struct
@@ -43,7 +44,7 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern void fetcher_get_indexnode_version (void);
+extern void fetcher_get_indexnode_version (indexnode_t *in);
 extern int http2errno (int http_code);
 
 extern char *make_url (
