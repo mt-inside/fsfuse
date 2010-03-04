@@ -110,7 +110,7 @@ extern emitter_t active_emitter;
         if (area##_trace_active)                                          \
         {                                                                 \
             pthread_mutex_lock(&trace_mutex);                             \
-            if (trace_dent) trace_dent += 2;                              \
+            if (trace_dent) trace_dent -= 2;                              \
             pthread_mutex_unlock(&trace_mutex);                           \
         }                                                                 \
     }
