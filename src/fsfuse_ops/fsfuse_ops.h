@@ -9,7 +9,7 @@
 #ifndef _INCLUDED_FSFUSE_OPS_H
 #define _INCLUDED_FSFUSE_OPS_H
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 
 #include "common.h"
 #include "trace.h"
@@ -27,102 +27,64 @@ TRACE_DECLARE(read)
 
 
 /* fsfuse filesystem methods vtable */
-extern struct fuse_operations fsfuse_oper;
+extern struct fuse_lowlevel_ops fsfuse_ops;
 
 
-extern int fsfuse_getattr ( const char *path,
-                            struct stat *stbuf );
+/* fsfuse_init() is local to fsfuse_ops.c */
 
-extern int fsfuse_readlink ( const char *path,
-                             char * buf,
-                             size_t len );
+/* fsfuse_destroy() is local to fsfuse_ops.c */
 
-extern int fsfuse_mknod ( const char *path,
-                          mode_t mode,
-                          dev_t dev         );
+extern void fsfuse_lookup (fuse_req_t req, fuse_ino_t parent, const char *name);
 
-extern int fsfuse_mkdir ( const char *path,
-                          mode_t mode       );
+extern void fsfuse_forget (fuse_req_t req, fuse_ino_t ino, unsigned long nlookup);
 
-extern int fsfuse_unlink ( const char *path );
+extern void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_rmdir ( const char *path );
+extern void fsfuse_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi);
 
-extern int fsfuse_symlink ( const char *from,
-                            const char *to    );
+extern void fsfuse_readlink (fuse_req_t req, fuse_ino_t ino);
 
-extern int fsfuse_rename ( const char *from,
-                           const char *to    );
+extern void fsfuse_mknod (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev_t rdev);
 
-extern int fsfuse_link ( const char *from,
-                         const char *to    );
+extern void fsfuse_mkdir (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode);
 
-extern int fsfuse_chmod ( const char *path,
-                          mode_t mode       );
+extern void fsfuse_unlink (fuse_req_t req, fuse_ino_t parent, const char *name);
 
-extern int fsfuse_chown ( const char *path,
-                          uid_t user,
-                          gid_t group       );
+extern void fsfuse_rmdir (fuse_req_t req, fuse_ino_t parent, const char *name);
 
-extern int fsfuse_truncate ( const char *path,
-                             off_t offset      );
+extern void fsfuse_symlink (fuse_req_t req, const char *link, fuse_ino_t parent, const char *name);
 
-extern int fsfuse_open ( const char *path,
-                         struct fuse_file_info *fi );
+extern void fsfuse_rename (fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent, const char *newname);
 
-extern int fsfuse_read ( const char *path,
-                         char *buf,
-                         size_t size,
-                         off_t offset,
-                         struct fuse_file_info *fi);
+extern void fsfuse_link (fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent, const char *newname);
 
-extern int fsfuse_write ( const char *path,
-                          const char *buf,
-                          size_t size,
-                          off_t off,
-                          struct fuse_file_info *fi );
+extern void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_statfs ( const char *path, struct statvfs *buf );
+extern void fsfuse_read (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi);
 
-extern int fsfuse_flush ( const char *path,
-                          struct fuse_file_info *fi );
+extern void fsfuse_write (fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi);
 
-extern int fsfuse_release ( const char *path,
-                            struct fuse_file_info *fi );
+extern void fsfuse_flush (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_fsync ( const char *path,
-                          int datasync,
-                          struct fuse_file_info *fi );
+extern void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_opendir ( const char *path,
-                            struct fuse_file_info *fi );
+extern void fsfuse_fsync (fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi);
 
-extern int fsfuse_readdir ( const char *path,
-                            void *buf,
-                            fuse_fill_dir_t filler,
-                            off_t offset,
-                            struct fuse_file_info *fi );
+extern void fsfuse_opendir (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_releasedir ( const char * path,
-                               struct fuse_file_info *fi );
+extern void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi);
 
-extern int fsfuse_fsyncdir ( const char *path,
-                             int datasync,
-                             struct fuse_file_info *fi );
+extern void fsfuse_releasedir (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi);
 
-extern int fsfuse_create ( const char *path,
-                           mode_t mode,
-                           struct fuse_file_info *fi );
+extern void fsfuse_fsyncdir (fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi);
 
-extern int fsfuse_ftruncate ( const char *path,
-                              off_t offset,
-                              struct fuse_file_info *fi );
+extern void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino);
 
-extern int fsfuse_access ( const char *path,
-                           int mode          );
+extern void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask);
 
-extern int fsfuse_bmap ( const char *,
-                         size_t blocksize,
-                         uint64_t *idx );
+extern void fsfuse_create (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi);
+
+extern void fsfuse_bmap (fuse_req_t req, fuse_ino_t ino, size_t blocksize, uint64_t idx);
+
 
 #endif /* _INCLUDED_FSFUSE_OPS_H */

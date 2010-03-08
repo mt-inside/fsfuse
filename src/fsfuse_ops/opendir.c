@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -15,17 +15,17 @@
 #include "direntry.h"
 
 
-int fsfuse_opendir ( const char *path,
-                     struct fuse_file_info *fi )
+void fsfuse_opendir (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
     /* For now, simply check the existence of path, and check permissions */
     int rc;
     direntry_t *de;
 
 
-    method_trace("fsfuse_opendir(path==%s)\n", path);
+    method_trace("fsfuse_opendir(ino %lu)\n", ino);
+    method_trace_indent();
 
-    rc = path_get_direntry(path, &de);
+    rc = direntry_get_by_inode(ino, &de);
 
     if (!rc)
     {
@@ -33,13 +33,21 @@ int fsfuse_opendir ( const char *path,
          * any flags... */
         /* Ordering below is deliberate - the reverse of our order of presidence
          * for complaining (TODO: which is a guess anyway). */
-        if ((fi->flags & 3) != O_RDONLY)                      rc = -EROFS;
-        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = -ENOTDIR;
+        if ((fi->flags & 3) != O_RDONLY)                      rc = EROFS;
+        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = ENOTDIR;
 
         direntry_delete(CALLER_INFO de);
     }
 
+    method_trace_dedent();
 
-    return rc;
+
+    if (!rc)
+    {
+        assert(!fuse_reply_open(req, fi));
+    }
+    else
+    {
+        assert(!fuse_reply_err(req, rc));
+    }
 }
-

@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,16 +14,15 @@
 #include "trace.h"
 
 
-int fsfuse_mknod ( const char *path,
-                   mode_t mode,
-                   dev_t dev         )
+void fsfuse_mknod (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev_t rdev)
 {
-    NOT_USED(path);
+    NOT_USED(parent);
+    NOT_USED(name);
     NOT_USED(mode);
-    NOT_USED(dev);
+    NOT_USED(rdev);
 
-    method_trace("fsfuse_mknod(path==%s, mode=%#x, dev=%#x)\n", path, mode, dev);
+    method_trace("fsfuse_mknod(parent %lu, name %s, mode %#x, dev %#x)\n", parent, name, mode, rdev);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

@@ -112,7 +112,7 @@ static void thread_chunk_list_add_chunk (thread_t *thread,
 static void *downloader_thread_main (void *arg);
 static void chunk_list_empty (thread_t *thread, int rc);
 static size_t thread_pool_consumer (void *buf, size_t size, size_t nmemb, void *userp);
-static void signal_read_thread (chunk_t *chunk, int rc);
+static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
 
 int thread_pool_init (void)
@@ -151,8 +151,7 @@ void thread_pool_chunk_add (direntry_t *de,
     thread_t *thread = tp_thread_get(direntry_get_hash(de));
 
 
-    dtp_trace("thread_pool_chunk_add(path==%s, hash==%s, start==%#x, end==%#x)\n",
-              direntry_get_path(de),
+    dtp_trace("thread_pool_chunk_add(hash==%s, start==%#x, end==%#x)\n",
               direntry_get_hash(de),
               start,
               end );
@@ -513,7 +512,7 @@ static void *downloader_thread_main (void *arg)
     {
         if (thread->current_chunk)
         {
-            signal_read_thread(thread->current_chunk, rc);
+            signal_read_thread(thread->current_chunk, rc, 0);
             chunk_delete(thread->current_chunk);
             thread->current_chunk = NULL;
 
@@ -541,7 +540,7 @@ static void chunk_list_empty (thread_t *thread, int rc)
 
     while ((c = TAILQ_FIRST(&thread->chunk_list)))
     {
-        signal_read_thread(c, rc);
+        signal_read_thread(c, rc, 0);
         TAILQ_REMOVE(&thread->chunk_list, TAILQ_FIRST(&thread->chunk_list), entries);
         chunk_delete(c);
     }
@@ -555,7 +554,7 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
     buf_t *buf = (buf_t *)malloc(sizeof(buf_t));
     thread_t *thread = (thread_t *)((fetcher_cb_data_t *)userp)->cb_data;
     chunk_t *chunk;
-    size_t buf_len = size * nmemb, rc = -EIO, copy_len;
+    size_t buf_len = size * nmemb, rc = EIO, copy_len;
 
 
     dtp_trace("thread_pool_consumer(size==%zd, nmemb==%zd, userp==%p)\n",
@@ -616,7 +615,7 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
                 /* End of chunk stuff
                  * (but don't get a new one because end of buf might mean end
                  * of file) */
-                signal_read_thread(chunk, chunk->bytes_used);
+                signal_read_thread(chunk, 0, chunk->bytes_used);
 
                 /* free the chunk */
                 chunk_delete(chunk);
@@ -643,7 +642,7 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
 
                 /* we've reached the end of this chunk's buffer. signal its
                  * semaphore so that its read() thread can wake and return */
-                signal_read_thread(chunk, chunk->bytes_used);
+                signal_read_thread(chunk, 0, chunk->bytes_used);
 
                 /* free the chunk */
                 chunk_delete(chunk);
@@ -687,11 +686,11 @@ bail:
     return rc;
 }
 
-static void signal_read_thread (chunk_t *chunk, int rc)
+static void signal_read_thread (chunk_t *chunk, int rc, size_t size)
 {
-    dtp_trace("signalling read() thead - %d bytes / error\n", rc);
+    dtp_trace("signalling read() thread - err %d, %zu bytes\n", rc, size);
 
-    chunk->cb(chunk->ctxt, rc);
+    chunk->cb(chunk->ctxt, rc, size);
 }
 
 

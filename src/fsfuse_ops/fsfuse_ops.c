@@ -1,4 +1,4 @@
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 
 #include "fsfuse_ops/fsfuse_ops.h"
 
@@ -6,8 +6,9 @@
 TRACE_DEFINE(method)
 
 
-static void *fsfuse_init (struct fuse_conn_info *conn)
+static void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
 {
+    NOT_USED(userdata);
     NOT_USED(conn);
 
     method_trace("fsfuse_init()\n");
@@ -27,22 +28,29 @@ static void *fsfuse_init (struct fuse_conn_info *conn)
     method_trace_dedent();
 
 
-    return NULL;
+    /* No reply */
 }
 
-static void fsfuse_destroy (void *private_data)
+static void fsfuse_destroy (void *userdata)
 {
-    NOT_USED(private_data);
+    NOT_USED(userdata);
 
     method_trace("fsfuse_destroy()\n");
+
+
+    /* No reply */
 }
 
 
-struct fuse_operations fsfuse_oper =
+struct fuse_lowlevel_ops fsfuse_ops =
 {
+    &fsfuse_init,        /* init */
+    &fsfuse_destroy,     /* destroy */
+    &fsfuse_lookup,      /* lookup */
+    &fsfuse_forget,      /* forget */
     &fsfuse_getattr,     /* getattr */
+    &fsfuse_setattr,     /* setattr */
     &fsfuse_readlink,    /* readlink */
-    NULL,                /* getdir D */
     &fsfuse_mknod,       /* mknod */
     &fsfuse_mkdir,       /* mkdir */
     &fsfuse_unlink,      /* unlink */
@@ -50,42 +58,26 @@ struct fuse_operations fsfuse_oper =
     &fsfuse_symlink,     /* symlink */
     &fsfuse_rename,      /* rename */
     &fsfuse_link,        /* link */
-    &fsfuse_chmod,       /* chmod */
-    &fsfuse_chown,       /* chown */
-    &fsfuse_truncate,    /* truncate */
-    NULL,                /* utime D */
     &fsfuse_open,        /* open */
     &fsfuse_read,        /* read */
     &fsfuse_write,       /* write */
-    &fsfuse_statfs,      /* statfs */
     &fsfuse_flush,       /* flush */
     &fsfuse_release,     /* release */
     &fsfuse_fsync,       /* fsync */
-    NULL,                /* setxattr */
-    NULL,                /* getxattr */
-    NULL,                /* listxattr */
-    NULL,                /* removexattr */
     &fsfuse_opendir,     /* opendir */
     &fsfuse_readdir,     /* readdir */
     &fsfuse_releasedir,  /* releasedir */
     &fsfuse_fsyncdir,    /* fsyncdir */
-    &fsfuse_init,        /* init */
-    &fsfuse_destroy,     /* destroy */
-#if FUSE_VERSION >= 25
+    &fsfuse_statfs,      /* statfs */
+    NULL,                /* setxattr */
+    NULL,                /* getxattr */
+    NULL,                /* listxattr */
+    NULL,                /* removexattr */
     &fsfuse_access,      /* access */
     &fsfuse_create,      /* create */
-    &fsfuse_ftruncate,   /* ftruncate */
-    NULL,                /* fgetattr */
-#if FUSE_VERSION >= 26
-    NULL,                /* lock */
-    NULL,                /* utimens */
+    NULL,                /* getlk */
+    NULL,                /* setlk */
     &fsfuse_bmap,        /* bmap */
-#if FUSE_VERSION >= 28
-    0,                   /* flag: nullpath_ok */
-    0,                   /* reserved flags */
     NULL,                /* ioctl */
     NULL                 /* poll */
-#endif /* FUSE_VERSION >= 28 */
-#endif /* FUSE_VERSION >= 26 */
-#endif /* FUSE_VERSION >= 25 */
 };

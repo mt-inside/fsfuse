@@ -8,7 +8,7 @@
 
 #include <string.h>
 #include <errno.h>
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <stdlib.h>
 
 #include "common.h"
@@ -23,12 +23,14 @@ TRACE_DEFINE(read)
 
 typedef struct
 {
-    pthread_mutex_t filled_mutex;
-    int rc;
+    direntry_t *de;
+    fuse_req_t req;
+    size_t size; /* requested size */
+    void *buf;
 } read_context_t;
 
 
-static void chunk_done (void *ctxt, int rc);
+static void chunk_done (void *read_ctxt, int rc, size_t size);
 
 
 /* MUST return as many bytes as were asked for, unless error or EOF.
@@ -49,11 +51,7 @@ static void chunk_done (void *ctxt, int rc);
  * been successfully open()ed. This means we don't have to check it's a file,
  * its permissions, etc. We /do/ have to check it (still) exists though.
  */
-int fsfuse_read (const char *path,
-                 char *buf,
-                 size_t size,
-                 off_t offset,
-                 struct fuse_file_info *fi)
+void fsfuse_read (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
     int rc; /* +ve: number of bytes read
                -ve: -ERRNO */
@@ -62,78 +60,89 @@ int fsfuse_read (const char *path,
 
     NOT_USED(fi);
 
-    method_trace("fsfuse_read(path==%s, size==%zd, offset==%ju)\n", path, size, offset);
+    method_trace("fsfuse_read(ino %lu, size %zd, off %ju)\n", ino, size, off);
     method_trace_indent();
 
 
-    rc = path_get_direntry(path, &de);
+    rc = direntry_get_by_inode(ino, &de);
 
     if (!rc)
     {
         /* check file limits - despite always calling getattr() first (so it
          * knows the length), fuse sometimes asks for ranges completely
          * past the end of the file */
-        if (offset >= direntry_get_size(de))
+        if (off >= direntry_get_size(de))
         {
-            rc = 0;
+            size = 0;
         }
         else
         {
             read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
-            pthread_mutex_init(&read_ctxt->filled_mutex, NULL);
-            pthread_mutex_lock(&read_ctxt->filled_mutex);
+            void *buf = malloc(size);
 
 
-            thread_pool_chunk_add(de, offset, offset + size, buf, &chunk_done, (void *)read_ctxt);
+            read_ctxt->req  = req;
+            read_ctxt->de   = de;
+            read_ctxt->size = size;
+            read_ctxt->buf  = buf;
 
-            /* wait until the downloader thread pool has filled buf */
-            read_trace("fsfuse_read() waiting on full buffer...\n");
-            pthread_mutex_lock(&read_ctxt->filled_mutex);
-            read_trace("fsfuse_read() woken by full buffer semaphore - returning (chunk->end == %u)\n", offset + size);
-
-            if (read_ctxt->rc != (signed)size)
-            {
-                read_trace("bytes read != file size => EOF / error\n");
-            }
-            rc = read_ctxt->rc;
-
-            /* As a result of this read() operation we can say certain things
-             * about the direntry. These professions can be made with confidence
-             * because we've just performed an actual network transaction, so
-             * our information is "live":
-             * - If we actually read data from the file then it definitely still
-             *   exists, now.
-             * - If we tried to read from it and found it didn't exist, then it
-             *   definitely doesn't exist any more.
-             * - Any other error doesn't give enough info.
-             */
-            if (rc > 0)
-            {
-                direntry_still_exists(de);
-            }
-            else if (rc == -ENOENT)
-            {
-                direntry_no_longer_exists(de);
-            }
-
-
-            pthread_mutex_destroy(&read_ctxt->filled_mutex);
-            free(read_ctxt);
+            thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
         }
-        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();
 
 
-    return rc;
+    if (rc)
+    {
+        fuse_reply_err(req, rc);
+    }
+    if (!size)
+    {
+        fuse_reply_buf(req, NULL, size);
+    }
 }
 
-static void chunk_done (void *ctxt, int rc)
+static void chunk_done (void *read_ctxt, int rc, size_t size)
 {
-    read_context_t *read_ctxt = (read_context_t *)ctxt;
+    read_context_t *ctxt = (read_context_t *)read_ctxt;
 
 
-    read_ctxt->rc = rc;
-    pthread_mutex_unlock(&read_ctxt->filled_mutex);
+    if (size != ctxt->size)
+    {
+        read_trace("bytes read != request size => EOF / error\n");
+    }
+
+    /* As a result of this read() operation we can say certain things
+     * about the direntry. These professions can be made with confidence
+     * because we've just performed an actual network transaction, so
+     * our information is "live":
+     * - If we actually read data from the file then it definitely still
+     *   exists, now.
+     * - If we tried to read from it and found it didn't exist, then it
+     *   definitely doesn't exist any more.
+     * - Any other error doesn't give enough info.
+     */
+    if (!rc)
+    {
+        direntry_still_exists(ctxt->de);
+    }
+    else if (rc == ENOENT)
+    {
+        direntry_no_longer_exists(ctxt->de);
+    }
+
+
+    if (!rc)
+    {
+        assert(!fuse_reply_buf(ctxt->req, ctxt->buf, size));
+    }
+    else
+    {
+        assert(!fuse_reply_err(ctxt->req, rc));
+    }
+
+    direntry_delete(CALLER_INFO ctxt->de);
+    free(ctxt->buf);
+    free(read_ctxt);
 }

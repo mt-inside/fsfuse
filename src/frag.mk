@@ -14,20 +14,22 @@ vpath %.xsl $(HERE)
 
 # Explicitly listed as not everything in this directory is built all the time
 # fsfuse.o isn't listed because it isn't always wanted.
-OUR_OBJS := common.o                \
+OUR_OBJS :=                         \
+            alarms.o                \
             buildnumber.o           \
-            hash.o                  \
-            trace.o                 \
-            direntry.o              \
-            fetcher.o               \
-            parser.o                \
-            download_thread_pool.o  \
-            indexnode.o             \
+	    common.o                \
             config.o                \
             config_define.o         \
-            alarms.o                \
-            locks.o                 \
+            direntry.o              \
+            download_thread_pool.o  \
+            fetcher.o               \
+            hash.o                  \
+            indexnode.o             \
+	    inode_map.o             \
             localei.o               \
-            peerstats.o
+            locks.o                 \
+            parser.o                \
+            peerstats.o             \
+            trace.o
 
 OBJECTS += $(OUR_OBJS)

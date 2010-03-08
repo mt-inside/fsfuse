@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,16 +14,14 @@
 #include "trace.h"
 
 
-int fsfuse_fsync ( const char *path,
-                   int datasync,
-                   struct fuse_file_info *fi )
+void fsfuse_fsync (fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi)
 {
-    NOT_USED(path);
+    NOT_USED(ino);
     NOT_USED(datasync);
     NOT_USED(fi);
 
-    method_trace("fsfuse_fsync(path==%s, datasync==%d)\n", path, datasync);
+    method_trace("fsfuse_fsync(ino %ld, datasync %d)\n", ino, datasync);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

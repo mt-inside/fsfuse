@@ -14,9 +14,8 @@
 #include <getopt.h>
 #include <string.h>
 
-#include <fuse.h>
-#include <fuse/fuse_opt.h>
 #include <fuse/fuse_lowlevel.h>
+#include <fuse/fuse_opt.h>
 
 #include <sys/utsname.h>
 #include <curl/curl.h>
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
     start_action_t sa;
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
-    struct fuse *f;
+    struct fuse_session *se;
     indexnode_t *indexnode;
 
 
@@ -193,26 +192,28 @@ int main(int argc, char *argv[])
     /* Hand over to fuse */
     if ((ch = fuse_mount(mountpoint.real, &fuse_args)))
     {
-        if ((f = fuse_new(ch, &fuse_args, &fsfuse_oper, sizeof(fsfuse_oper), NULL)))
+        if ((se = fuse_lowlevel_new(&fuse_args, &fsfuse_ops, sizeof(fsfuse_ops), NULL)))
         {
             /* Setup */
-            fuse_set_signal_handlers(fuse_get_session(f));
+            fuse_set_signal_handlers(se);
+            fuse_session_add_chan(se, ch);
             fuse_daemonize(config_proc_fg);
 
             /* Go! */
             if (config_proc_singlethread)
             {
-                rc = fuse_loop(f);
+                rc = fuse_session_loop(se);
             }
             else
             {
-                rc = fuse_loop_mt(f);
+                rc = fuse_session_loop_mt(se);
             }
 
             /* Teardown */
-            fuse_remove_signal_handlers(fuse_get_session(f));
+            fuse_session_remove_chan(ch);
+            fuse_remove_signal_handlers(se);
+            fuse_session_destroy(se);
             fuse_unmount(mountpoint.real, ch);
-            fuse_destroy(f);
         }
     }
 

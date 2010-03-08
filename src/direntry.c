@@ -18,19 +18,23 @@
 #include "config.h"
 #include "direntry.h"
 #include "direntry_internal.h"
-#if FEATURE_DIRENTRY_CACHE
-#include "direntry_cache.h"
-#endif
 #include "fetcher.h"
+#include "inode_map.h"
 #include "parser.h"
 
 
 TRACE_DEFINE(direntry)
 
 
-static direntry_t *lis_to_dirents(listing_list_t *lis, const char *parent);
+static void direntry_attribute_add (
+    direntry_t * const de,
+    const char *name,
+    const char *value
+);
+static direntry_t *direntry_new (CALLER_DECL_ONLY);
+static direntry_t *lis_to_dirents(listing_list_t *lis, direntry_t *parent);
 static direntry_type_t direntry_type_from_string (const char * const s);
-static void listing_to_direntry (listing_t *li, direntry_t *de);
+static direntry_t *direntry_from_listing (listing_t *li);
 
 
 /* direntry module external interface ======================================= */
@@ -40,11 +44,16 @@ int direntry_init (void)
     direntry_trace("direntry_init()\n");
 
 
+    /* TODO: horrid way to encache */
+    direntry_delete(CALLER_INFO direntry_new_root(CALLER_INFO_ONLY));
+
+
     return 0;
 }
 
 void direntry_finalise (void)
 {
+    inode_map_clear();
 }
 
 
@@ -61,28 +70,8 @@ int path_get_direntry (
          *url;
     direntry_t *de = NULL;
     listing_list_t *lis;
-#if FEATURE_DIRENTRY_CACHE
-    direntry_t *dirents = NULL;
-    direntry_cache_status_t cache_stat;
-#endif
 
 
-#if FEATURE_DIRENTRY_CACHE
-    cache_stat = direntry_cache_get(CALLER_INFO path, &de);
-
-    if (cache_stat == direntry_cache_status_NOENT && config_option_cache_negative)
-    {
-        rc = -ENOENT;
-        goto end;
-    }
-    else if (cache_stat == direntry_cache_status_HIT)
-    {
-        rc = 0;
-        goto end;
-    }
-
-    assert(cache_stat == direntry_cache_status_UNKNOWN);
-#else
     /* special case - there is nowhere whence to get metadata for "/"; it has no
      * parent. Instead, we just make it up. */
     if (!strcmp(path, "/"))
@@ -93,7 +82,6 @@ int path_get_direntry (
         rc = 0;
         goto end;
     }
-#endif
 
 
     /* Get listing for the children of this path's parent */
@@ -104,45 +92,18 @@ int path_get_direntry (
 
     if (!rc && lis)
     {
-#if FEATURE_DIRENTRY_CACHE
-        direntry_cache_status_t cache_stat;
-
-        /* This makes direntries for the listing, with the side effect that the
-         * dirents are encached. */
-        dirents = lis_to_dirents(lis, parent_path);
-
-        /* We actually have no interest in the dirents */
-        direntry_delete_list(CALLER_INFO dirents);
-
-        /* Our desired direntry will now be in the cache, if it exists */
-        cache_stat = direntry_cache_get(CALLER_INFO path, &de);
-        if (cache_stat == direntry_cache_status_HIT)
-        {
-            rc = 0;
-        }
-        else
-        {
-            assert(cache_stat == direntry_cache_status_NOENT);
-            rc = -ENOENT;
-        }
-#else
         /* Search parent's children for desired entry */
-        rc = -ENOENT;
+        rc = ENOENT;
         for (unsigned i = 0; i < lis->count; ++i)
         {
             if (!strcmp(listing_get_name(lis->items[i]), file_name))
             {
-                de = direntry_new(CALLER_INFO_ONLY);
-
-                listing_to_direntry(lis->items[i], de);
-
-                direntry_attribute_add(de, "fs2-path", path);
+                direntry_from_listing(lis->items[i]);
 
                 rc = 0;
                 break;
             }
         }
-#endif
         listing_list_delete(CALLER_INFO lis);
     }
 
@@ -155,99 +116,69 @@ end:
     return rc;
 }
 
-int path_get_children (
-    char const * const parent,
-    direntry_t **dirents_out
+int direntry_get_children (
+    direntry_t *de,
+    direntry_t **children_out
 )
 {
-    int rc = -EIO;
-    char *url;
+    int rc = EIO;
+    char *path, *url;
     listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
-#if FEATURE_DIRENTRY_CACHE
-    direntry_t *de;
-    direntry_cache_status_t cache_stat;
-#endif
 
 
-    direntry_trace("path_get_children(%s)\n", parent);
-
-
-#if FEATURE_DIRENTRY_CACHE
-    cache_stat = direntry_cache_get(CALLER_INFO parent, &de);
-    if (cache_stat == direntry_cache_status_HIT)
+    if (de->children)
     {
-        if (direntry_get_looked_for_children(de))
+        *children_out = direntry_post_list(CALLER_INFO de->children);
+        rc = 0;
+    }
+    else
+    {
+        path = direntry_get_path(de);
+        direntry_trace("direntry_get_children(%s)\n", path);
+
+
+        /* fetch the directory listing from the indexnode */
+        url = make_url("browse", path + 1);
+        rc = parser_fetch_listing(url, &lis);
+        free(path);
+        free(url);
+
+        if (!rc && lis)
         {
-            dirents = direntry_get_first_child(de);
-            direntry_post_list(CALLER_INFO dirents);
-            direntry_delete(CALLER_INFO de);
-            rc = 0;
-            goto end;
+            dirents = lis_to_dirents(lis, de);
+
+            listing_list_delete(CALLER_INFO lis);
         }
-        direntry_delete(CALLER_INFO de);
-    }
-#endif
 
 
-    /* fetch the directory listing from the indexnode */
-    url = make_url("browse", parent + 1);
-    rc = parser_fetch_listing(url, &lis);
-    free(url);
-
-    if (!rc && lis)
-    {
-        dirents = lis_to_dirents(lis, parent);
-
-        listing_list_delete(CALLER_INFO lis);
+        de->children = dirents;
+        *children_out = dirents;
     }
 
 
-#if FEATURE_DIRENTRY_CACHE
-end:
-#endif
-    *dirents_out = dirents;
     return rc;
 }
 
-static direntry_t *lis_to_dirents(listing_list_t *lis, const char *parent)
+static direntry_t *lis_to_dirents(listing_list_t *lis, direntry_t *parent)
 {
     direntry_t *de = NULL, *prev = NULL;
-    char *path;
     unsigned i;
 
 
     assert(lis);
 
-    /* turn array of li's into linked list of de's, adding path info to each one
-     * */
+    /* turn array of li's into linked list of de's */
     for (i = 0; i < lis->count; ++i)
     {
-        de = direntry_new(CALLER_INFO_ONLY);
-
-        listing_to_direntry(lis->items[i], de);
-
-        /* Currently, the indexnode gives us paths for directories, but not
-         * files. In addition, the paths is offers up for directories are
-         * bollocks, so we ignore them and make our own paths for both */
-        path = (char *)malloc(strlen(direntry_get_base_name(de)) + strlen(parent) + 2);
-
-        strcpy(path, parent);
-        if (strcmp(parent, "/")) strcat(path, "/"); /* special case: don't append a trailing "/" onto the parent path if it's the root ("/"), because the root is essentially a directory with an empty name, and we store paths normalised. */
-        strcat(path, direntry_get_base_name(de));
-
-        direntry_attribute_add(de, "fs2-path", path);
-
-        free(path);
+        de = direntry_from_listing(lis->items[i]);
 
 
+        de->parent = parent;
         de->next = prev;
         prev = de;
     }
 
-#if FEATURE_DIRENTRY_CACHE
-    direntry_cache_add_list(de, parent);
-#endif
 
     return de;
 }
@@ -292,7 +223,7 @@ void listing_attribute_add (
         direntry_trace("Unknown attribute %s == %s\n", name, value);
     }
 }
-void direntry_attribute_add (
+static void direntry_attribute_add (
     direntry_t * const de,
     const char *name,
     const char *value
@@ -301,10 +232,6 @@ void direntry_attribute_add (
     if (!strcmp(name, "fs2-name"))
     {
         de->base_name = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-path"))
-    {
-        de->path = strdup(value);
     }
     else if (!strcmp(name, "fs2-hash"))
     {
@@ -357,7 +284,7 @@ static direntry_type_t direntry_type_from_string (const char * const s)
 
 
 /* direntry lifecycle ======================================================= */
-direntry_t *direntry_new (CALLER_DECL_ONLY)
+static direntry_t *direntry_new (CALLER_DECL_ONLY)
 {
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
@@ -366,20 +293,28 @@ direntry_t *direntry_new (CALLER_DECL_ONLY)
     pthread_mutex_init(de->lock, NULL);
 
     de->ref_count = 1;
+    de->inode = inode_next();
+    inode_map_add(de);
 
-    direntry_trace("[direntry %p] new (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS de->ref_count);
+    direntry_trace("[direntry %p] new (" CALLER_FORMAT ") ref %u inode %lu\n",
+                   de, CALLER_PASS de->ref_count, de->inode);
 
     return de;
 }
 
 direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 {
-    direntry_t *root = direntry_new(CALLER_PASS_ONLY);
+    direntry_t *root = (direntry_t *)calloc(1, sizeof(direntry_t));
 
+
+    root->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(root->lock, NULL);
+
+    root->ref_count = 1;
+    root->inode = 1;
+    inode_map_add(root);
 
     direntry_attribute_add(root, "fs2-name", "");
-    direntry_attribute_add(root, "fs2-path", "/");
     direntry_attribute_add(root, "fs2-type", "directory");
     /* Set the link count to something non-0. We can't query this from the
      * indexnode. We could work it out every time, but that would be tedious.
@@ -387,6 +322,9 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
      * to share the filesystem */
     direntry_attribute_add(root, "fs2-linkcount", "1");
 
+
+    direntry_trace("[direntry %p] new (" CALLER_FORMAT ") ref %u inode %lu\n",
+                   root, CALLER_PASS root->ref_count, root->inode);
 
     return root;
 }
@@ -409,13 +347,6 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
     sprintf(trace_str,
             "[direntry %p] post (" CALLER_FORMAT ") ref %u",
             (void *)de, CALLER_PASS de->ref_count);
-#if FEATURE_DIRENTRY_CACHE
-    {
-        char *stat = direntry_cache_status(direntry_get_path(de));
-        strcat(trace_str, stat);
-        free(stat);
-    }
-#endif /* FEATURE_DIRENTRY_CACHE */
     strcat(trace_str, "\n");
     direntry_trace(trace_str);
 #endif /* DEBUG */
@@ -424,16 +355,18 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
     return de;
 }
 
-void direntry_post_list (CALLER_DECL direntry_t *de)
+direntry_t *direntry_post_list (CALLER_DECL direntry_t *de)
 {
-    direntry_t *next;
+    direntry_t *next = de;
 
-    while (de)
+
+    while (next)
     {
-        next = direntry_get_next_sibling(de);
-        direntry_post(CALLER_PASS de);
-        de = next;
+        next = direntry_get_next_sibling(direntry_post(CALLER_PASS next));
     }
+
+
+    return de;
 }
 
 
@@ -445,27 +378,20 @@ void direntry_delete (CALLER_DECL direntry_t *de)
 #endif
 
 
+#if DEBUG
+    sprintf(trace_str,
+            "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
+            (void *)de, CALLER_PASS de->ref_count - 1);
+    strcat(trace_str, "\n");
+    direntry_trace(trace_str);
+#endif /* DEBUG */
+
     /* hacky attempt to detect overflow */
     assert((signed)de->ref_count > 0);
 
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
     pthread_mutex_unlock(de->lock);
-
-#if DEBUG
-    sprintf(trace_str,
-            "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
-            (void *)de, CALLER_PASS de->ref_count);
-#if FEATURE_DIRENTRY_CACHE
-    {
-        char *stat = direntry_cache_status(direntry_get_path(de));
-        strcat(trace_str, stat);
-        free(stat);
-    }
-#endif /* FEATURE_DIRENTRY_CACHE */
-    strcat(trace_str, "\n");
-    direntry_trace(trace_str);
-#endif /* DEBUG */
 
     direntry_trace_indent();
 
@@ -477,7 +403,6 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         free(de->lock);
 
         if (de->base_name) free(de->base_name);
-        if (de->path) free(de->path);
         if (de->hash) free(de->hash);
         if (de->href) free(de->href);
 
@@ -519,17 +444,39 @@ direntry_t *direntry_get_next_sibling (direntry_t *de)
     return de->next;
 }
 
-direntry_t *direntry_set_next_sibling (direntry_t *de, direntry_t *sibling)
-{
-    return de->next = sibling;
-}
-
 
 /* direntry attribute getters =============================================== */
 
+ino_t direntry_get_inode (direntry_t *de)
+{
+    return de->inode;
+}
+
+static void direntry_get_path_inner (direntry_t *de, char *path)
+{
+    direntry_t *parent;
+
+
+    if ((parent = direntry_get_parent(de)))
+    {
+        direntry_get_path_inner(parent, path);
+    }
+
+    strcat(path, direntry_get_base_name(de));
+    strcat(path, "/");
+}
 char *direntry_get_path (direntry_t *de)
 {
-    return de->path;
+    /* FIXME */
+    char *path = malloc(1024);
+
+
+    path[0] = '\0';
+
+    direntry_get_path_inner(de, path);
+
+
+    return path;
 }
 
 char *direntry_get_base_name (direntry_t *de)
@@ -574,10 +521,15 @@ void direntry_set_looked_for_children (direntry_t *de, int val)
 
 int direntry_is_root (direntry_t *de)
 {
-    return !strcmp(direntry_get_path(de), "/");
+    char *path = direntry_get_path(de);
+    int is_root = !strcmp(direntry_get_path(de), "/");
+
+    free(path);
+
+    return is_root;
 }
 
-int direntry_de2stat (struct stat *st, direntry_t *de)
+void direntry_de2stat (direntry_t *de, struct stat *st)
 {
     int uid = config_attr_id_uid,
         gid = config_attr_id_gid;
@@ -585,9 +537,10 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
 
     memset((void *)st, 0, sizeof(struct stat));
 
+    st->st_ino = de->inode;
+    st->st_nlink = de->link_count;
     st->st_uid = (uid == -1) ? getuid() : (unsigned)uid;
     st->st_gid = (gid == -1) ? getgid() : (unsigned)gid;
-    st->st_nlink = de->link_count;
 
     switch (de->type)
     {
@@ -609,27 +562,16 @@ int direntry_de2stat (struct stat *st, direntry_t *de)
 
             break;
     }
-
-
-    return 0;
 }
 
 void direntry_still_exists (direntry_t *de)
 {
-#if FEATURE_DIRENTRY_CACHE
-    direntry_cache_notify_still_valid(de);
-#else
     NOT_USED(de);
-#endif
 }
 
 void direntry_no_longer_exists (direntry_t *de)
 {
-#if FEATURE_DIRENTRY_CACHE
-    direntry_cache_notify_stale(de);
-#else
     NOT_USED(de);
-#endif
 }
 
 
@@ -781,8 +723,11 @@ char *listing_get_client (listing_t *li)
     return li->client;
 }
 
-static void listing_to_direntry (listing_t *li, direntry_t *de)
+static direntry_t *direntry_from_listing (listing_t *li)
 {
+    direntry_t *de = direntry_new(CALLER_INFO_ONLY);
+
+
     de->type       = li->type;
 
     switch (li->type)
@@ -802,4 +747,63 @@ static void listing_to_direntry (listing_t *li, direntry_t *de)
             de->href       = strdup(li->href);
             break;
     }
+
+
+    return de;
+}
+
+
+/* FIXME: stubs */
+int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de)
+{
+    direntry_trace("direntry_get_by_inode(ino %lu)\n", ino);
+
+    *de = inode_map_get(ino);
+
+
+    return *de ? 0 : ENOENT;
+}
+
+int direntry_get_by_parent_and_name (
+    fuse_ino_t parent,
+    const char *name,
+    direntry_t **de_out
+)
+{
+    direntry_t *de, *child = NULL;
+    int rc;
+
+
+    rc = direntry_get_by_inode(parent, &de);
+
+    if (!rc)
+    {
+        /* FIXME: this (will) bypasses cache. Also, probably want to factor to
+         * direntry_find_child(ino).
+         * If it's to stay like this, it need to take a lock, as it doesn't own
+         * any copies of the children! */
+        rc = ENOENT;
+        child = de->children;
+        while (child)
+        {
+            if (!strcmp(direntry_get_base_name(child), name))
+            {
+                rc = 0;
+                direntry_post(CALLER_INFO child);
+                break;
+            }
+
+            child = direntry_get_next_sibling(child);
+        }
+
+        direntry_delete(CALLER_INFO de);
+    }
+
+    if (!rc)
+    {
+        *de_out = child;
+    }
+
+
+    return rc;
 }

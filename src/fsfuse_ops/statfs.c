@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -21,36 +21,37 @@
 #include "parser.h"
 
 
-static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes);
+static void stats_general_parse (struct statvfs *stvfs, xmlNodeSetPtr nodes);
 
 
-int fsfuse_statfs (const char *path, struct statvfs *stfs)
+void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
 {
     xmlParserCtxtPtr  parser;
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr         doc;
-    int rc = -EIO, fetcher_rc;
+    struct statvfs stvfs;
+    int rc;
 
 
-    NOT_USED(path);
+    NOT_USED(ino);
 
-    method_trace("fsfuse_statfs(path==%s)\n", path);
+    method_trace("fsfuse_statfs(ino %lu)\n", ino);
     method_trace_indent();
 
-    memset(stfs, 0, sizeof(struct statvfs));
-    stfs->f_bsize   = FSFUSE_BLKSIZE;
-    stfs->f_frsize  = FSFUSE_BLKSIZE;        /* Ignored by fuse */
-    stfs->f_flag    = ST_RDONLY | ST_NOSUID; /* Ignored by fuse */
-    stfs->f_namemax = ULONG_MAX;
+    memset(&stvfs, 0, sizeof(struct statvfs));
+    stvfs.f_bsize   = FSFUSE_BLKSIZE;
+    stvfs.f_frsize  = FSFUSE_BLKSIZE;        /* Ignored by fuse */
+    stvfs.f_flag    = ST_RDONLY | ST_NOSUID; /* Ignored by fuse */
+    stvfs.f_namemax = ULONG_MAX;
 
     /* make a new parser for this thread */
     parser = parser_new();
 
     /* fetch the stats page and feed it into the parser */
-    fetcher_rc = fetcher_fetch_stats((curl_write_callback)&parser_consumer,
-                                     (void *)parser);
+    rc = fetcher_fetch_stats((curl_write_callback)&parser_consumer,
+                             (void *)parser);
 
-    if (fetcher_rc == 0)
+    if (!rc)
     {
         /* The fetcher has returned, so that's all the document.
          * Indicate to the parser that that's it */
@@ -59,7 +60,7 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
         xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='general']/xhtml:span[@id]");
         if (xpathObj->type == XPATH_NODESET)
         {
-            stats_general_parse(stfs, xpathObj->nodesetval);
+            stats_general_parse(&stvfs, xpathObj->nodesetval);
             rc = 0;
         }
 
@@ -72,10 +73,17 @@ int fsfuse_statfs (const char *path, struct statvfs *stfs)
     method_trace_dedent();
 
 
-    return rc;
+    if (!rc)
+    {
+        assert(!fuse_reply_statfs(req, &stvfs));
+    }
+    else
+    {
+        assert(!fuse_reply_err(req, rc));
+    }
 }
 
-static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
+static void stats_general_parse (struct statvfs *stvfs, xmlNodeSetPtr nodes)
 {
     xmlNodePtr curNod = NULL;
     int size, i;
@@ -99,8 +107,8 @@ static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
             {
                 value = (char *)xmlGetProp(curNod, BAD_CAST "value");
 
-                stfs->f_files = atoll(value);
-                parser_trace("file-count: %llu\n", stfs->f_files);
+                stvfs->f_files = atoll(value);
+                parser_trace("file-count: %llu\n", stvfs->f_files);
 
                 free(value);
             }
@@ -108,9 +116,9 @@ static void stats_general_parse (struct statvfs *stfs, xmlNodeSetPtr nodes)
             {
                 value = (char *)xmlGetProp(curNod, BAD_CAST "value");
 
-                stfs->f_blocks = atoll(value) / stfs->f_bsize;
+                stvfs->f_blocks = atoll(value) / stvfs->f_bsize;
                 parser_trace("total-size: %llu %lu byte blocks\n",
-                     stfs->f_blocks, stfs->f_bsize);
+                     stvfs->f_blocks, stvfs->f_bsize);
 
                 free(value);
             }

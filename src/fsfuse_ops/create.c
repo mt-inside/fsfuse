@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,16 +14,15 @@
 #include "trace.h"
 
 
-int fsfuse_create ( const char *path,
-                    mode_t mode,
-                    struct fuse_file_info *fi )
+void fsfuse_create (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
 {
-    NOT_USED(path);
+    NOT_USED(parent);
+    NOT_USED(name);
     NOT_USED(mode);
     NOT_USED(fi);
 
-    method_trace("fsfuse_create(path==%s, mode==%#x)\n", path, mode);
+    method_trace("fsfuse_create(parent %ld, name %s, mode %#x)\n", parent, name, mode);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -15,19 +15,18 @@
 
 
 /* Called exactly once per open fd - when the last instance of that fd is
- * close()ed. Thus there will be one release() per open().
- * This does not mean that there won't be more operations on that file without a
- * subsequent open() - there could be other open fds also referring to the file
- * in question.
+ * close()ed / munmap()ped. Thus there will be one release() per open().
  */
-int fsfuse_release ( const char *path,
-                     struct fuse_file_info *fi )
+void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-    NOT_USED(path);
+    NOT_USED(ino);
     NOT_USED(fi);
 
-    method_trace("fsfuse_release(path==%s)\n", path);
+    method_trace("fsfuse_release(ino %lu)\n", ino);
 
 
-    return 0;
+    /* TODO */
+
+    /* Any error codes passed in here are not passed on to userspace. */
+    assert(!fuse_reply_err(req, 0));
 }

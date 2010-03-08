@@ -193,7 +193,7 @@ static int filelist_entries_parse (
     {
         if (!(li = listing_new(CALLER_INFO_ONLY)))
         {
-            rc = -EIO;
+            rc = EIO;
             break;
         }
 
@@ -228,7 +228,7 @@ static int filelist_entry_parse (
     if (node->type != XML_ELEMENT_NODE ||
         strcmp((char *)node->name, "a"))
     {
-        return -EIO;
+        return EIO;
     }
 
     /* Enumerate the element's attributes */

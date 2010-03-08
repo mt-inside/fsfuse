@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,15 +14,11 @@
 #include "trace.h"
 
 
-int fsfuse_readlink ( const char *path,
-                      char * buf,
-                      size_t len )
+void fsfuse_readlink (fuse_req_t req, fuse_ino_t ino)
 {
-    NOT_USED(path);
-    NOT_USED(buf);
-    NOT_USED(len);
+    NOT_USED(ino);
 
-    method_trace("fsfuse_readlink(path==%s). SHOULD NOT HAPPEN\n", path);
+    method_trace("fsfuse_readlink(ino %lu)\n", ino);
 
     /* We do not currently claim that there are any symlinks in an fsfuse
      * filesystem (although I envisage search and/or multiple file alternatives
@@ -31,5 +27,5 @@ int fsfuse_readlink ( const char *path,
     assert(0);
 
 
-    return 0; /* success */
+    assert(!fuse_reply_err(req, EIO));
 }

@@ -1,0 +1,56 @@
+/*
+ * Implementation of lookup().
+ *
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
+ *
+ * $Id: bmap.c 441 2010-01-11 23:56:17Z matt $
+ */
+
+#include <fuse/fuse_lowlevel.h>
+#include <errno.h>
+
+#include "common.h"
+#include "direntry.h"
+#include "fsfuse_ops/fsfuse_ops.h"
+#include "trace.h"
+
+
+void fsfuse_lookup (fuse_req_t req,
+                    fuse_ino_t parent,
+                    const char *name)
+{
+    direntry_t *de;
+    struct fuse_entry_param entry;
+    int rc;
+
+
+    method_trace("fsfuse_lookup(parent %lu, name %s)\n",
+         parent, name);
+    method_trace_indent();
+
+
+    rc = direntry_get_by_parent_and_name(parent, name, &de);
+
+    if (!rc)
+    {
+        entry.ino = direntry_get_inode(de);
+        entry.generation = 0;
+        direntry_de2stat(de, &entry.attr);
+        entry.attr_timeout = 1.0;
+        entry.entry_timeout = 1.0;
+
+        direntry_delete(CALLER_INFO de);
+    }
+
+    method_trace_dedent();
+
+
+    if (!rc)
+    {
+        assert(!fuse_reply_entry(req, &entry));
+    }
+    else
+    {
+        assert(!fuse_reply_err(req, rc));
+    }
+}

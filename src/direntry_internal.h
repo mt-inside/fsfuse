@@ -11,19 +11,12 @@
 
 struct _direntry_t
 {
+    ino_t                      inode;
     char                      *base_name;
-    /* These are stored normalised. Fuse doesn't give us ".."s, but we don't
-     * generate e.g. "//". It would be easier in places to not care if we make
-     * non-normal paths, but the overhead of converting them might as well be
-     * (once) before storage rather than (many times) afterwards. */
-    char                      *path;
     char                      *hash;
     direntry_type_t            type;
     off_t                      size; /* st_size in struct stat is off_t */
     unsigned long              link_count;
-#if FEATURE_DIRENTRY_CACHE
-    time_t                     cache_last_valid;
-#endif
     char                      *href;
 
     struct _direntry_t        *children; /* directories in fs2 are never empty,

@@ -6,8 +6,9 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
+#include <string.h>
 
 #include "common.h"
 #include "fsfuse_ops/fsfuse_ops.h"
@@ -15,23 +16,26 @@
 #include "direntry.h"
 
 
-int fsfuse_getattr ( const char *path,
-                     struct stat *stbuf )
+void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
     int rc;
     direntry_t *de;
+    struct stat stats;
 
 
-    method_trace("fsfuse_getattr(%s)\n", path);
+    NOT_USED(fi);
+
+    method_trace("fsfuse_getattr(ino %ld)\n", ino);
     method_trace_indent();
 
-    rc = path_get_direntry(path, &de);
+    rc = direntry_get_by_inode(ino, &de);
 
     if (!rc)
     {
         assert(de);
 
-        direntry_de2stat(stbuf, de);
+        memset(&stats, 0, sizeof(stats));
+        direntry_de2stat(de, &stats);
         direntry_delete(CALLER_INFO de);
     }
     else
@@ -42,6 +46,17 @@ int fsfuse_getattr ( const char *path,
     method_trace_dedent();
 
 
-    return rc;
+    if (rc)
+    {
+        assert(!fuse_reply_err(req, rc));
+    }
+    else
+    {
+        /* TODO: timeout value below. The fuse example takes its struct stat off
+         * the stack and passes it into reply_attr, so it must get copied during
+         * the call.
+         * The timeout, I assume, therefore indicates how long to trust those
+         * stats for before requesting them again. */
+        assert(!fuse_reply_attr(req, &stats, 1.0));
+    }
 }
-

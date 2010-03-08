@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,20 +14,16 @@
 #include "trace.h"
 
 
-int fsfuse_write ( const char *path,
-                   const char *buf,
-                   size_t size,
-                   off_t off,
-                   struct fuse_file_info *fi )
+void fsfuse_write (fuse_req_t req, fuse_ino_t ino, const char *buf, size_t size, off_t off, struct fuse_file_info *fi)
 {
-    NOT_USED(path);
+    NOT_USED(ino);
     NOT_USED(buf);
     NOT_USED(size);
     NOT_USED(off);
     NOT_USED(fi);
 
-    method_trace("fsfuse_write(path==%s, size==%zd, off==%ju)\n", path, size, off);
+    method_trace("fsfuse_write(ino %lu, buf %p, size %zu, off %lu)\n", ino, buf, size, off);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

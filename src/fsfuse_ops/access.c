@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -16,27 +16,26 @@
 #include "direntry.h"
 
 
-int fsfuse_access ( const char *path,
-                    int mode          )
+void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask)
 {
     int rc = 0;
     direntry_t *de;
 
 
-    method_trace("fsfuse_access(%s, %o)\n", path, mode);
+    method_trace("fsfuse_access(ino %ld, mask %o)\n", ino, mask);
     method_trace_indent();
 
-    rc = path_get_direntry(path, &de);
+    rc = direntry_get_by_inode(ino, &de);
 
     if (!rc)
     {
         switch (direntry_get_type(de))
         {
             case direntry_type_DIRECTORY:
-                if (mode & ~config_attr_mode_dir)  rc = -EACCES;
+                if (mask & ~config_attr_mode_dir)  rc = EACCES;
                 break;
             case direntry_type_FILE:
-                if (mode & ~config_attr_mode_file) rc = -EACCES;
+                if (mask & ~config_attr_mode_file) rc = EACCES;
                 break;
         }
 
@@ -46,6 +45,6 @@ int fsfuse_access ( const char *path,
     method_trace_dedent();
 
 
-    return rc;
+    assert(!fuse_reply_err(req, rc));
 }
 

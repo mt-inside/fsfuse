@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,12 +14,13 @@
 #include "trace.h"
 
 
-int fsfuse_unlink ( const char *path )
+void fsfuse_unlink (fuse_req_t req, fuse_ino_t parent, const char *name)
 {
-    NOT_USED(path);
+    NOT_USED(parent);
+    NOT_USED(name);
 
-    method_trace("fsfuse_unlink(path==%s)\n", path);
+    method_trace("fsfuse_unlink(parent %lu, name %s)\n", parent, name);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

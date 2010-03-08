@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,14 +14,14 @@
 #include "trace.h"
 
 
-int fsfuse_symlink ( const char *from,
-                     const char *to    )
+void fsfuse_symlink (fuse_req_t req, const char *link, fuse_ino_t parent, const char *name)
 {
-    NOT_USED(from);
-    NOT_USED(to);
+    NOT_USED(link);
+    NOT_USED(parent);
+    NOT_USED(name);
 
-    method_trace("fsfuse_symlink(from==%s, to==%s)\n", from, to);
+    method_trace("fsfuse_symlink(link %s, parent %lu, name %s)\n", link, parent, name);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

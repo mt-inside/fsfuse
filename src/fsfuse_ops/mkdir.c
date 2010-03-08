@@ -6,7 +6,7 @@
  * $Id$
  */
 
-#include <fuse.h>
+#include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
 #include "common.h"
@@ -14,14 +14,14 @@
 #include "trace.h"
 
 
-int fsfuse_mkdir ( const char *path,
-                   mode_t mode       )
+void fsfuse_mkdir (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
 {
-    NOT_USED(path);
+    NOT_USED(parent);
+    NOT_USED(name);
     NOT_USED(mode);
 
-    method_trace("fsfuse_mkdir(path==%s, mode=%#x)\n", path, mode);
+    method_trace("fsfuse_mkdir(parent %lu, name %s, mode %#x)\n", parent, name, mode);
 
 
-    return -EROFS;
+    assert(!fuse_reply_err(req, EROFS));
 }

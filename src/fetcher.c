@@ -68,7 +68,7 @@ int fetcher_fetch_file (const char * const   hash,
                         curl_write_callback  cb,
                         void                *cb_data)
 {
-    int rc = -EIO;
+    int rc = EIO;
     char *url;
     listing_list_t *lis;
     listing_t *li = NULL;
@@ -97,7 +97,7 @@ int fetcher_fetch_file (const char * const   hash,
         }
         else
         {
-            rc = -EBUSY;
+            rc = EBUSY;
             /* TODO sort out handling of this whole area */
         }
 
@@ -137,7 +137,7 @@ int fetcher_fetch_internal (const char * const   url,
 {
     char *redirect_target, *error_buffer;
     char s[1024]; /* TODO: security */
-    int rc = -EIO, curl_rc;
+    int rc = EIO, curl_rc;
     long http_code = 0;
     CURL *eh;
     struct curl_slist *slist = NULL;
@@ -233,11 +233,11 @@ int fetcher_fetch_internal (const char * const   url,
         case CURLE_COULDNT_CONNECT:
             /* we see this when an indexnode redirects us to a client that's
              * disappeared, but the indexnode hasn't noticed yet */
-            rc = -ENOENT;
+            rc = ENOENT;
             break;
 
         default:
-            rc = -EIO;
+            rc = EIO;
             break;
     }
 
@@ -354,7 +354,7 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
  * assert so the bug can be found */
 int http2errno (int http_code)
 {
-    int rc = -EIO;
+    int rc = EIO;
 
 
     switch (http_code)
@@ -397,7 +397,7 @@ int http2errno (int http_code)
         case 403: /* Forbidden */
             break;
         case 404: /* Not Found */
-            rc = -ENOENT;
+            rc = ENOENT;
             break;
         case 405: /* Method Not Allowed */
         case 406: /* Not Acceptable */
@@ -416,14 +416,14 @@ int http2errno (int http_code)
 
         /* 5xx: Server Error */
         case 500: /* Internal Server Error */
-            rc = -EIO;
+            rc = EIO;
             break;
         case 501: /* Not Implemented */
         case 502: /* Bad Gateway */
             break;
         case 503: /* Service Unavailable */
             /* Returned when sharer's upload limit has been reached */
-            rc = -EBUSY;
+            rc = EBUSY;
             break;
         case 504: /* Gateway Timeout */
         case 505: /* HTTP Version Not Supported */
@@ -433,7 +433,7 @@ int http2errno (int http_code)
             break;
     }
 
-    if (rc == -EIO)
+    if (rc == EIO)
     {
         trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
     }

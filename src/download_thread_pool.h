@@ -21,7 +21,7 @@ TRACE_DECLARE(dtp)
 #define dtp_trace_dedent() TRACE_DEDENT(dtp)
 
 
-typedef void (*chunk_done_cb_t)(void *ctxt, int rc);
+typedef void (*chunk_done_cb_t)(void *ctxt, int rc, size_t size);
 
 
 extern int thread_pool_init (void);
