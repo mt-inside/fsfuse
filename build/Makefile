@@ -11,7 +11,7 @@ SRC_ROOT := $(ROOT)/src
 
 # == Option Defaults ==
 
-DIRENTRY_CACHE ?= 1
+DIRENTRY_CACHE ?= 0
 PROGRESS_METER ?= 0
 DEBUG ?= 1
 
@@ -25,7 +25,7 @@ default: fsfuse
 
 OS:=$(shell uname -s)
 
-DEFINES = -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_REENTRANT
+DEFINES = -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 
 # This is necessary for fuse.h to be valid. We also use a lot of other features
 # that also require this macro.
