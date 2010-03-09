@@ -7,6 +7,8 @@
  * $Id$
  */
 
+#include "common.h"
+
 #include <stdio.h>
 #include <errno.h>
 #include <stddef.h>
@@ -22,7 +24,6 @@
 #include <libxml/xmlversion.h>
 #include <curses.h>
 
-#include "common.h"
 #include "buildnumber.h"
 #include "config.h"
 #include "alarms.h"

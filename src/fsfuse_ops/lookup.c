@@ -6,10 +6,11 @@
  * $Id: bmap.c 441 2010-01-11 23:56:17Z matt $
  */
 
+#include "common.h"
+
 #include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
-#include "common.h"
 #include "direntry.h"
 #include "fsfuse_ops/fsfuse_ops.h"
 #include "trace.h"

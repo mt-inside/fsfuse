@@ -1,3 +1,13 @@
+/*
+ * Definition of the vtable and some methods.
+ *
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
+ *
+ * $Id: fsfuse_ops.h 513 2010-03-08 22:27:27Z matt $
+ */
+
+#include "common.h"
+
 #include <fuse/fuse_lowlevel.h>
 
 #include "fsfuse_ops/fsfuse_ops.h"
@@ -73,11 +83,17 @@ struct fuse_lowlevel_ops fsfuse_ops =
     NULL,                /* getxattr */
     NULL,                /* listxattr */
     NULL,                /* removexattr */
+#if FUSE_USE_VERSION >= 25
     &fsfuse_access,      /* access */
     &fsfuse_create,      /* create */
+#if FUSE_USE_VERSION >= 26
     NULL,                /* getlk */
     NULL,                /* setlk */
     &fsfuse_bmap,        /* bmap */
+#if FUSE_USE_VERSION >= 28
     NULL,                /* ioctl */
     NULL                 /* poll */
+#endif /* FUSE_USE_VERSION >= 28 */
+#endif /* FUSE_USE_VERSION >= 26 */
+#endif /* FUSE_USE_VERSION >= 25 */
 };

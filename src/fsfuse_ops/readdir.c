@@ -6,12 +6,13 @@
  * $Id$
  */
 
+#include "common.h"
+
 #include <fuse/fuse_lowlevel.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 
-#include "common.h"
 #include "direntry.h"
 #include "fsfuse_ops/fsfuse_ops.h"
 

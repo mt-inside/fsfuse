@@ -1,6 +1,6 @@
 /*
  * Common header file, including important constants and over-rides. To be
- * included by every source file.
+ * included FIRST by every source file.
  *
  * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
  *
@@ -21,6 +21,11 @@
 #define FSFUSE_VERSION   "0.4.0 beta"
 #define FSFUSE_DATE      "February 2010"
 #define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2010\n"
+
+/* Use fuse API version provided on this (the build) system up to the maximum
+ * version that we support */
+#define MAX_FUSE_VERSION 28
+#define FUSE_USE_VERSION MIN(FUSE_VERSION, MAX_FUSE_VERSION)
 
 /* Greatest protocol version that we know we support */
 #define PROTO_MINIMUM "0.5"

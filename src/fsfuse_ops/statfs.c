@@ -6,6 +6,8 @@
  * $Id$
  */
 
+#include "common.h"
+
 #include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 #include <string.h>
@@ -15,7 +17,6 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
-#include "common.h"
 #include "fetcher.h"
 #include "fsfuse_ops/fsfuse_ops.h"
 #include "parser.h"

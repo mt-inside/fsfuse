@@ -1,7 +1,7 @@
 /*
- * Declarations for all filesystem implementations.
+ * Declarations of all filesystem methods and the vtable.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
  *
  * $Id$
  */
@@ -9,9 +9,10 @@
 #ifndef _INCLUDED_FSFUSE_OPS_H
 #define _INCLUDED_FSFUSE_OPS_H
 
+#include "common.h"
+
 #include <fuse/fuse_lowlevel.h>
 
-#include "common.h"
 #include "trace.h"
 
 
