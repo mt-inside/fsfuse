@@ -24,9 +24,13 @@ void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
     NOT_USED(fi);
 
     method_trace("fsfuse_release(ino %lu)\n", ino);
+    method_trace_indent();
 
 
     /* TODO */
+
+    method_trace_dedent();
+
 
     /* Any error codes passed in here are not passed on to userspace. */
     assert(!fuse_reply_err(req, 0));

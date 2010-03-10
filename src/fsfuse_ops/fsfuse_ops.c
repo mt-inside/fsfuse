@@ -22,7 +22,6 @@ static void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
     NOT_USED(conn);
 
     method_trace("fsfuse_init()\n");
-
     method_trace_indent();
 
     method_trace(

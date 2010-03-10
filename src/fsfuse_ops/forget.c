@@ -24,8 +24,11 @@ void fsfuse_forget (fuse_req_t req,
 
     method_trace("fsfuse_forget(ino %lu, nlookup %lu)\n",
          ino, nlookup);
+    method_trace_indent();
 
     /* TODO */
+
+    method_trace_dedent();
 
     fuse_reply_none(req);
 }

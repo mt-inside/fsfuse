@@ -23,6 +23,7 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
 
     method_trace("fsfuse_open(ino %lu)\n", ino);
+    method_trace_indent();
 
     rc = direntry_get_by_inode(ino, &de);
 
@@ -35,6 +36,8 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 
         direntry_delete(CALLER_INFO de);
     }
+
+    method_trace_dedent();
 
 
     if (!rc)
