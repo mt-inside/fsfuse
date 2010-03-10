@@ -770,16 +770,20 @@ int direntry_get_by_parent_and_name (
     direntry_t **de_out
 )
 {
-    direntry_t *de, *child = NULL;
+    direntry_t *de, *first_child, *child = NULL;
     int rc;
 
 
     rc = direntry_get_by_inode(parent, &de);
+    /* ensure that the children have been fetched. TODO split this into
+     * "ensure/fetch_children" and "get_children". */
+    rc = direntry_get_children(de, &first_child);
+    direntry_delete_list(CALLER_INFO first_child);
 
     if (!rc)
     {
         /* FIXME: this (will) bypasses cache. Also, probably want to factor to
-         * direntry_find_child(ino).
+         * direntry_find_child(de, name).
          * If it's to stay like this, it need to take a lock, as it doesn't own
          * any copies of the children! */
         rc = ENOENT;
