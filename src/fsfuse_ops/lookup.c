@@ -30,7 +30,7 @@ void fsfuse_lookup (fuse_req_t req,
     method_trace_indent();
 
 
-    rc = direntry_get_by_parent_and_name(parent, name, &de);
+    rc = direntry_get_child_by_name(parent, name, &de);
 
     if (!rc)
     {
@@ -39,13 +39,13 @@ void fsfuse_lookup (fuse_req_t req,
         direntry_de2stat(de, &entry.attr);
         entry.attr_timeout = 1.0;
         entry.entry_timeout = 1.0;
-
-        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();
 
 
+    /* Don't delete the de, as the success branch usurps the copy to be owned by
+     * the looked-up file, and the error branch doesn't have a de to delete */
     if (!rc)
     {
         assert(!fuse_reply_entry(req, &entry));

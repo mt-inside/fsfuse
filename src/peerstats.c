@@ -46,6 +46,9 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
 {
     listing_list_t *fav_list, *normal_list, *block_list;
     listing_t *ret;
+#if DEBUG
+    listing_t *li;
+#endif
     unsigned i;
 
 
@@ -60,44 +63,53 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
                &fav_list, &normal_list, &block_list);
 
 
-    peerstats_trace("favs count: %u\n", fav_list->count);
+#if DEBUG
+    peerstats_trace("favs count: %u\n", listing_list_get_count(fav_list));
     peerstats_trace_indent();
-    for (i = 0; i < fav_list->count; ++i)
+    for (i = 0; i < listing_list_get_count(fav_list); ++i)
     {
-        peerstats_trace("%s\n", listing_get_client(fav_list->items[i]));
+        li = listing_list_get_item(fav_list, i);
+        peerstats_trace("%s\n", listing_get_client(li));
+        listing_delete(CALLER_INFO li);
     }
     peerstats_trace_dedent();
 
-    peerstats_trace("normal count: %u\n", normal_list->count);
+    peerstats_trace("normal count: %u\n", listing_list_get_count(normal_list));
     peerstats_trace_indent();
-    for (i = 0; i < normal_list->count; ++i)
+    for (i = 0; i < listing_list_get_count(normal_list); ++i)
     {
-        peerstats_trace("%s\n", listing_get_client(normal_list->items[i]));
+        li = listing_list_get_item(normal_list, i);
+        peerstats_trace("%s\n", listing_get_client(li));
+        listing_delete(CALLER_INFO li);
     }
     peerstats_trace_dedent();
 
-    peerstats_trace("blocked count: %u\n", block_list->count);
+    peerstats_trace("blocked count: %u\n", listing_list_get_count(block_list));
     peerstats_trace_indent();
-    for (i = 0; i < block_list->count; ++i)
+    for (i = 0; i < listing_list_get_count(block_list); ++i)
     {
-        peerstats_trace("%s\n", listing_get_client(block_list->items[i]));
+        li = listing_list_get_item(block_list, i);
+        peerstats_trace("%s\n", listing_get_client(li));
+        listing_delete(CALLER_INFO li);
     }
     peerstats_trace_dedent();
+#endif /* DEBUG */
 
 
-    if (fav_list->count)
+    if (listing_list_get_count(fav_list))
     {
-        ret = listing_post(CALLER_INFO fav_list->items[random() % fav_list->count]);
+        ret = listing_list_get_item(fav_list, random() % listing_list_get_count(fav_list));
     }
-    else if (normal_list->count)
+    else if (listing_list_get_count(normal_list))
     {
-        ret = listing_post(CALLER_INFO normal_list->items[random() % normal_list->count]);
+        ret = listing_list_get_item(normal_list, random() % listing_list_get_count(normal_list));
     }
     else
     {
         ret = NULL;
     }
 
+#if DEBUG
     if (ret)
     {
         peerstats_trace("chose alternative %s from %s\n", listing_get_href(ret), listing_get_client(ret));
@@ -106,6 +118,7 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
     {
         peerstats_trace("no appropriate alternative\n");
     }
+#endif
 
 
     listing_list_delete(CALLER_INFO fav_list   );
@@ -128,27 +141,30 @@ static void split_list (
 {
     unsigned i = 0, j = 0, fav_count = 0, block_count = 0, normal_count = 0;
     int found;
+    listing_t *li;
     listing_list_t *fav_list, *block_list, *normal_list;
 
 
-    fav_list    = listing_list_new(alts->count);
-    block_list  = listing_list_new(alts->count);
-    normal_list = listing_list_new(alts->count);
+    fav_list    = listing_list_new(listing_list_get_count(alts));
+    block_list  = listing_list_new(listing_list_get_count(alts));
+    normal_list = listing_list_new(listing_list_get_count(alts));
 
 
-    for (i = 0; i < alts->count; ++i)
+    for (i = 0; i < listing_list_get_count(alts); ++i)
     {
         found = 0;
 
         j = 0;
         while (favs[j])
         {
-            if (!strcmp(listing_get_client(alts->items[i]), favs[j]))
+            li = listing_list_get_item(alts, i);
+            if (!strcmp(listing_get_client(li), favs[j]))
             {
-                fav_list->items[fav_count++] = listing_post(CALLER_INFO alts->items[i]);
+                listing_list_set_item(fav_list, fav_count++, li);
                 found = 1;
                 break;
             }
+            listing_delete(CALLER_INFO li);
             j++;
         }
 
@@ -157,19 +173,23 @@ static void split_list (
             j = 0;
             while (blocks[j])
             {
-                if (!strcmp(listing_get_client(alts->items[i]), blocks[j]))
+                li = listing_list_get_item(alts, i);
+                if (!strcmp(listing_get_client(li), blocks[j]))
                 {
-                    block_list->items[block_count++] = listing_post(CALLER_INFO alts->items[i]);
+                    listing_list_set_item(block_list, block_count++, li);
                     found = 1;
                     break;
                 }
+                listing_delete(CALLER_INFO li);
                 j++;
             }
         }
 
         if (!found)
         {
-            normal_list->items[normal_count++] = listing_post(CALLER_INFO alts->items[i]);
+            li = listing_list_get_item(alts, i);
+            listing_list_set_item(normal_list, normal_count++, li);
+            listing_delete(CALLER_INFO li);
         }
     }
 

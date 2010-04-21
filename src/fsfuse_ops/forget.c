@@ -11,6 +11,7 @@
 #include <fuse/fuse_lowlevel.h>
 #include <errno.h>
 
+#include "direntry.h"
 #include "fsfuse_ops/fsfuse_ops.h"
 #include "trace.h"
 
@@ -19,16 +20,30 @@ void fsfuse_forget (fuse_req_t req,
                     fuse_ino_t ino,
                     unsigned long nlookup)
 {
-    NOT_USED(ino);
-    NOT_USED(nlookup);
+    int rc;
+    direntry_t *de;
+
 
     method_trace("fsfuse_forget(ino %lu, nlookup %lu)\n",
          ino, nlookup);
     method_trace_indent();
 
-    /* TODO */
+    rc = direntry_get_by_inode(ino, &de);
+
+    if (!rc)
+    {
+        /* Delete our copy... */
+        direntry_delete(CALLER_INFO de);
+
+        /* ...and all the ones taken by lookup() */
+        while (nlookup--)
+        {
+            direntry_delete(CALLER_INFO de);
+        }
+    }
 
     method_trace_dedent();
+
 
     fuse_reply_none(req);
 }

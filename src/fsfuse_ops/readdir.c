@@ -17,6 +17,13 @@
 #include "fsfuse_ops/fsfuse_ops.h"
 
 
+/* from fuse_lowlevel.h:
+ * "From the 'stbuf' argument the st_ino field and bits 12-15 of the st_mode
+ * field are used.  The other fields are ignored".
+ * Bytes 12-15 are 010000 - 0100000 (0x1000 - 0x8000) which represent node type
+ * (file / dir / etc). Mode flags are ignored.
+ */
+
 static void dirbuf_add (
     fuse_req_t req,
     char **buf,

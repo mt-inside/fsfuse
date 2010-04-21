@@ -33,13 +33,13 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
          * for complaining (TODO: which is a guess anyway). */
         if ((fi->flags & 3) != O_RDONLY)                 rc = EROFS;
         if (direntry_get_type(de) != direntry_type_FILE) rc = EISDIR;
-
-        direntry_delete(CALLER_INFO de);
     }
 
     method_trace_dedent();
 
 
+    /* Don't delete the de, as the success branch usurps the copy to be owned by
+     * the open file, and the error branch doesn't have a de to delete */
     if (!rc)
     {
         assert(!fuse_reply_open(req, fi));
@@ -49,4 +49,3 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
         assert(!fuse_reply_err(req, rc));
     }
 }
-

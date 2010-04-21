@@ -19,9 +19,7 @@ struct _direntry_t
     unsigned long              link_count;
     char                      *href;
 
-    struct _direntry_t        *children; /* directories in fs2 are never empty,
-                                            so NULL children means we haven't
-                                            looked yet */
+    struct _direntry_t        *children;
     int                        looked_for_children;
     unsigned                   ref_count;
     pthread_mutex_t           *lock;
@@ -42,6 +40,13 @@ struct _listing_t
     unsigned                   ref_count;
     pthread_mutex_t           *lock;
 };
+
+struct _listing_list_t
+{
+    unsigned count;
+    listing_t **items;
+};
+
 
 extern direntry_t *direntry_new_root (CALLER_DECL_ONLY);
 

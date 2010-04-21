@@ -200,7 +200,8 @@ static int filelist_entries_parse (
         rc = filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i],
                                   li);
 
-        lis->items[i] = li;
+        listing_list_set_item(lis, i, li);
+        listing_delete(CALLER_INFO li);
     }
 
     *lis_out = lis;

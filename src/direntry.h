@@ -32,12 +32,7 @@ typedef enum
 
 typedef struct _direntry_t direntry_t;
 typedef struct _listing_t listing_t;
-
-typedef struct
-{
-    unsigned count;
-    listing_t **items;
-} listing_list_t;
+typedef struct _listing_list_t listing_list_t;
 
 
 extern int direntry_init (void);
@@ -72,10 +67,6 @@ extern listing_t *listing_new (CALLER_DECL_ONLY);
 extern listing_t *listing_post (CALLER_DECL listing_t *li);
 extern void listing_delete (CALLER_DECL listing_t *li);
 
-extern listing_list_t *listing_list_new (unsigned count);
-extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
-extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
-
 extern char *          listing_get_name          (listing_t *li);
 extern char *          listing_get_hash          (listing_t *li);
 extern direntry_type_t listing_get_type          (listing_t *li);
@@ -83,6 +74,16 @@ extern off_t           listing_get_size          (listing_t *li);
 extern unsigned long   listing_get_link_count    (listing_t *li);
 extern char *          listing_get_href          (listing_t *li);
 extern char *          listing_get_client        (listing_t *li);
+
+
+extern listing_list_t *listing_list_new (unsigned count);
+extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
+extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
+
+extern unsigned listing_list_get_count (listing_list_t *lis);
+extern void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li);
+extern listing_t *listing_list_get_item (listing_list_t *lis, unsigned item);
+
 
 extern int path_get_direntry (
     char const * const path,
@@ -101,7 +102,7 @@ void listing_attribute_add (
 
 /* FIXME: stubs */
 extern int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de);
-extern int direntry_get_by_parent_and_name (
+extern int direntry_get_child_by_name (
     fuse_ino_t parent,
     const char *name,
     direntry_t **de_out

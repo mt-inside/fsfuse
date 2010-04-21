@@ -284,6 +284,7 @@ static direntry_type_t direntry_type_from_string (const char * const s)
 
 
 /* direntry lifecycle ======================================================= */
+
 static direntry_t *direntry_new (CALLER_DECL_ONLY)
 {
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
@@ -576,6 +577,7 @@ void direntry_no_longer_exists (direntry_t *de)
 
 
 /* listing lifecycle ======================================================= */
+
 listing_t *listing_new (CALLER_DECL_ONLY)
 {
     listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
@@ -644,47 +646,6 @@ void listing_delete (CALLER_DECL listing_t *li)
     direntry_trace_dedent();
 }
 
-listing_list_t *listing_list_new (unsigned count)
-{
-    listing_list_t *lis = (listing_list_t *)malloc(sizeof(listing_list_t));
-
-
-    lis->count = count;
-    lis->items = (listing_t **)calloc(count, sizeof(listing_t *));
-
-
-    return lis;
-}
-
-listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count)
-{
-    lis->items = (listing_t **)realloc(lis->items, new_count * sizeof(listing_t *));
-
-    if (new_count > lis->count)
-    {
-        memset(lis->items + lis->count, 0, (new_count - lis->count) * sizeof(listing_t *));
-    }
-
-    lis->count = new_count;
-
-
-    return lis;
-}
-
-
-void listing_list_delete (CALLER_DECL listing_list_t *lis)
-{
-    unsigned i;
-
-
-    for (i = 0; i < lis->count; ++i)
-    {
-        listing_delete(CALLER_PASS lis->items[i]);
-    }
-
-    free(lis->items);
-    free(lis);
-}
 
 /* listing attribute getters =============================================== */
 
@@ -753,6 +714,72 @@ static direntry_t *direntry_from_listing (listing_t *li)
 }
 
 
+/* listing list lifecycle =================================================== */
+
+listing_list_t *listing_list_new (unsigned count)
+{
+    listing_list_t *lis = (listing_list_t *)malloc(sizeof(listing_list_t));
+
+
+    lis->count = count;
+    lis->items = (listing_t **)calloc(count, sizeof(listing_t *));
+
+
+    return lis;
+}
+
+listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count)
+{
+    lis->items = (listing_t **)realloc(lis->items, new_count * sizeof(listing_t *));
+
+    if (new_count > lis->count)
+    {
+        memset(lis->items + lis->count, 0, (new_count - lis->count) * sizeof(listing_t *));
+    }
+
+    lis->count = new_count;
+
+
+    return lis;
+}
+
+
+void listing_list_delete (CALLER_DECL listing_list_t *lis)
+{
+    unsigned i;
+
+
+    for (i = 0; i < lis->count; ++i)
+    {
+        listing_delete(CALLER_PASS lis->items[i]);
+    }
+
+    free(lis->items);
+    free(lis);
+}
+
+
+/* listing list getters ===================================================== */
+
+unsigned listing_list_get_count (listing_list_t *lis)
+{
+    return lis->count;
+}
+
+void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
+{
+    lis->items[item] = listing_post(CALLER_INFO li);
+}
+
+listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
+{
+    return listing_post(CALLER_INFO lis->items[item]);
+}
+
+
+/* stubs etc ===================================================== */
+
+
 /* FIXME: stubs */
 int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de)
 {
@@ -764,7 +791,7 @@ int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de)
     return *de ? 0 : ENOENT;
 }
 
-int direntry_get_by_parent_and_name (
+int direntry_get_child_by_name (
     fuse_ino_t parent,
     const char *name,
     direntry_t **de_out

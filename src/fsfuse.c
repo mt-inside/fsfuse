@@ -451,8 +451,7 @@ static void fsfuse_splash (void)
 {
     printf("%s - FragSoc Filesystem in USErspace\n"
            "Version %s - %s (subversion revision %u)\n"
-           "%s\n"
-           "\n",
+           "%s\n\n",
            FSFUSE_NAME,
            FSFUSE_VERSION,
            FSFUSE_DATE,
@@ -471,7 +470,7 @@ static void fsfuse_versions (void)
     printf("Using kernel %s %s\n"
            "Using libfuse version %d (built against %d, using API version %d)\n"
            "Using %s\n"
-           "Using libxml2 %s\n",
+           "Using libxml2 %s",
            un.sysname,
            un.release,
            fuse_version(), FUSE_VERSION, FUSE_USE_VERSION,
