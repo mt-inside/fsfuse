@@ -321,7 +321,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
     {
         dtp_trace("Downloader thread for %s woken up! "
                   "Chunks remaining: %d\n",
-                  direntry_get_base_name(thread->de),
+                  direntry_get_name(thread->de),
                   thread->chunk_list_count);
 
 
@@ -427,7 +427,7 @@ static void *downloader_thread_main (void *arg)
 
 
     dtp_trace("downloader_thread_main(file==%s): New downloader thread!\n",
-              direntry_get_base_name(thread->de) );
+              direntry_get_name(thread->de) );
     dtp_trace_indent();
 
     /* We never try to guess when we're done with a file completely and call
@@ -522,7 +522,7 @@ static void *downloader_thread_main (void *arg)
 
     /* Delete the data structures */
 #if FEATURE_PROGRESS_METER
-    progress_delete(direntry_get_base_name(thread->de));
+    progress_delete(direntry_get_name(thread->de));
 #endif
     thread_delete(thread); /* When we move to a pool, we'll need to blank it */
 
@@ -602,7 +602,7 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
             dtp_trace("chunk->start now == %#x\n", buf->start);
 
 #if FEATURE_PROGRESS_METER
-            progress_update(direntry_get_base_name(thread->de),
+            progress_update(direntry_get_name(thread->de),
                             direntry_get_size(thread->de),
                             buf->end );
 #endif

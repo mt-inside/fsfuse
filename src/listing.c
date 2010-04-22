@@ -9,8 +9,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "common.h"
+#include "config.h"
 #include "listing.h"
 
 
@@ -26,10 +28,11 @@ struct _listing_t
     unsigned long              link_count;
     char                      *href;
 
+    char                      *client;
+
     unsigned                   ref_count;
     pthread_mutex_t           *lock;
 
-    char                      *client;
 };
 
 struct _listing_list_t
@@ -170,6 +173,40 @@ char *listing_get_href (listing_t *li)
 char *listing_get_client (listing_t *li)
 {
     return li->client;
+}
+
+void listing_li2stat (listing_t *li, struct stat *st)
+{
+    int uid = config_attr_id_uid,
+        gid = config_attr_id_gid;
+
+
+    memset((void *)st, 0, sizeof(struct stat));
+
+    st->st_nlink = li->link_count;
+    st->st_uid = (uid == -1) ? getuid() : (unsigned)uid;
+    st->st_gid = (gid == -1) ? getgid() : (unsigned)gid;
+
+    switch (li->type)
+    {
+        /* Regular file */
+        case listing_type_FILE:
+            st->st_mode = S_IFREG | config_attr_mode_file;
+
+            st->st_size = li->size;
+            st->st_blksize = FSFUSE_BLKSIZE;
+            st->st_blocks = (li->size / 512) + 1;
+
+            break;
+        case listing_type_DIRECTORY:
+            st->st_mode = S_IFDIR | config_attr_mode_dir;
+
+            /* indexnode supplies directory's tree size - not what a unix fs
+             * wants */
+            st->st_size = 0;
+
+            break;
+    }
 }
 
 

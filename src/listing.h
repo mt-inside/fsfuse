@@ -11,6 +11,9 @@
 #define _INCLUDED_LISTING_H
 
 #include <sys/types.h>
+#include <sys/stat.h>
+
+#include "trace.h"
 
 
 TRACE_DECLARE(listing)
@@ -47,6 +50,8 @@ extern off_t           listing_get_size          (listing_t *li);
 extern unsigned long   listing_get_link_count    (listing_t *li);
 extern char *          listing_get_href          (listing_t *li);
 extern char *          listing_get_client        (listing_t *li);
+extern void            listing_li2stat           (listing_t *li,
+                                                  struct stat *st);
 
 
 extern listing_list_t *listing_list_new (unsigned count);

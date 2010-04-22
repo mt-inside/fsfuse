@@ -12,8 +12,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <fuse/fuse_lowlevel.h>
 
 #include "trace.h"
 
@@ -46,7 +44,7 @@ extern direntry_t *direntry_get_next_sibling (direntry_t *de);
 
 extern ino_t           direntry_get_inode               (direntry_t *de);
 extern char *          direntry_get_path                (direntry_t *de);
-extern char *          direntry_get_base_name           (direntry_t *de);
+extern char *          direntry_get_name                (direntry_t *de);
 extern char *          direntry_get_hash                (direntry_t *de);
 extern direntry_type_t direntry_get_type                (direntry_t *de);
 extern off_t           direntry_get_size                (direntry_t *de);
@@ -71,9 +69,9 @@ extern int direntry_get_children (
 
 
 /* FIXME: stubs */
-extern int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de);
+extern int direntry_get_by_inode (ino_t ino, direntry_t **de);
 extern int direntry_get_child_by_name (
-    fuse_ino_t parent,
+    ino_t parent,
     const char *name,
     direntry_t **de_out
 );

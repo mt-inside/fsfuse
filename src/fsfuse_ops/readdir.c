@@ -36,7 +36,7 @@ static void dirbuf_add (
     size_t old_size = *size;
 
 
-    name = name ? name : direntry_get_base_name(de);
+    name = name ? name : direntry_get_name(de);
 
     /* Saw this trick (to determine, a priori, the exact size this entry will
      * need) in the fuse_lowlevel example. If it stops working, go back to
