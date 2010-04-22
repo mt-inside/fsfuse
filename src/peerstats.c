@@ -152,45 +152,48 @@ static void split_list (
 
     for (i = 0; i < listing_list_get_count(alts); ++i)
     {
+        li = listing_list_get_item(alts, i);
         found = 0;
 
-        j = 0;
-        while (favs[j])
-        {
-            li = listing_list_get_item(alts, i);
-            if (!strcmp(listing_get_client(li), favs[j]))
-            {
-                listing_list_set_item(fav_list, fav_count++, li);
-                found = 1;
-                break;
-            }
-            listing_delete(CALLER_INFO li);
-            j++;
-        }
-
-        if (!found)
+        if (favs)
         {
             j = 0;
-            while (blocks[j])
+            while (favs[j])
             {
-                li = listing_list_get_item(alts, i);
-                if (!strcmp(listing_get_client(li), blocks[j]))
+                if (!strcmp(listing_get_client(li), favs[j]))
                 {
-                    listing_list_set_item(block_list, block_count++, li);
+                    listing_list_set_item(fav_list, fav_count++, li);
                     found = 1;
                     break;
                 }
-                listing_delete(CALLER_INFO li);
                 j++;
             }
         }
 
         if (!found)
         {
-            li = listing_list_get_item(alts, i);
-            listing_list_set_item(normal_list, normal_count++, li);
-            listing_delete(CALLER_INFO li);
+            if (blocks)
+            {
+                j = 0;
+                while (blocks[j])
+                {
+                    if (!strcmp(listing_get_client(li), blocks[j]))
+                    {
+                        listing_list_set_item(block_list, block_count++, li);
+                        found = 1;
+                        break;
+                    }
+                    j++;
+                }
+            }
         }
+
+        if (!found)
+        {
+            listing_list_set_item(normal_list, normal_count++, li);
+        }
+
+        listing_delete(CALLER_INFO li);
     }
 
     assert(fav_count + block_count + normal_count == i);
