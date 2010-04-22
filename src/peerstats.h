@@ -9,7 +9,7 @@
 #ifndef _INCLUDED_PEERSTATS_H
 #define _INCLUDED_PEERSTATS_H
 
-#include "direntry.h"
+#include "listing.h"
 #include "trace.h"
 
 

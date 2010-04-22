@@ -17,7 +17,6 @@
 #include "common.h"
 #include "config.h"
 #include "direntry.h"
-#include "direntry_internal.h"
 #include "fetcher.h"
 #include "inode_map.h"
 #include "parser.h"
@@ -26,15 +25,30 @@
 TRACE_DEFINE(direntry)
 
 
-static void direntry_attribute_add (
-    direntry_t * const de,
-    const char *name,
-    const char *value
-);
+struct _direntry_t
+{
+    char                      *name;
+    char                      *hash;
+    direntry_type_t            type;
+    off_t                      size; /* st_size in struct stat is off_t */
+    unsigned long              link_count;
+    char                      *href;
+
+    unsigned                   ref_count;
+    pthread_mutex_t           *lock;
+
+    ino_t                      inode;
+    struct _direntry_t        *next;
+    struct _direntry_t        *parent;
+    struct _direntry_t        *children;
+    int                        looked_for_children;
+};
+
+
 static direntry_t *direntry_new (CALLER_DECL_ONLY);
-static direntry_t *lis_to_dirents(listing_list_t *lis, direntry_t *parent);
-static direntry_type_t direntry_type_from_string (const char * const s);
+extern direntry_t *direntry_new_root (CALLER_DECL_ONLY);
 static direntry_t *direntry_from_listing (listing_t *li);
+static direntry_t *direntries_from_listing_list (listing_list_t *lis, direntry_t *parent);
 
 
 /* direntry module external interface ======================================= */
@@ -70,6 +84,7 @@ int path_get_direntry (
          *url;
     direntry_t *de = NULL;
     listing_list_t *lis;
+    listing_t *li;
 
 
     /* special case - there is nowhere whence to get metadata for "/"; it has no
@@ -94,15 +109,18 @@ int path_get_direntry (
     {
         /* Search parent's children for desired entry */
         rc = ENOENT;
-        for (unsigned i = 0; i < lis->count; ++i)
+        for (unsigned i = 0; i < listing_list_get_count(lis); ++i)
         {
-            if (!strcmp(listing_get_name(lis->items[i]), file_name))
+            li = listing_list_get_item(lis, i);
+            if (!strcmp(listing_get_name(li), file_name))
             {
-                direntry_from_listing(lis->items[i]);
+                /* FIXME!! should this not store return in de??? */
+                direntry_from_listing(li);
 
                 rc = 0;
                 break;
             }
+            listing_delete(CALLER_INFO li);
         }
         listing_list_delete(CALLER_INFO lis);
     }
@@ -146,7 +164,7 @@ int direntry_get_children (
 
         if (!rc && lis)
         {
-            dirents = lis_to_dirents(lis, de);
+            dirents = direntries_from_listing_list (lis, de);
 
             listing_list_delete(CALLER_INFO lis);
         }
@@ -160,18 +178,21 @@ int direntry_get_children (
     return rc;
 }
 
-static direntry_t *lis_to_dirents(listing_list_t *lis, direntry_t *parent)
+static direntry_t *direntries_from_listing_list (listing_list_t *lis, direntry_t *parent)
 {
     direntry_t *de = NULL, *prev = NULL;
+    listing_t *li;
     unsigned i;
 
 
     assert(lis);
 
     /* turn array of li's into linked list of de's */
-    for (i = 0; i < lis->count; ++i)
+    for (i = 0; i < listing_list_get_count(lis); ++i)
     {
-        de = direntry_from_listing(lis->items[i]);
+        li = listing_list_get_item(lis, i);
+        de = direntry_from_listing(li);
+        listing_delete(CALLER_INFO li);
 
 
         de->parent = parent;
@@ -183,103 +204,33 @@ static direntry_t *lis_to_dirents(listing_list_t *lis, direntry_t *parent)
     return de;
 }
 
-void listing_attribute_add (
-    listing_t * const li,
-    const char *name,
-    const char *value
-)
+static direntry_t *direntry_from_listing (listing_t *li)
 {
-    if (!strcmp(name, "fs2-name"))
-    {
-        li->name = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-hash"))
-    {
-        li->hash = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-type"))
-    {
-        li->type = direntry_type_from_string(value);
-    }
-    else if (!strcmp(name, "fs2-size"))
-    {
-        li->size = atoll(value);
-    }
-    else if (!strcmp(name, "fs2-linkcount") ||
-             !strcmp(name, "fs2-alternativescount"))
-    {
-        li->link_count = atol(value);
-    }
-    else if (!strcmp(name, "href"))
-    {
-        li->href = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-clientalias"))
-    {
-        li->client = strdup(value);
-    }
-    else
-    {
-        direntry_trace("Unknown attribute %s == %s\n", name, value);
-    }
-}
-static void direntry_attribute_add (
-    direntry_t * const de,
-    const char *name,
-    const char *value
-)
-{
-    if (!strcmp(name, "fs2-name"))
-    {
-        de->base_name = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-hash"))
-    {
-        de->hash = strdup(value);
-    }
-    else if (!strcmp(name, "fs2-type"))
-    {
-        de->type = direntry_type_from_string(value);
-    }
-    else if (!strcmp(name, "fs2-size"))
-    {
-        de->size = atoll(value);
-    }
-    else if (!strcmp(name, "fs2-linkcount") ||
-             !strcmp(name, "fs2-alternativescount"))
-    {
-        de->link_count = atol(value);
-    }
-    else if (!strcmp(name, "href"))
-    {
-        de->href = strdup(value);
-    }
-    else
-    {
-        direntry_trace("Unknown attribute %s == %s\n", name, value);
-    }
-}
-
-static direntry_type_t direntry_type_from_string (const char * const s)
-{
-    direntry_type_t type;
+    direntry_t *de = direntry_new(CALLER_INFO_ONLY);
 
 
-    if (!strcmp(s, "file"))
+    de->type       = listing_get_type(li);
+
+    switch (de->type)
     {
-        type = direntry_type_FILE;
-    }
-    else if (!strcmp(s, "directory"))
-    {
-        type = direntry_type_DIRECTORY;
-    }
-    else
-    {
-        assert(0);
+        case direntry_type_FILE:
+            de->name       = strdup(listing_get_name(li));
+            de->hash       = strdup(listing_get_hash(li));
+            de->size       = listing_get_size(li);
+            de->link_count = listing_get_link_count(li);
+            de->href       = strdup(listing_get_href(li));
+            break;
+
+        case direntry_type_DIRECTORY:
+            de->name       = strdup(listing_get_name(li));
+            de->size       = listing_get_size(li);
+            de->link_count = listing_get_link_count(li);
+            de->href       = strdup(listing_get_href(li));
+            break;
     }
 
 
-    return type;
+    return de;
 }
 
 
@@ -312,17 +263,16 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
     pthread_mutex_init(root->lock, NULL);
 
     root->ref_count = 1;
-    root->inode = 1;
-    inode_map_add(root);
-
-    direntry_attribute_add(root, "fs2-name", "");
-    direntry_attribute_add(root, "fs2-type", "directory");
+    root->name = strdup("");
+    root->type = direntry_type_DIRECTORY;
     /* Set the link count to something non-0. We can't query this from the
      * indexnode. We could work it out every time, but that would be tedious.
      * It turns out to be vitally important that this is non-0 if samba is going
      * to share the filesystem */
-    direntry_attribute_add(root, "fs2-linkcount", "1");
+    root->link_count = 1;
 
+    root->inode = 1;
+    inode_map_add(root);
 
     direntry_trace("[direntry %p] new (" CALLER_FORMAT ") ref %u inode %lu\n",
                    root, CALLER_PASS root->ref_count, root->inode);
@@ -403,7 +353,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
         pthread_mutex_destroy(de->lock);
         free(de->lock);
 
-        if (de->base_name) free(de->base_name);
+        if (de->name) free(de->name);
         if (de->hash) free(de->hash);
         if (de->href) free(de->href);
 
@@ -482,7 +432,7 @@ char *direntry_get_path (direntry_t *de)
 
 char *direntry_get_base_name (direntry_t *de)
 {
-    return de->base_name;
+    return de->name;
 }
 
 char *direntry_get_hash (direntry_t *de)
@@ -576,209 +526,7 @@ void direntry_no_longer_exists (direntry_t *de)
 }
 
 
-/* listing lifecycle ======================================================= */
-
-listing_t *listing_new (CALLER_DECL_ONLY)
-{
-    listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
-
-
-    li->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(li->lock, NULL);
-
-    li->ref_count = 1;
-
-    direntry_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS li->ref_count);
-
-    return li;
-}
-
-listing_t *listing_post (CALLER_DECL listing_t *li)
-{
-    unsigned refc;
-
-
-    assert(li->ref_count);
-
-    pthread_mutex_lock(li->lock);
-    refc = ++li->ref_count;
-    pthread_mutex_unlock(li->lock);
-
-    direntry_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS refc);
-
-
-    return li;
-}
-
-void listing_delete (CALLER_DECL listing_t *li)
-{
-    unsigned refc;
-
-
-    /* hacky attempt to detect overflow */
-    assert((signed)li->ref_count > 0);
-
-    pthread_mutex_lock(li->lock);
-    refc = --li->ref_count;
-    pthread_mutex_unlock(li->lock);
-
-    direntry_trace("[listing %p] delete (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS refc);
-    direntry_trace_indent();
-
-    if (!refc)
-    {
-        direntry_trace("refcount == 0 => free()ing\n");
-
-        pthread_mutex_destroy(li->lock);
-        free(li->lock);
-
-        if (li->name)   free(li->name);
-        if (li->hash)   free(li->hash);
-        if (li->href)   free(li->href);
-        if (li->client) free(li->client);
-
-        free(li);
-    }
-
-    direntry_trace_dedent();
-}
-
-
-/* listing attribute getters =============================================== */
-
-char *listing_get_name (listing_t *li)
-{
-    return li->name;
-}
-
-char *listing_get_hash (listing_t *li)
-{
-    return li->hash;
-}
-
-direntry_type_t listing_get_type (listing_t *li)
-{
-    return li->type;
-}
-
-off_t listing_get_size (listing_t *li)
-{
-    return li->size;
-}
-
-unsigned long listing_get_link_count (listing_t *li)
-{
-    return li->link_count;
-}
-
-char *listing_get_href (listing_t *li)
-{
-    return li->href;
-}
-
-char *listing_get_client (listing_t *li)
-{
-    return li->client;
-}
-
-static direntry_t *direntry_from_listing (listing_t *li)
-{
-    direntry_t *de = direntry_new(CALLER_INFO_ONLY);
-
-
-    de->type       = li->type;
-
-    switch (li->type)
-    {
-        case direntry_type_FILE:
-            de->base_name  = strdup(li->name);
-            de->hash       = strdup(li->hash);
-            de->size       = li->size;
-            de->link_count = li->link_count;
-            de->href       = strdup(li->href);
-            break;
-
-        case direntry_type_DIRECTORY:
-            de->base_name  = strdup(li->name);
-            de->size       = li->size;
-            de->link_count = li->link_count;
-            de->href       = strdup(li->href);
-            break;
-    }
-
-
-    return de;
-}
-
-
-/* listing list lifecycle =================================================== */
-
-listing_list_t *listing_list_new (unsigned count)
-{
-    listing_list_t *lis = (listing_list_t *)malloc(sizeof(listing_list_t));
-
-
-    lis->count = count;
-    lis->items = (listing_t **)calloc(count, sizeof(listing_t *));
-
-
-    return lis;
-}
-
-listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count)
-{
-    lis->items = (listing_t **)realloc(lis->items, new_count * sizeof(listing_t *));
-
-    if (new_count > lis->count)
-    {
-        memset(lis->items + lis->count, 0, (new_count - lis->count) * sizeof(listing_t *));
-    }
-
-    lis->count = new_count;
-
-
-    return lis;
-}
-
-
-void listing_list_delete (CALLER_DECL listing_list_t *lis)
-{
-    unsigned i;
-
-
-    for (i = 0; i < lis->count; ++i)
-    {
-        listing_delete(CALLER_PASS lis->items[i]);
-    }
-
-    free(lis->items);
-    free(lis);
-}
-
-
-/* listing list getters ===================================================== */
-
-unsigned listing_list_get_count (listing_list_t *lis)
-{
-    return lis->count;
-}
-
-void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
-{
-    lis->items[item] = listing_post(CALLER_INFO li);
-}
-
-listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
-{
-    return listing_post(CALLER_INFO lis->items[item]);
-}
-
-
 /* stubs etc ===================================================== */
-
 
 /* FIXME: stubs */
 int direntry_get_by_inode (fuse_ino_t ino, direntry_t **de)

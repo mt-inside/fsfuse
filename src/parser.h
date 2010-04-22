@@ -15,7 +15,7 @@
 #include <libxml/xpathInternals.h>
 
 #include "common.h"
-#include "direntry.h"
+#include "listing.h"
 
 
 TRACE_DECLARE(parser)

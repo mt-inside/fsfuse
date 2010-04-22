@@ -17,7 +17,7 @@ vpath %.xsl $(HERE)
 OUR_OBJS :=                         \
             alarms.o                \
             buildnumber.o           \
-	    common.o                \
+            common.o                \
             config.o                \
             config_define.o         \
             direntry.o              \
@@ -25,7 +25,8 @@ OUR_OBJS :=                         \
             fetcher.o               \
             hash.o                  \
             indexnode.o             \
-	    inode_map.o             \
+            inode_map.o             \
+            listing.o               \
             localei.o               \
             locks.o                 \
             parser.o                \
