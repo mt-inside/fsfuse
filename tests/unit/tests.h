@@ -7,4 +7,5 @@
  */
 
 extern void hash_test (void);
+extern void http_test (void);
 extern void common_test (void);

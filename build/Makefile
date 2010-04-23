@@ -30,6 +30,8 @@ DEFINES = -D_FILE_OFFSET_BITS=64 -D_REENTRANT
 # This is necessary for fuse.h to be valid. We also use a lot of other features
 # that also require this macro.
 DEFINES += -D_BSD_SOURCE
+#getaddrinfo() et all
+DEFINES += -D_POSIX_SOURCE
 
 CONFIGS := config_declare.h \
            config_define.c

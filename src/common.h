@@ -36,6 +36,8 @@
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
+#define free_const(x) free((void *)(x))
+
 #if DEBUG
 #define CALLER_DECL const char *const file, size_t line_num,
 #define CALLER_DECL_ONLY const char *const file, size_t line_num
@@ -57,6 +59,11 @@
 #define FSFUSE_BLKSIZE   512
 
 
+typedef struct _str_buf_t str_buf_t;
+
+typedef struct _uri_t uri_t;
+
+
 /* General utility functions */
 extern int common_init (void);
 extern void common_finalise (void);
@@ -70,5 +77,38 @@ extern int compare_dotted_version (const char *ver, const char *cmp);
 
 extern int is_ip4_address (const char *s);
 extern int is_ip6_address (const char *s);
+
+extern str_buf_t *str_buf_new (void);
+extern void str_buf_add (str_buf_t *buf, const char *s);
+extern char *str_buf_commit (str_buf_t *buf);
+
+/* See RFC2396.
+ * We assume a "generic uri" with a "server-based naming authority".
+ * e.g.:
+ *
+ * scheme://userinfo@host:port/path?query#fragment
+ *          \-- authority  --/
+ */
+extern uri_t *uri_new (void);
+extern uri_t *uri_from_string (const char *str);
+extern void uri_delete (uri_t *uri);
+
+extern void uri_set_scheme   (uri_t *uri, const char *scheme  );
+extern void uri_set_userinfo (uri_t *uri, const char *userinfo);
+extern void uri_set_host     (uri_t *uri, const char *host    );
+extern void uri_set_port     (uri_t *uri, const char *port    );
+extern void uri_set_path     (uri_t *uri, const char *path    );
+extern void uri_set_query    (uri_t *uri, const char *query   );
+extern void uri_set_fragment (uri_t *uri, const char *fragment);
+
+extern char *uri_get           (uri_t *uri);
+extern char *uri_get_scheme    (uri_t *uri);
+extern char *uri_get_authority (uri_t *uri);
+extern char *uri_get_userinfo  (uri_t *uri);
+extern char *uri_get_host      (uri_t *uri);
+extern char *uri_get_port      (uri_t *uri);
+extern char *uri_get_path      (uri_t *uri);
+extern char *uri_get_query     (uri_t *uri);
+extern char *uri_get_fragment  (uri_t *uri);
 
 #endif /* _included_common_h */

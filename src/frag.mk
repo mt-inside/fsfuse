@@ -24,6 +24,7 @@ OUR_OBJS :=                         \
             download_thread_pool.o  \
             fetcher.o               \
             hash.o                  \
+            http.o                  \
             indexnode.o             \
             inode_map.o             \
             listing.o               \

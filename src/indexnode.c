@@ -6,9 +6,8 @@
  * $Id$
  */
 
- /* NI_MAX[HOST|etc]. NB: this really should be _BSD_SOURCE - the man page and
-  * netdb.h say so... */
-#define _POSIX_SOURCE
+ /* NB: this file relies on _POSIX_SOURCE to get NI_MAX[HOST|etc], even though
+  * the man page and netdb.h seem to say it really should be _BSD_SOURCE */
 
 #include <sys/types.h>
 #include <sys/socket.h>

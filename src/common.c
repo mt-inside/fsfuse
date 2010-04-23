@@ -13,6 +13,25 @@
 #include "common.h"
 
 
+struct _str_buf_t
+{
+    unsigned size; /* size of memory block */
+    unsigned len;  /* length of string s */
+    char *s;
+};
+
+struct _uri_t
+{
+    char *scheme;
+    char *userinfo;
+    char *host;
+    char *port;
+    char *path;
+    char *query;
+    char *fragment;
+};
+
+
 static pthread_key_t thread_index_key;
 static unsigned next_thread_index = 1;
 
@@ -146,4 +165,250 @@ int is_ip4_address (const char *s)
 int is_ip6_address (const char *s)
 {
     return (strspn(s, "0123456789abcdefABCDEF:") == strlen(s));
+}
+
+
+str_buf_t *str_buf_new (void)
+{
+    str_buf_t *buf = calloc(sizeof(str_buf_t), 1);
+
+    buf->size = 1;
+    buf->s = malloc(sizeof(char));
+    *(buf->s) = '\0';
+    buf->len = 0;
+
+    return buf;
+}
+
+void str_buf_add (str_buf_t *buf, const char *s)
+{
+    unsigned new_size;
+
+
+    assert(buf);
+    if (!s) return;
+
+    buf->len += strlen(s);
+
+    new_size = buf->size;
+    if (!new_size) new_size = 1;
+    while (buf->len >= new_size)
+    {
+        new_size *= 2;
+    }
+    if (new_size != buf->size)
+    {
+        buf->size = new_size;
+        buf->s = realloc(buf->s, buf->size);
+    }
+
+    strcat(buf->s, s);
+}
+
+char *str_buf_commit (str_buf_t *buf)
+{
+    char *s;
+
+
+    assert(buf);
+
+    s = buf->s;
+
+    free(buf);
+
+
+    return s;
+}
+
+
+uri_t *uri_new (void)
+{
+    uri_t *uri = calloc(sizeof(uri_t), 1);
+
+
+    return uri;
+}
+
+uri_t *uri_from_string (const char *str)
+{
+    uri_t *uri = uri_new();
+
+
+    assert(str);
+
+    //FIXME: parse...
+    assert(0); //NOT SUPPORTED YET
+
+
+    return uri;
+}
+
+void uri_delete (uri_t *uri)
+{
+    assert(uri);
+
+    if (uri->scheme)   free(uri->scheme);
+    if (uri->userinfo) free(uri->userinfo);
+    if (uri->host)     free(uri->host);
+    if (uri->port)     free(uri->port);
+    if (uri->path)     free(uri->path);
+    if (uri->query)    free(uri->query);
+    if (uri->fragment) free(uri->fragment);
+
+    free(uri);
+}
+
+void uri_set_scheme (uri_t *uri, const char *scheme)
+{
+    assert(uri);
+
+    if (uri->scheme) free(uri->scheme);
+    uri->scheme = strdup(scheme);
+}
+void uri_set_userinfo (uri_t *uri, const char *userinfo)
+{
+    assert(uri);
+
+    if (uri->userinfo) free(uri->userinfo);
+    uri->userinfo = strdup(userinfo);
+}
+void uri_set_host (uri_t *uri, const char *host)
+{
+    assert(uri);
+
+    if (uri->host) free(uri->host);
+    uri->host = strdup(host);
+}
+void uri_set_port (uri_t *uri, const char *port)
+{
+    assert(uri);
+
+    if (uri->port) free(uri->port);
+    uri->port = strdup(port);
+}
+void uri_set_path (uri_t *uri, const char *path)
+{
+    assert(uri);
+
+    if (uri->path) free(uri->path);
+    uri->path = strdup(path);
+}
+void uri_set_query (uri_t *uri, const char *query)
+{
+    assert(uri);
+
+    if (uri->query) free(uri->query);
+    uri->query = strdup(query);
+}
+void uri_set_fragment (uri_t *uri, const char *fragment)
+{
+    assert(uri);
+
+    if (uri->fragment) free(uri->fragment);
+    uri->fragment = strdup(fragment);
+}
+
+char *uri_get (uri_t *uri)
+{
+    /* This could prove to be a bit slow - be careful how often you call it, or
+     * optimise it :P */
+    str_buf_t *buf = str_buf_new();
+    char *auth;
+
+
+    assert(uri);
+
+    if (uri->scheme)
+    {
+        str_buf_add(buf, uri->scheme);
+        str_buf_add(buf, ":");
+    }
+
+    auth = uri_get_authority(uri);
+    if (auth)
+    {
+        str_buf_add(buf, "//");
+        str_buf_add(buf, auth);
+        free(auth);
+    }
+
+    assert(uri->path);
+    str_buf_add(buf, uri->path);
+
+    if (uri->query)
+    {
+        str_buf_add(buf, "?");
+        str_buf_add(buf, uri->query);
+    }
+    if (uri->fragment)
+    {
+        str_buf_add(buf, "#");
+        str_buf_add(buf, uri->fragment);
+    }
+
+
+    return str_buf_commit(buf);
+}
+
+char *uri_get_scheme (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->scheme);
+}
+char *uri_get_authority (uri_t *uri)
+{
+    str_buf_t *buf = str_buf_new();
+
+
+    assert(uri);
+
+    if (uri->userinfo)
+    {
+        str_buf_add(buf, uri->userinfo);
+        str_buf_add(buf, "@");
+    }
+
+    if (uri->host)
+    {
+        str_buf_add(buf, uri->host);
+    }
+
+    if (uri->port)
+    {
+        str_buf_add(buf, ":");
+        str_buf_add(buf, uri->port);
+    }
+
+
+    return str_buf_commit(buf);
+}
+char *uri_get_userinfo (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->userinfo);
+}
+char *uri_get_host (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->host);
+}
+char *uri_get_port (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->port);
+}
+char *uri_get_path (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->path);
+}
+char *uri_get_query (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->query);
+}
+char *uri_get_fragment (uri_t *uri)
+{
+    assert(uri);
+    return strdup(uri->fragment);
 }

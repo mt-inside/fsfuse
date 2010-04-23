@@ -16,6 +16,7 @@ int main (int argc, char **argv)
     NOT_USED(argv);
 
     hash_test();
+    http_test();
     common_test();
 
 
