@@ -34,9 +34,7 @@ extern int direntry_init (void);
 extern void direntry_finalise (void);
 
 extern direntry_t *direntry_post      (CALLER_DECL direntry_t *de);
-extern direntry_t *direntry_post_list (CALLER_DECL direntry_t *de);
 extern void direntry_delete      (CALLER_DECL direntry_t *de);
-extern void direntry_delete_list (CALLER_DECL direntry_t *de);
 
 extern direntry_t *direntry_get_parent       (direntry_t *de);
 extern direntry_t *direntry_get_first_child  (direntry_t *de);
@@ -58,13 +56,8 @@ extern void            direntry_still_exists            (direntry_t *de);
 extern void            direntry_no_longer_exists        (direntry_t *de);
 
 
-extern int path_get_direntry (
-    char const * const path,
-    direntry_t **direntry
-);
-extern int direntry_get_children (
-    direntry_t *de,
-    direntry_t **children_out
+extern int direntry_ensure_children (
+    direntry_t *de
 );
 
 

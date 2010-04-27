@@ -67,9 +67,8 @@ void direntry_finalise (void)
 
 /* Innards ================================================================== */
 
-int direntry_get_children (
-    direntry_t *de,
-    direntry_t **children_out
+int direntry_ensure_children (
+    direntry_t *de
 )
 {
     int rc = EIO;
@@ -78,12 +77,7 @@ int direntry_get_children (
     direntry_t *dirents = NULL;
 
 
-    if (de->children)
-    {
-        *children_out = direntry_post_list(CALLER_INFO de->children);
-        rc = 0;
-    }
-    else
+    if (!de->looked_for_children)
     {
         path = direntry_get_path(de);
         direntry_trace("direntry_get_children(%s)\n", path);
@@ -102,9 +96,8 @@ int direntry_get_children (
             listing_list_delete(CALLER_INFO lis);
         }
 
-
         de->children = dirents;
-        *children_out = dirents;
+        de->looked_for_children = 1;
     }
 
 
@@ -175,7 +168,7 @@ static direntry_t *direntry_from_listing (CALLER_DECL listing_t *li)
 
 direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 {
-    direntry_t *de = direntry_new(CALLER_PASS 1);
+    direntry_t *de = direntry_new(CALLER_PASS FSFUSE_ROOT_INODE);
     listing_t *li = listing_new(CALLER_PASS_ONLY);
 
 
@@ -219,21 +212,6 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 
     return de;
 }
-
-direntry_t *direntry_post_list (CALLER_DECL direntry_t *de)
-{
-    direntry_t *next = de;
-
-
-    while (next)
-    {
-        next = direntry_get_next_sibling(direntry_post(CALLER_PASS next));
-    }
-
-
-    return de;
-}
-
 
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
@@ -294,17 +272,17 @@ void direntry_delete_list (CALLER_DECL direntry_t *de)
 
 direntry_t *direntry_get_parent       (direntry_t *de)
 {
-    return de->parent;
+    return de->parent ? direntry_post(CALLER_INFO de->parent) : NULL;
 }
 
 direntry_t *direntry_get_first_child  (direntry_t *de)
 {
-    return de->children;
+    return de->children ? direntry_post(CALLER_INFO de->children) : NULL;
 }
 
 direntry_t *direntry_get_next_sibling (direntry_t *de)
 {
-    return de->next;
+    return de->next ? direntry_post(CALLER_INFO de->next) : NULL;
 }
 
 
@@ -323,6 +301,7 @@ static void direntry_get_path_inner (direntry_t *de, char *path)
     if ((parent = direntry_get_parent(de)))
     {
         direntry_get_path_inner(parent, path);
+        direntry_delete(CALLER_INFO parent);
     }
 
     strcat(path, direntry_get_name(de));
@@ -384,12 +363,7 @@ void direntry_set_looked_for_children (direntry_t *de, int val)
 
 int direntry_is_root (direntry_t *de)
 {
-    char *path = direntry_get_path(de);
-    int is_root = !strcmp(direntry_get_path(de), "/");
-
-    free(path);
-
-    return is_root;
+    return de->inode == FSFUSE_ROOT_INODE;
 }
 
 void direntry_de2stat (direntry_t *de, struct stat *st)
@@ -429,34 +403,33 @@ int direntry_get_child_by_name (
     direntry_t **de_out
 )
 {
-    direntry_t *de, *first_child, *child = NULL;
+    direntry_t *de, *child = NULL, *old_child;
     int rc;
 
 
     rc = direntry_get_by_inode(parent, &de);
-    /* ensure that the children have been fetched. TODO split this into
-     * "ensure/fetch_children" and "get_children". */
-    rc = direntry_get_children(de, &first_child);
-    direntry_delete_list(CALLER_INFO first_child);
 
     if (!rc)
     {
+        direntry_ensure_children(de);
+
         /* FIXME: this (will) bypasses cache. Also, probably want to factor to
          * direntry_find_child(de, name).
          * If it's to stay like this, it need to take a lock, as it doesn't own
          * any copies of the children! */
         rc = ENOENT;
-        child = de->children;
+        child = direntry_get_first_child(de);
         while (child)
         {
             if (!strcmp(direntry_get_name(child), name))
             {
                 rc = 0;
-                direntry_post(CALLER_INFO child);
                 break;
             }
 
+            old_child = child;
             child = direntry_get_next_sibling(child);
+            direntry_delete(CALLER_INFO old_child);
         }
 
         direntry_delete(CALLER_INFO de);

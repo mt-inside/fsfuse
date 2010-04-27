@@ -59,7 +59,7 @@ static void dirbuf_add (
 void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
     int rc = 0;
-    direntry_t *de, *parent, *first_child, *child;
+    direntry_t *de, *parent, *child, *old_child;
     char *buf = NULL; size_t bufsize = 0;
 
 
@@ -89,24 +89,22 @@ void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, str
             if (parent)
             {
                 dirbuf_add(req, &buf, &bufsize, parent, "..");
+                direntry_delete(CALLER_INFO parent);
             }
             else
             {
                 dirbuf_add(req, &buf, &bufsize, de, "..");
             }
 
-            rc = direntry_get_children(de, &first_child);
-            if (!rc)
+            direntry_ensure_children(de);
+            child = direntry_get_first_child(de);
+            while (child)
             {
-                child = first_child;
-                while (child)
-                {
-                    dirbuf_add(req, &buf, &bufsize, child, NULL);
+                dirbuf_add(req, &buf, &bufsize, child, NULL);
 
-                    child = direntry_get_next_sibling(child);
-                }
-
-                direntry_delete_list(CALLER_INFO first_child);
+                old_child = child;
+                child = direntry_get_next_sibling(child);
+                direntry_delete(CALLER_INFO old_child);
             }
         }
 
