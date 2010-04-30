@@ -56,6 +56,7 @@
 #define CALLER_FORMAT
 #endif
 
+#define FSFUSE_ROOT_INODE 1
 #define FSFUSE_BLKSIZE   512
 
 
