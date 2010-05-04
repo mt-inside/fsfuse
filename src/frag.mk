@@ -16,7 +16,6 @@ vpath %.xsl $(HERE)
 # fsfuse.o isn't listed because it isn't always wanted.
 OUR_OBJS :=                         \
             alarms.o                \
-            buildnumber.o           \
             common.o                \
             config.o                \
             config_define.o         \

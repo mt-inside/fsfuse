@@ -21,7 +21,9 @@ MAIN_OBJECT ?= fsfuse.o
 # == Basics ==
 
 default: fsfuse
-.PHONY: default depend objects clean count
+.PHONY: default depend objects clean count buildnumber.c
+
+OBJECTS+=buildnumber.o
 
 OS:=$(shell uname -s)
 
@@ -104,6 +106,7 @@ config_define.c:  config.xsl config-config.xml
 	xsltproc --stringparam filetype c $^ > $@
 
 buildnumber.c:
+	@echo "Making buildnumber.c"
 	$(shell echo "unsigned svn_rev = " > buildnumber.c)
 	$(shell echo `svn info $(SRC_ROOT) | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
 	$(shell echo ";" >> buildnumber.c)
@@ -117,7 +120,6 @@ buildnumber.c:
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
 fsfuse: $(CONFIGS) objects
-	@$(MAKE) buildnumber.o
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
 
