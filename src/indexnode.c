@@ -104,6 +104,23 @@ static indexnode_t *indexnode_from_config (void)
     return in;
 }
 
+/* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
+ * (proto, local addr, local port, remote addr, remote port).  SO_REUSEADDR just
+ * says that you can reuse local addresses.  The 5 tuple still must be unique!"
+ * This would seem to apply to state connected sockets - they have a remote
+ * address. And it's true that SO_REUSEADDR lets you bind another socket to the
+ * same local addr/port while there are connected sockets to remote addresses
+ * from on that port. We're talking about state listening sockets here, which I
+ * don't believe have a meaningful remote address.
+ * However, even if they did, our 5-tuples here are still identical - the IPv4
+ * and IPv6 sockets only differ in domain, not protocol. SO_REUSEADDR seems to
+ * let us get away with this though.
+ * In addition, we bind first to the IPv6 wildcard address, which on some
+ * systems grabs the IPv4 wildcard address to, thus listening for both, but also
+ * blocks attempts to later bind to the IPv6 wildcard address. The order is
+ * important, because conversely binding to the IPv4 wildcard doesn't pick up
+ * IPv6 connections.
+ */
 static indexnode_t *indexnode_listen (void)
 {
     /* FIXME: security */
@@ -166,7 +183,36 @@ static indexnode_t *indexnode_listen (void)
     freeifaddrs(ifaddr);
 
 
-    /* ==== Set up sockets ==== */
+    /* ==== Set up listening sockets ==== */
+
+    /* IPv6 */
+    memset(&sa6, 0, sizeof(sa6));
+    sa6.sin6_family = AF_INET6;
+    sa6.sin6_port   = htons(42444); /* TODO: config option */
+    sa6.sin6_addr   = in6addr_any;
+
+    errno = 0;
+    s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    /* See function comment */
+    setsockopt(s6, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if (s6 != -1)
+    {
+        errno = 0;
+        their_rc = bind(s6, (struct sockaddr *)&sa6, sizeof(sa6));
+        if (!their_rc)
+        {
+            s6_ok = 1;
+            trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa6.sin6_port));
+        }
+        else
+        {
+            trace_warn("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
+        }
+    }
+    else
+    {
+        trace_warn("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
+    }
 
     /* IPv4 */
     memset(&sa4, 0, sizeof(sa4));
@@ -176,7 +222,8 @@ static indexnode_t *indexnode_listen (void)
 
     errno = 0;
     s4 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    setsockopt(s4, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* FIXME: magic runes. Not sure if this should be used */
+    /* See function comment */
+    setsockopt(s4, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     if (s4 != -1)
     {
         errno = 0;
@@ -197,36 +244,7 @@ static indexnode_t *indexnode_listen (void)
     }
 
 
-    /* IPv6 */
-    memset(&sa6, 0, sizeof(sa6));
-    sa6.sin6_family = AF_INET6;
-    sa6.sin6_port   = htons(42444); /* TODO: config option */
-    sa6.sin6_addr   = in6addr_any;
-
-    errno = 0;
-    s6 = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-    setsockopt(s6, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)); /* FIXME: magic runes. Not sure if this should be used */
-    if (s6 != -1)
-    {
-        errno = 0;
-        their_rc = bind(s6, (struct sockaddr *)&sa6, sizeof(sa6));
-        if (!their_rc)
-        {
-            s6_ok = 1;
-            trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa6.sin6_port));
-        }
-        else
-        {
-            trace_warn("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
-        }
-    }
-    else
-    {
-        trace_warn("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
-    }
-
-
-    /* ==== Wait for packets ==== */
+    /* ==== Wait for broadcast packets ==== */
 
     FD_ZERO(&r_fds);
     if (s4_ok) FD_SET(s4, &r_fds);
