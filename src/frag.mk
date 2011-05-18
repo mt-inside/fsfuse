@@ -25,6 +25,7 @@ OUR_OBJS :=                         \
             hash.o                  \
             http.o                  \
             indexnode.o             \
+            indexnodes.o            \
             inode_map.o             \
             listing.o               \
             localei.o               \

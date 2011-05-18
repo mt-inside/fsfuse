@@ -1,7 +1,7 @@
 /*
- * API for interacting with indexnodes.
+ * Indexnode class.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2011. All rights reserved.
  *
  * $Id$
  */
@@ -12,18 +12,9 @@
 typedef struct _indexnode_t indexnode_t;
 
 
-/* Global One True Indexnode singleton - for now */
-extern indexnode_t *g_indexnode;
-
-
-extern int indexnode_init (void);
-extern void indexnode_finalise (void);
-
+extern indexnode_t *indexnode_new (void);
 extern void indexnode_delete (indexnode_t *in);
 
-extern indexnode_t *indexnode_find (void);
-
-extern void indexnode_parse_version (char *buf, char *version);
 extern void  indexnode_set_host    (indexnode_t *in, char *host);
 extern char *indexnode_get_host    (indexnode_t *in);
 extern void  indexnode_set_port    (indexnode_t *in, char *port);

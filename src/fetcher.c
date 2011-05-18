@@ -20,7 +20,7 @@
 #include "config.h"
 #include "fetcher.h"
 #include "parser.h"
-#include "indexnode.h"
+#include "indexnodes.h"
 #include "peerstats.h"
 
 
@@ -257,7 +257,8 @@ int fetcher_fetch_internal (const char * const   url,
     return rc;
 }
 
-void fetcher_get_indexnode_version (indexnode_t *in)
+void fetcher_get_indexnode_version (indexnode_t *in,
+                                    indexnode_version_cb_t cb)
 {
     char *url, *error_buffer;
     char s[1024]; /* TODO: security */
@@ -265,10 +266,16 @@ void fetcher_get_indexnode_version (indexnode_t *in)
     long http_code;
     CURL *eh;
     struct curl_slist *slist = NULL;
+    indexnode_version_cb_pair_t *pair =
+        malloc(sizeof(indexnode_version_cb_pair_t));
 
 
     fetcher_trace("fetcher_get_indexnode_version(%p)\n", in);
     fetcher_trace_indent();
+
+    /* Package data for header callback */
+    pair->indexnode = in;
+    pair->callback = cb;
 
     /* New handle */
     eh = curl_eh_new();
@@ -297,7 +304,7 @@ void fetcher_get_indexnode_version (indexnode_t *in)
 
     /* Header consumer */
     curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_version_header_cb);
-    curl_easy_setopt(eh, CURLOPT_HEADERDATA, in);
+    curl_easy_setopt(eh, CURLOPT_HEADERDATA, pair);
 
     /* Do a HEAD request */
     curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
@@ -320,10 +327,8 @@ void fetcher_get_indexnode_version (indexnode_t *in)
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
 {
-    indexnode_t *in = (indexnode_t *)stream;
+    indexnode_version_cb_pair_t *pair = (indexnode_version_cb_pair_t *)stream;
     char *header = (char *)ptr;
-    //FIXME: security
-    char version[1024];
 
 
     NOT_USED(stream);
@@ -331,10 +336,10 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        indexnode_parse_version(header, version);
-        indexnode_set_version(in, version);
+        pair->callback(pair->indexnode, header);
     }
 
+    free(pair);
 
     return size * nmemb;
 }
@@ -471,7 +476,7 @@ char *make_url (
     const char * const resource
 )
 {
-    indexnode_t *in = g_indexnode;
+    indexnode_t *in = indexnodes_get_globalton();
     char *host = indexnode_get_host(in), *port = indexnode_get_port(in);
     char *fmt;
     char *resource_esc, *url;

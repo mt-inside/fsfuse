@@ -18,9 +18,9 @@
 
 
 #define FSFUSE_NAME      "fsfuse"
-#define FSFUSE_VERSION   "0.4.0 beta"
-#define FSFUSE_DATE      "February 2010"
-#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2010"
+#define FSFUSE_VERSION   "0.5.0 beta"
+#define FSFUSE_DATE      "February 2011"
+#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2011"
 
 /* Use fuse API version provided on this (the build) system up to the maximum
  * version that we support */

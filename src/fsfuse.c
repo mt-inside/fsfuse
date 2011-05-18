@@ -38,7 +38,7 @@
 #include "progress.h"
 #endif
 #include "peerstats.h"
-#include "indexnode.h"
+#include "indexnodes.h"
 #include "localei.h"
 
 #include "fsfuse_ops/fsfuse_ops.h"
@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
     struct fuse_args fuse_args;
     struct fuse_chan *ch;
     struct fuse_session *se;
-    indexnode_t *indexnode;
 
 
     progname = argv[0];
@@ -159,7 +158,7 @@ int main(int argc, char *argv[])
         common_init()         ||
         locale_init()         ||
         alarms_init()         ||
-        indexnode_init()      ||
+        indexnodes_init()     ||
         fetcher_init()        ||
         parser_init()         ||
         direntry_init()       ||
@@ -176,19 +175,6 @@ int main(int argc, char *argv[])
         goto pre_init_bail;
     }
 
-    /* Check indexnode version */
-    if (!(indexnode = indexnode_find()))
-    {
-        trace_error("indexnode find error (this is not a simple indexnode not found)\n");
-        goto bail;
-    }
-    if (compare_dotted_version(PROTO_MINIMUM, indexnode_get_version(indexnode)) > 0 ||
-        compare_dotted_version(indexnode_get_version(indexnode), PROTO_MAXIMUM) > 0)
-    {
-        trace_error("indexnode reports to be version %s, only versions %s <= x <= %s are supported\n",
-                    indexnode_get_version(indexnode), PROTO_MINIMUM, PROTO_MAXIMUM);
-        goto bail;
-    }
 
     /* Hand over to fuse */
     if ((ch = fuse_mount(mountpoint.real, &fuse_args)))
@@ -219,7 +205,6 @@ int main(int argc, char *argv[])
     }
 
 
-bail:
     /* finalisations */
     thread_pool_finalise();
     peerstats_finalise();
@@ -233,7 +218,7 @@ bail:
     parser_finalise();
     fetcher_finalise();
     alarms_finalise();
-    indexnode_finalise();
+    indexnodes_finalise();
     locale_finalise();
     common_finalise();
     trace_finalise();

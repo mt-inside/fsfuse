@@ -15,11 +15,19 @@
 #include "indexnode.h"
 
 
+typedef void (*indexnode_version_cb_t)(indexnode_t *, char *);
+
 typedef struct
 {
     CURL *eh;
     void *cb_data;
 } fetcher_cb_data_t;
+
+typedef struct
+{
+    indexnode_t *indexnode;
+    indexnode_version_cb_t callback;
+} indexnode_version_cb_pair_t;
 
 
 TRACE_DECLARE(fetcher)
@@ -44,7 +52,8 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern void fetcher_get_indexnode_version (indexnode_t *in);
+extern void fetcher_get_indexnode_version (indexnode_t *in,
+                                           indexnode_version_cb_t cb);
 extern int http2errno (int http_code);
 
 extern char *make_url (
