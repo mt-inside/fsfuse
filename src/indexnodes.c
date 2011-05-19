@@ -21,6 +21,7 @@
 #include "config.h"
 #include "indexnode.h"
 #include "fetcher.h"
+#include "string_buffer.h"
 
 
 typedef struct _listener_thread_info_t
@@ -141,25 +142,38 @@ indexnode_t *indexnodes_get_globalton (void)
     return in;
 }
 
-//TODO: check and return error codes
-//TODO; have callsites check
-static int indexnode_parse_version (char *buf, char *version)
+static int indexnode_parse_version (const char *buf, char **version)
 {
-    sscanf(buf, "fs2protocol-%s", version);
+    int rc = 1;
+    char *v = malloc(strlen(buf) * sizeof(char));
 
-    return 0;
+    if (v &&
+        sscanf(buf, "fs2protocol-%s", v) == 1)
+    {
+        *version = v;
+        rc = 0;
+    }
+
+    return rc;
 }
 
-//TODO: check and return error codes
-static int parse_advert_packet (char *buf, char *port, char *version)
+static int parse_advert_packet (const char *buf, char **port, char **version)
 {
-    /* TODO: security */
-    char s[1024];
+    int rc = 1;
+    char *s = malloc(strlen(buf) * sizeof(char));
+    char *p = malloc(strlen(buf) * sizeof(char));
 
-    sscanf(buf, "%[^:]:%[^:]:*", s, port);
-    indexnode_parse_version(s, version);
+    if (s && p &&
+        sscanf(buf, "%[^:]:%[^:]:*", s, p) == 2 &&
+        !indexnode_parse_version(s, version))
+    {
+        *port = p;
+        rc = 0;
+    }
 
-    return 0;
+    free(s);
+
+    return rc;
 }
 
 /* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
@@ -181,13 +195,11 @@ static int parse_advert_packet (char *buf, char *port, char *version)
  */
 static void *indexnodes_listen_main(void *args)
 {
-    /* FIXME: security */
     indexnode_t *in;
     int s4 = -1, s6 = -1;
     int s4_ok = 0, s6_ok = 0;
     int their_rc;
     socklen_t socklen;
-    char buf[1024], host[NI_MAXHOST], port[1024], version[1024];
     struct sockaddr_in  sa4;
     struct sockaddr_in6 sa6;
     fd_set r_fds;
@@ -212,6 +224,8 @@ static void *indexnodes_listen_main(void *args)
 
     for (ifa = ifaddr; ifa; ifa = ifa->ifa_next)
     {
+        char host[NI_MAXHOST];
+
         family = ifa->ifa_addr->sa_family;
 
         /* For an AF_INET* interface address, display the address, interface and
@@ -314,6 +328,9 @@ static void *indexnodes_listen_main(void *args)
     {
         int found = 0;
         errno = 0;
+        char buf[1024], host[NI_MAXHOST];
+        string_buffer_t *buffer = string_buffer_new();
+        char **port, **version;
         their_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
 
         switch (their_rc)
@@ -330,13 +347,20 @@ static void *indexnodes_listen_main(void *args)
                 if (FD_ISSET(s4, &r_fds))
                 {
                     socklen = sizeof(sa4);
-                    their_rc = recvfrom(s4, buf, sizeof(buf), 0, (struct sockaddr *)&sa4, &socklen);
-                    if (their_rc > 0 &&
+                    do
+                    {
+                        their_rc = recvfrom(s4, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa4, &socklen);
+                        if (their_rc > 0)
+                        {
+                            buf[their_rc] = '\0';
+                            string_buffer_append(buffer, buf);
+                        }
+                    } while( their_rc > 0 );
+
+                    if (their_rc == 0 &&
                         socklen == sizeof(sa4))
                     {
-                        buf[their_rc] = '\0';
-
-                        if (!parse_advert_packet(buf, port, version) &&
+                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version) &&
                             inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
                         {
                             found = 1;
@@ -346,13 +370,20 @@ static void *indexnodes_listen_main(void *args)
                 else if (FD_ISSET(s6, &r_fds))
                 {
                     socklen = sizeof(sa6);
-                    their_rc = recvfrom(s6, buf, sizeof(buf), 0, (struct sockaddr *)&sa6, &socklen);
-                    if (their_rc > 0 &&
+                    do
+                    {
+                        their_rc = recvfrom(s6, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa6, &socklen);
+                        if (their_rc > 0)
+                        {
+                            buf[their_rc] = '\0';
+                            string_buffer_append(buffer, buf);
+                        }
+                    } while( their_rc > 0 );
+
+                    if (their_rc == 0 &&
                         socklen == sizeof(sa6))
                     {
-                        buf[their_rc] = '\0';
-
-                        if (!parse_advert_packet(buf, port, version) &&
+                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version) &&
                             inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
                         {
                             found = 1;
@@ -370,15 +401,17 @@ static void *indexnodes_listen_main(void *args)
         if (found)
         {
             indexnode_set_host(in, host);
-            indexnode_set_port(in, port);
-            indexnode_set_version(in, version);
+            indexnode_set_port(in, *port);
+            indexnode_set_version(in, *version);
 
             //TODO: port is coming out as "autoindexnode" - pardin error?
             //TODO: dedup!
-            trace_info("Found index node, version %s, at %s:%s\n", version, host, port);
+            trace_info("Found index node, version %s, at %s:%s\n", *version, host, *port);
 
             indexnodes_add(in);
         }
+
+        string_buffer_delete(buffer);
     }
 
 
@@ -390,19 +423,21 @@ static void *indexnodes_listen_main(void *args)
 
 static void version_cb (indexnode_t *in, char *buf)
 {
-    //FIXME: security
-    char version[1024];
+    char **version;
 
-    indexnode_parse_version(buf, version);
-    indexnode_set_version(in, version);
+    if (!indexnode_parse_version(buf, version))
+    {
+        indexnode_set_version(in, *version);
+        free(*version);
 
-    trace_info(
-        "Static index node configured at %s:%s - version %s\n",
-        indexnode_get_host(in),
-        indexnode_get_port(in),
-        indexnode_get_version(in));
+        trace_info(
+            "Static index node configured at %s:%s - version %s\n",
+            indexnode_get_host(in),
+            indexnode_get_port(in),
+            indexnode_get_version(in));
 
-    indexnodes_add(in);
+        indexnodes_add(in);
+    }
 }
 
 /* TODO: config currently only supports one indexnode. */

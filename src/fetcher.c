@@ -22,6 +22,7 @@
 #include "parser.h"
 #include "indexnodes.h"
 #include "peerstats.h"
+#include "string_buffer.h"
 
 
 #define URL_LEN 1024
@@ -136,7 +137,7 @@ int fetcher_fetch_internal (const char * const   url,
                             void                *cb_data)
 {
     char *redirect_target, *error_buffer;
-    char s[1024]; /* TODO: security */
+    string_buffer_t *alias = string_buffer_new();
     int rc = EIO, curl_rc;
     long http_code = 0;
     CURL *eh;
@@ -177,8 +178,10 @@ int fetcher_fetch_internal (const char * const   url,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    sprintf(s, "fs2-alias: %s", config_alias);
-    slist = curl_slist_append(slist, s);
+    string_buffer_set(alias, "fs2-alias: ");
+    string_buffer_append(alias, config_alias);
+    slist = curl_slist_append(slist, string_buffer_peek(alias));
+    string_buffer_delete(alias);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
 
     /* No keep-alive */
@@ -257,11 +260,12 @@ int fetcher_fetch_internal (const char * const   url,
     return rc;
 }
 
+/* TODO: factor the first part of this into fetcher_setup_common() */
 void fetcher_get_indexnode_version (indexnode_t *in,
                                     indexnode_version_cb_t cb)
 {
     char *url, *error_buffer;
-    char s[1024]; /* TODO: security */
+    string_buffer_t *alias = string_buffer_new();
     int curl_rc;
     long http_code;
     CURL *eh;
@@ -294,8 +298,10 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    sprintf(s, "fs2-alias: %s", config_alias);
-    slist = curl_slist_append(slist, s);
+    string_buffer_set(alias, "fs2-alias: ");
+    string_buffer_append(alias, config_alias);
+    slist = curl_slist_append(slist, string_buffer_peek(alias));
+    string_buffer_delete(alias);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
 
     /* No keep-alive */

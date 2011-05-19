@@ -32,6 +32,7 @@ OUR_OBJS :=                         \
             locks.o                 \
             parser.o                \
             peerstats.o             \
+            string_buffer.o         \
             trace.o
 
 OBJECTS += $(OUR_OBJS)
