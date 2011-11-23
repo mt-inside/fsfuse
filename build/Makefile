@@ -115,6 +115,10 @@ buildnumber.c:
 	@echo "Compiling $< -> $@"
 	@$(CC) -c $(CFLAGS) -o $@ $<
 
+%.s: %.c
+	@echo "Assembling $< -> $@"
+	@$(CC) -S $(CFLAGS) -o $@ $<
+
 %.d: %.c
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
