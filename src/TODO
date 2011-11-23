@@ -1,0 +1,51 @@
+**WARNING** THIS IS NOT UNDER VERSION CONTROL.
+- resurect the wiki :)
+
+Refactoring to improve quality :)
+- Unit tests
+- Integration tests (mock or real indexnode, client c program / bash script)
+- dtp to become pool and downloader_thread
+- names for threads (like "getattr for /foo/bar") and a collapsed thread id
+- make indexnode_listener class. Instantiate one per address to listen on (e.g.
+  IP4 all, IP6 all). Thread each? Call a static method to use a master thread?
+- statesfor indexnodes - awaiting version, up, missing etc. IsUp() / IsAvailable
+  method. This should make static indexnode version finding better (can be async)
+- "filesystem abstraction" object to appear. This is direntry_get_by_inode +
+  friends. It is to be an active object which queues calls and responds. It makes direct indexnode requests every time. It probably needs to keep a tree for "get child by name" purposes (but look at a tre of paths or something). It is to manage the tree consistency, etc.
+- "filesystem abstraction" cache which is also an active object and has the same
+  interface as the non-caching one. Do non-expiring first (tree is trimmed when something 404s, but new files never show up). Needs integration tests!. Do auto-expiry next (should be easy).
+- Direntry and listing to be closely looked at (direntry is a listing in a tree?
+  but how does it work when we're not caching?). We need some inheritance / interfaces round here.
+- there shouldn't be one downloader thread per path, because then two difference
+  accesses will cause massive thrashing. There should be one per (path X "session"). Basically one per open(). open() should stash thread reference or "request #" in fi field.
+- support multiple indexnodes. Maybe have a parser/mapper thing like in cdnfs
+- Make proper temporal use of the vfs contract. I.e. open() should start a
+  download steam with an empty block list. A handle to this should be stashed in our private context field. read() shouldn't need to start that off, or check whether the file exists, because it knows certain things about open() and what it's done.
+
+
+**WARNING** THIS IS NOT UNDER VERSION CONTROL.
+- resurect the wiki :)
+
+Switch to low-level interface
+make use of dprintf
+
+Test inode behaviour wiht early branch or small test high-level fs. (use ls -i / df -i). See what allocation scheme is, how numbers tiw with lookup / forget / etc.
+Play with inodes in low-level sandbox.
+
+System tests!
+- Various read() patterns.
+- Various readdir() patterns (straight in at the bottom, etc)
+- Mock indexnode that goes away at *all* stages of all fetches
+
+split dtp into downloader_thread and a pool
+- except, pool currently just spwans ad infinitum, but still have callers go
+  through it
+- thread wil need ::reset() to clear all state and let it go back in the pool
+- creating threads isn't expensive, we're just worried about DoSing, so thread
+  pool doesn't need a pool, just a max count.
+reduce memcpy()s - either point libcurl into fuse's buffers, or more likely hold lubcurl's buffers around and make an iovec response to read().
+Factor indexnode hackery into an object as the first step to supporting multiple indexnodes.
+This then allows securemode, with some thinking.
+proper handling of remote queueing / async io etc
+Change the cache to be an instance of the composite pattern - same interface as the fetcher, and conditionally compiled. Prob use a vtable.
+Change the whole direntry system /cache to be an active object. This means you just message-pass to some instance of the direntry interface, be it cache or not. This should also eliminate all the bloody locking problems.
