@@ -91,7 +91,13 @@ struct fuse_lowlevel_ops fsfuse_ops =
     &fsfuse_bmap,        /* bmap */
 #if FUSE_USE_VERSION >= 28
     NULL,                /* ioctl */
-    NULL                 /* poll */
+    NULL,                /* poll */
+#if FUSE_USE_VERSION >= 29
+    NULL,                /* write_buf */
+    NULL,                /* retrieve_reply */
+    NULL,                /* forget_multi */
+    NULL                 /* flock */
+#endif /* FUSE_USE_VERSION >= 29 */
 #endif /* FUSE_USE_VERSION >= 28 */
 #endif /* FUSE_USE_VERSION >= 26 */
 #endif /* FUSE_USE_VERSION >= 25 */
