@@ -27,32 +27,40 @@ OBJECTS+=buildnumber.o
 
 OS:=$(shell uname -s)
 
-DEFINES = -D_FILE_OFFSET_BITS=64 -D_REENTRANT
-
-# This is necessary for fuse.h to be valid. We also use a lot of other features
-# that also require this macro.
-DEFINES += -D_BSD_SOURCE
-#getaddrinfo() et all
-DEFINES += -D_POSIX_SOURCE
 
 CONFIGS := config_declare.h \
            config_define.c
 
-INCLUDES = `curl-config --cflags` `xml2-config --cflags` -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
+INCLUDES = -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
 
-CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror $(INCLUDES) -DDEBUG=$(DEBUG) $(DEFINES)
+CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror $(INCLUDES) -D_REENTRANT -DDEBUG=$(DEBUG) $(FEATURES)
+CFLAGS += `curl-config --cflags` `xml2-config --cflags`
+ifeq ($(OS),Darwin) # it would be nice to do this all the time, but fuse is usually installed from git on linux dev boxen.
+    CFLAGS += `pkg-config --cflags fuse` -mmacosx-version-min=10.5
+else
+    CFLAGS += -D_FILE_OFFSET_BITS=64
+endif
+ifneq ($(OS),Darwin)
+    # Linux needs both of these and acts sanely; BSD is needed for strdup(), POSIX
+    #   for getaddrinfo(), etc.
+    # MacOSX doesn't seem to need these, and in fact POSIX breaks the build on Mac
+    CFLAGS += -D_POSIX_SOURCE -D_BSD_SOURCE
+endif
+
 CFLAGS_OPTIM := -O2
 CFLAGS_DEBUG := -O0 -g3
-ifeq ($(OS),Darwin)
-    CFLAGS += -mmacosx-version-min=10.5
-endif
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
 else
     CFLAGS += $(CFLAGS_OPTIM)
 endif
 
-LDFLAGS = -lfuse `curl-config --libs` `xml2-config --libs`
+LDFLAGS = `curl-config --libs` `xml2-config --libs`
+ifeq ($(OS),Darwin)
+    LDFLAGS += `pkg-config --libs fuse`
+else
+    LDFLAGS += -lfuse
+endif
 ifeq ($(DEBUG),1)
     LDFLAGS += $(CFLAGS_DEBUG)
 else
@@ -69,11 +77,11 @@ OBJECTS += $(MAIN_OBJECT)
 
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o
-    DEFINES += -DFEATURE_DIRENTRY_CACHE=1
+    FEATURES += -DFEATURE_DIRENTRY_CACHE=1
 endif
 ifeq ($(PROGRESS_METER),1)
     OBJECTS += progress.o
-    DEFINES += -DFEATURE_PROGRESS_METER=1
+    FEATURES += -DFEATURE_PROGRESS_METER=1
     LDFLAGS += -lncurses
 endif
 
@@ -110,6 +118,10 @@ buildnumber.c:
 	$(shell echo "unsigned svn_rev = " > buildnumber.c)
 	$(shell echo `svn info $(SRC_ROOT) | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
 	$(shell echo ";" >> buildnumber.c)
+
+%.i: %.c
+	@echo "Preprocessing $< -> $@"
+	@$(CC) -E $(CFLAGS) -o $@ $<
 
 %.o: %.c
 	@echo "Compiling $< -> $@"
