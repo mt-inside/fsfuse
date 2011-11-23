@@ -65,6 +65,7 @@ static mountpoint_t mountpoint;
 
 static void settings_get_config_file              (int argc, char *argv[]);
 static start_action_t settings_parse_command_line (int argc, char *argv[]);
+static int my_fuse_main (void);
 static void fuse_args_set (struct fuse_args *fuse_args);
 static void fsfuse_splash (void);
 static void fsfuse_versions (void);
@@ -76,9 +77,6 @@ int main(int argc, char *argv[])
     int rc = EXIT_FAILURE;
     char **myargv = malloc(argc * sizeof(char *));
     start_action_t sa;
-    struct fuse_args fuse_args;
-    struct fuse_chan *ch;
-    struct fuse_session *se;
 
 
     progname = argv[0];
@@ -116,15 +114,11 @@ int main(int argc, char *argv[])
      * give fuse_new() any arguments it doesn't understand it b0rks. This is
      * convenient, given fuse's parsing functions allow you to remove any
      * (non-fuse) arguments you've dealt with...
-     * Anything you do give it must be malloc()d, as it all gets realloc()d and
-     * free()d a lot. fuse_opt_parse() must do this implicitly.
+     * The argv member of the fuse_args structure you give it must be malloc()d,
+     * as it all gets realloc()d and free()d a lot. Giving it NULL works too.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
     sa = settings_parse_command_line(argc, argv);
-
-
-    fuse_args_set(&fuse_args);
-
 
     switch (sa)
     {
@@ -152,7 +146,6 @@ int main(int argc, char *argv[])
     }
 
 
-
     /* Inits */
     if (trace_init()          ||
         common_init()         ||
@@ -174,6 +167,48 @@ int main(int argc, char *argv[])
         trace_error("initialisation failed\n");
         goto pre_init_bail;
     }
+
+
+    rc = my_fuse_main();
+
+
+    /* finalisations */
+    thread_pool_finalise();
+    peerstats_finalise();
+#if FEATURE_PROGRESS_METER
+    progress_finalise();
+#endif
+#if FEATURE_DIRENTRY_CACHE
+    direntry_cache_finalise();
+#endif
+    direntry_finalise();
+    parser_finalise();
+    fetcher_finalise();
+    alarms_finalise();
+    indexnodes_finalise();
+    locale_finalise();
+    common_finalise();
+    trace_finalise();
+
+pre_init_bail:
+    config_finalise();
+    xmlCleanupParser();
+    if (mountpoint.real) free(mountpoint.real);
+    if (mountpoint.error) free(mountpoint.error);
+
+
+    exit(rc);
+}
+
+static int my_fuse_main (void)
+{
+    int rc = EXIT_FAILURE;
+    struct fuse_chan *ch;
+    struct fuse_session *se;
+    struct fuse_args fuse_args;
+
+
+    fuse_args_set(&fuse_args);
 
 
     /* Hand over to fuse */
@@ -204,34 +239,10 @@ int main(int argc, char *argv[])
         }
     }
 
-
-    /* finalisations */
-    thread_pool_finalise();
-    peerstats_finalise();
-#if FEATURE_PROGRESS_METER
-    progress_finalise();
-#endif
-#if FEATURE_DIRENTRY_CACHE
-    direntry_cache_finalise();
-#endif
-    direntry_finalise();
-    parser_finalise();
-    fetcher_finalise();
-    alarms_finalise();
-    indexnodes_finalise();
-    locale_finalise();
-    common_finalise();
-    trace_finalise();
-
-pre_init_bail:
-    config_finalise();
-    xmlCleanupParser();
     fuse_opt_free_args(&fuse_args);
-    if (mountpoint.real) free(mountpoint.real);
-    if (mountpoint.error) free(mountpoint.error);
 
 
-    exit(rc);
+    return rc;
 }
 
 static void settings_get_config_file (int argc, char *argv[])
@@ -405,7 +416,6 @@ static void fuse_args_set (struct fuse_args *fuse_args)
     fuse_args->argv = NULL;
     fuse_opt_add_arg(fuse_args, progname);
 
-
     /* Here we add mount options to give fuse.
      * These seem to be normal mount options, plus some fuse-specific ones.
      * Presumably we can also read (and filter out) any fsfuse-specific ones
@@ -447,29 +457,47 @@ static void fsfuse_splash (void)
 
 static void fsfuse_versions (void)
 {
-    struct utsname un;
+    {
+        struct utsname un;
 
+        uname(&un);
 
-    uname(&un);
-
-    printf("Using kernel %s %s\n"
-           "Using libfuse version %d (built against %d, using API version %d)\n"
-           "Using %s\n"
-           "Using libxml2 %s",
-           un.sysname,
-           un.release,
-           fuse_version(), FUSE_VERSION, FUSE_USE_VERSION,
-           curl_version(),
-           LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
-          );
+        printf("Using kernel %s %s\n"
+               "Using libfuse version %d (built against %d, using API version %d)\n"
+               "Using %s\n"
+               "Using libxml2 %s",
+               un.sysname,
+               un.release,
+               fuse_version(), FUSE_VERSION, FUSE_USE_VERSION,
+               curl_version(),
+               LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
+              );
 
 #if FEATURE_PROGRESS_METER
-    printf("Using %s\n",
-           curses_version()
-          );
+        printf("Using %s\n",
+               curses_version()
+              );
 #endif
 
-    printf("\n");
+        printf("\n");
+    }
+
+    {
+        struct fuse_args fuse_args;
+        char my_arg[1024];
+        fuse_args.argv = NULL;
+        fuse_args.argc = 0;
+
+        sprintf(my_arg, "-d");
+        fuse_opt_add_arg(&fuse_args, my_arg);
+
+        sprintf(my_arg, "--version");
+        fuse_opt_add_arg(&fuse_args, my_arg);
+
+        fuse_parse_cmdline(&fuse_args, NULL, NULL, NULL);
+
+        printf("\n");
+    }
 }
 
 static void fsfuse_usage (void)
