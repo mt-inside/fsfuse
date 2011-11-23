@@ -330,7 +330,7 @@ static void *indexnodes_listen_main(void *args)
         errno = 0;
         char buf[1024], host[NI_MAXHOST];
         string_buffer_t *buffer = string_buffer_new();
-        char **port, **version;
+        char **port = NULL, **version = NULL;
         their_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
 
         switch (their_rc)
@@ -423,7 +423,7 @@ static void *indexnodes_listen_main(void *args)
 
 static void version_cb (indexnode_t *in, char *buf)
 {
-    char **version;
+    char **version = NULL;
 
     if (!indexnode_parse_version(buf, version))
     {
