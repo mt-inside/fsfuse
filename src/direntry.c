@@ -192,13 +192,12 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 #if DEBUG
     char trace_str[1024] = "";
 #endif
-    unsigned refc;
 
 
     assert(de->ref_count);
 
     pthread_mutex_lock(de->lock);
-    refc = ++de->ref_count;
+    ++de->ref_count;
     pthread_mutex_unlock(de->lock);
 
 #if DEBUG
@@ -229,8 +228,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     direntry_trace(trace_str);
 #endif /* DEBUG */
 
-    /* hacky attempt to detect overflow */
-    assert((signed)de->ref_count > 0);
+    assert(de->ref_count);
 
     pthread_mutex_lock(de->lock);
     refc = --de->ref_count;
