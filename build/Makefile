@@ -82,7 +82,8 @@ endif
 ifeq ($(PROGRESS_METER),1)
     OBJECTS += progress.o
     FEATURES += -DFEATURE_PROGRESS_METER=1
-    LDFLAGS += -lncurses
+    CFLAGS += `ncurses5-config --cflags`
+    LDFLAGS += `ncurses5-config --libs`
 endif
 
 
