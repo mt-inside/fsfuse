@@ -1,7 +1,7 @@
 /*
  * Definition of the vtable and some methods.
  *
- * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
  *
  * $Id: fsfuse_ops.h 513 2010-03-08 22:27:27Z matt $
  */
@@ -96,7 +96,9 @@ struct fuse_lowlevel_ops fsfuse_ops =
     NULL,                /* write_buf */
     NULL,                /* retrieve_reply */
     NULL,                /* forget_multi */
-    NULL                 /* flock */
+    NULL,                /* flock */
+    NULL,                /* mmap (CUSE only atm) */
+    NULL                 /* munmap (CUSE only atm) */
 #endif /* FUSE_USE_VERSION >= 29 */
 #endif /* FUSE_USE_VERSION >= 28 */
 #endif /* FUSE_USE_VERSION >= 26 */
