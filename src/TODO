@@ -3,6 +3,8 @@
 instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
 
 Refactoring to improve quality :)
+=======
+- everywhere one sees char foo[xxx] - string_builder!
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
 - Unit tests
