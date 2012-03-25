@@ -1,11 +1,14 @@
-**WARNING** THIS IS NOT UNDER VERSION CONTROL.
 - resurect the wiki :)
 
+instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
+
 Refactoring to improve quality :)
+- inode lifecycle (don't keep all inodes forever, dump them when fuse says
+  FORGET)
 - Unit tests
 - Integration tests (mock or real indexnode, client c program / bash script)
 - dtp to become pool and downloader_thread
-- names for threads (like "getattr for /foo/bar") and a collapsed thread id
+- names for threads (like "getattr for /foo/bar", "read bar 4k-8k") and a collapsed thread id
 - make indexnode_listener class. Instantiate one per address to listen on (e.g.
   IP4 all, IP6 all). Thread each? Call a static method to use a master thread?
 - statesfor indexnodes - awaiting version, up, missing etc. IsUp() / IsAvailable
