@@ -16,7 +16,7 @@ Refactoring to improve quality :)
 - "filesystem abstraction" object to appear. This is direntry_get_by_inode +
   friends. It is to be an active object which queues calls and responds. It makes direct indexnode requests every time. It probably needs to keep a tree for "get child by name" purposes (but look at a tre of paths or something). It is to manage the tree consistency, etc.
 - "filesystem abstraction" cache which is also an active object and has the same
-  interface as the non-caching one. Do non-expiring first (tree is trimmed when something 404s, but new files never show up). Needs integration tests!. Do auto-expiry next (should be easy).
+  interface as the non-caching one. Do non-expiring first (tree is trimmed when something 404s, but new files never show up). Needs integration tests!. Do auto-expiry next (should be easy). May want to time expire only dirs and not files (i.e. if access an expired file, ignore it, if access out of date dir, do something (cause that's how you miss new stuff)). On expired dir, only re-fecth that dir, not all ancestors. If that dir no longer exists, trigger normal mechanism to purge upwards. "Cached dead actors, stacked to the rafters, line up the bastards, all I want is the truth"
 - Direntry and listing to be closely looked at (direntry is a listing in a tree?
   but how does it work when we're not caching?). We need some inheritance / interfaces round here.
 - there shouldn't be one downloader thread per path, because then two difference
