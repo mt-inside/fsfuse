@@ -114,9 +114,9 @@ config_define.c:  config.xsl config-config.xml
 
 buildnumber.c:
 	@echo "Making buildnumber.c"
-	$(shell echo "unsigned svn_rev = " > buildnumber.c)
-	$(shell echo `svn info $(SRC_ROOT) | grep Revision | cut -d ' ' -f 2` >> buildnumber.c)
-	$(shell echo ";" >> buildnumber.c)
+	$(shell echo -n 'const char * const svn_rev = "'  > buildnumber.c)
+	$(shell echo -n `svnversion $(SRC_ROOT)`         >> buildnumber.c)
+	$(shell echo    '";'                             >> buildnumber.c)
 
 %.i: %.c
 	@echo "Preprocessing $< -> $@"

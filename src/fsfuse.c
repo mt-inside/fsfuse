@@ -445,7 +445,7 @@ static void fuse_args_set (struct fuse_args *fuse_args)
 static void fsfuse_splash (void)
 {
     printf("%s - FragSoc Filesystem in USErspace\n"
-           "Version %s - %s (subversion revision %u)\n"
+           "Version %s - %s (subversion revision %s)\n"
            "%s\n\n",
            FSFUSE_NAME,
            FSFUSE_VERSION,

@@ -6,4 +6,4 @@
  * $Id$
  */
 
-extern unsigned svn_rev;
+extern const char * const svn_rev;
