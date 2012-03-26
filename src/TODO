@@ -5,7 +5,6 @@ instead of hand-rolling an http impl, use libevent, which claims to have http su
 Refactoring to improve quality :)
 =======
 - can chunk_list lock be a rwlock?
-- everywhere one sees char foo[xxx] - string_builder!
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
 - rename hash.c -> hash_table.c
