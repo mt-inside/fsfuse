@@ -6,9 +6,15 @@
  * $Id$
  */
 
-/* A thread for downloading a file. There is one thread per open()ed file, so if
- * a file is opened > 1 time it will have multiple threads steaming it at
- * different points.
+/* A thread for downloading a file.
+ * There is currently one thread per path, so multiple open()s will use the one
+ * thread.
+ * TODO: have one thread per open()ed file, so if a file is opened > 1 time it
+ * will have multiple threads steaming it at different points.
+ * Even with one thread per open(), userspace can dup() or spawn threads,
+ * meaning we still have to lock stuff.
+ * This could one day become an actor so that it doesn't lock. Or rather it
+ * would have a chunk list actor that it could ask questions of.
  */
 
 #include <assert.h>
@@ -70,11 +76,6 @@ struct _thread_t
                                at the head of the list at any time */
     int seek;               /* flags indicating why we bailed */
     int timed_out;
-    pthread_mutex_t mutex;  /* mutex to protect the thread_t object. Multiple
-                               concurrent accesses can occur if multiple threads
-                               or processes use the same file descriptor, or
-                               possibly just a single thread because of the way
-                               the kernel issues requests. */
 };
 
 
@@ -117,7 +118,6 @@ thread_t *download_thread_new (direntry_t *de, thread_end_cb_t end_cb)
     TAILQ_INIT(&t->chunk_list);
     pthread_cond_init(&(t->chunk_list_cond), NULL);
     pthread_mutex_init(&(t->chunk_list_mutex), NULL);
-    pthread_mutex_init(&(t->mutex), NULL);
 
 
     /* make the thread */
@@ -137,14 +137,11 @@ static void thread_delete (thread_t *t)
     assert(!t->current_chunk);
     assert(TAILQ_EMPTY(&t->chunk_list));
 
-    pthread_mutex_unlock(&(t->mutex));
-
     t->end_cb(t);
 
     direntry_delete(CALLER_INFO t->de);
     pthread_cond_destroy(&t->chunk_list_cond);
     pthread_mutex_destroy(&t->chunk_list_mutex);
-    pthread_mutex_destroy(&t->mutex);
 
     free(t);
 }
@@ -192,7 +189,7 @@ void download_thread_chunk_add (thread_t *thread,
     c = chunk_new(start, end, buf, cb, ctxt);
 
 
-    pthread_mutex_lock(&(thread->mutex));
+    pthread_mutex_lock(&(thread->chunk_list_mutex));
 
     /* this new chunk needs to go into the list in order. Chunks cannot be
      * aggregated because they all get passed off to separate buffers, but
@@ -220,12 +217,10 @@ void download_thread_chunk_add (thread_t *thread,
     }
 
     /* increment the chunk list count */
-    pthread_mutex_lock(&thread->chunk_list_mutex);
     thread->chunk_list_count++;
-    pthread_mutex_unlock(&thread->chunk_list_mutex);
     pthread_cond_signal(&thread->chunk_list_cond);
 
-    pthread_mutex_unlock(&(thread->mutex));
+    pthread_mutex_unlock(&(thread->chunk_list_mutex));
 }
 
 static chunk_t *chunk_new (
@@ -299,7 +294,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
                   thread->chunk_list_count);
 
 
-        pthread_mutex_lock(&(thread->mutex));
+        pthread_mutex_lock(&(thread->chunk_list_mutex));
 
         chunk = TAILQ_FIRST(&thread->chunk_list);
         /* there must be a chunk, because we just came out of the semaphore */
@@ -309,7 +304,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
         /* remove the chunk from the list */
         TAILQ_REMOVE(&thread->chunk_list, chunk, entries);
 
-        pthread_mutex_unlock(&(thread->mutex));
+        pthread_mutex_unlock(&(thread->chunk_list_mutex));
     }
     else
     {
@@ -409,6 +404,9 @@ static void *downloader_thread_main (void *arg)
                                 (void *)thread                              );
     } while (rc == 0);
 
+
+    pthread_mutex_lock(&(thread->chunk_list_mutex));
+
     if (rc == 0)
     {
         /* OK */
@@ -427,6 +425,9 @@ static void *downloader_thread_main (void *arg)
             chunk_list_empty(thread, rc);
         }
     }
+
+    pthread_mutex_unlock(&(thread->chunk_list_mutex));
+
 
     /* Delete the data structures */
 #if FEATURE_PROGRESS_METER

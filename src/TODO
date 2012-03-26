@@ -4,8 +4,7 @@ instead of hand-rolling an http impl, use libevent, which claims to have http su
 
 Refactoring to improve quality :)
 =======
-- why do threads have two mutexes? shouldn't they have a r/w for the chunk list?
-- add hash_equals
+- can chunk_list lock be a rwlock?
 - everywhere one sees char foo[xxx] - string_builder!
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
