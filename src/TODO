@@ -7,10 +7,8 @@ Refactoring to improve quality :)
 - can chunk_list lock be a rwlock?
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
-- rename hash.c -> hash_table.c
 - move stuff out of common.c. Make utils.c for stuff.
 - make hash (as in de hash) a 1stclass type(def)
-- add const annotations (and * const) ... everywhere!
 - Unit tests
 - Integration tests (mock or real indexnode, client c program / bash script)
 - dtp to become pool and downloader_thread
@@ -30,6 +28,7 @@ Refactoring to improve quality :)
 - support multiple indexnodes. Maybe have a parser/mapper thing like in cdnfs
 - Make proper temporal use of the vfs contract. I.e. open() should start a
   download steam with an empty block list. A handle to this should be stashed in our private context field. read() shouldn't need to start that off, or check whether the file exists, because it knows certain things about open() and what it's done.
+- add const annotations (and * const) ... everywhere!
 
 
 **WARNING** THIS IS NOT UNDER VERSION CONTROL.

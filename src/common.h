@@ -60,8 +60,6 @@
 #define FSFUSE_BLKSIZE   512
 
 
-typedef struct _str_buf_t str_buf_t;
-
 typedef struct _uri_t uri_t;
 
 
