@@ -136,7 +136,7 @@ buildnumber.c:
 
 fsfuse: $(CONFIGS) objects buildnumber.o
 	@echo "Linking $@"
-	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS) buildnumber.o
+	@$(CC) -o $@ $(OBJECTS) buildnumber.o $(LDFLAGS)
 
 depend: $(DEPENDS)
 
