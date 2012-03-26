@@ -298,7 +298,7 @@ ino_t direntry_get_inode (direntry_t *de)
     return de->inode;
 }
 
-static void direntry_get_path_inner (direntry_t *de, char *path)
+static void direntry_get_path_inner (direntry_t *de, string_buffer_t *path)
 {
     direntry_t *parent;
 
@@ -309,13 +309,12 @@ static void direntry_get_path_inner (direntry_t *de, char *path)
         direntry_delete(CALLER_INFO parent);
     }
 
-    strcat(path, direntry_get_name(de));
-    strcat(path, "/");
+    string_buffer_append(path, direntry_get_name(de));
+    string_buffer_append(path, "/");
 }
 char *direntry_get_path (direntry_t *de)
 {
-    /* FIXME */
-    char *path = malloc(1024);
+    string_buffer_t *path = string_buffer_new();
 
 
     path[0] = '\0';
@@ -323,7 +322,7 @@ char *direntry_get_path (direntry_t *de)
     direntry_get_path_inner(de, path);
 
 
-    return path;
+    return string_buffer_commit(path);
 }
 
 char *direntry_get_name (direntry_t *de)
