@@ -22,7 +22,9 @@
 #include <sys/utsname.h>
 #include <curl/curl.h>
 #include <libxml/xmlversion.h>
+#if FEATURE_PROGRESS_METER
 #include <curses.h>
+#endif
 
 #include "buildnumber.h"
 #include "config.h"
