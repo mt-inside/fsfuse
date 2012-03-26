@@ -23,8 +23,6 @@ MAIN_OBJECT ?= fsfuse.o
 default: fsfuse
 .PHONY: default depend objects clean count buildnumber.c
 
-OBJECTS+=buildnumber.o
-
 OS:=$(shell uname -s)
 
 
@@ -136,9 +134,9 @@ buildnumber.c:
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
-fsfuse: $(CONFIGS) objects
+fsfuse: $(CONFIGS) objects buildnumber.o
 	@echo "Linking $@"
-	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
+	@$(CC) $(LDFLAGS) -o $@ $(OBJECTS) buildnumber.o
 
 depend: $(DEPENDS)
 
