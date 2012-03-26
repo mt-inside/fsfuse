@@ -72,6 +72,30 @@ void string_buffer_append (string_buffer_t *sb, const char *string)
     (**sb).length += len;
 }
 
+/* This looks a lot like make_message in the linux vsnprintf() man page */
+void string_buffer_printf (string_buffer_t *sb, const char *format, ...)
+{
+    va_list ap;
+    int output_size;
+
+    va_start(ap, format);
+    output_size = vsnprintf((**sb).s, (*sb)->capacity, format, ap);
+    va_end(ap);
+    assert(output_size >= 0);
+
+    if ((unsigned)output_size > (*sb)->capacity)
+    {
+        string_buffer_ensure_capacity(sb, output_size);
+
+        va_start(ap, format);
+        output_size = vsnprintf((**sb).s, (*sb)->capacity, format, ap);
+        va_end(ap);
+
+        assert(output_size >= 0 && (unsigned)output_size <= (*sb)->capacity);
+    }
+
+}
+
 char *string_buffer_get (string_buffer_t *sb)
 {
     char *s = malloc((**sb).length + 1);
@@ -99,6 +123,7 @@ static void string_buffer_ensure_capacity (string_buffer_t *sb, size_t cap)
 {
     if( (*sb)->capacity < cap )
     {
+        /* TODO: should prolly round up to power of 2 or something */
         (*sb) = realloc( *sb, sizeof(struct _string_buffer_t) + (cap * sizeof(char)) );
         (*sb)->capacity = cap;
     }

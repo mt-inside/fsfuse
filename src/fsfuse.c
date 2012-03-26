@@ -42,6 +42,7 @@
 #include "peerstats.h"
 #include "indexnodes.h"
 #include "localei.h"
+#include "string_buffer.h"
 
 #include "fsfuse_ops/fsfuse_ops.h"
 
@@ -413,7 +414,9 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 
 static void fuse_args_set (struct fuse_args *fuse_args)
 {
-    char my_arg[1024];
+    string_buffer_t *my_arg = string_buffer_new();
+
+
     fuse_args->argc = 0;
     fuse_args->argv = NULL;
     fuse_opt_add_arg(fuse_args, progname);
@@ -427,21 +430,23 @@ static void fuse_args_set (struct fuse_args *fuse_args)
      */
     if (config_proc_debug)
     {
-        sprintf(my_arg, "-d");
-        fuse_opt_add_arg(fuse_args, my_arg);
+        string_buffer_printf(my_arg, "-d");
+        fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));
     }
 
-    sprintf(my_arg, "-ofsname=" FSFUSE_NAME);
-    fuse_opt_add_arg(fuse_args, my_arg);
+    string_buffer_printf(my_arg, "-ofsname=" FSFUSE_NAME);
+    fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));
 
-    sprintf(my_arg, "-osubtype=" FSFUSE_NAME "-" FSFUSE_VERSION);
-    fuse_opt_add_arg(fuse_args, my_arg);
+    string_buffer_printf(my_arg, "-osubtype=" FSFUSE_NAME "-" FSFUSE_VERSION);
+    fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));
 
-    sprintf(my_arg, "-oallow_other");
-    fuse_opt_add_arg(fuse_args, my_arg);
+    string_buffer_printf(my_arg, "-oallow_other");
+    fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));
 
-    sprintf(my_arg, "-oro");
-    fuse_opt_add_arg(fuse_args, my_arg);
+    string_buffer_printf(my_arg, "-oro");
+    fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));
+
+    string_buffer_delete(my_arg);
 }
 
 static void fsfuse_splash (void)
@@ -486,17 +491,19 @@ static void fsfuse_versions (void)
 
     {
         struct fuse_args fuse_args;
-        char my_arg[1024];
+        string_buffer_t *my_arg = string_buffer_new();
         fuse_args.argv = NULL;
         fuse_args.argc = 0;
 
-        sprintf(my_arg, "-d");
-        fuse_opt_add_arg(&fuse_args, my_arg);
+        string_buffer_printf(my_arg, "-d");
+        fuse_opt_add_arg(&fuse_args, string_buffer_peek(my_arg));
 
-        sprintf(my_arg, "--version");
-        fuse_opt_add_arg(&fuse_args, my_arg);
+        string_buffer_printf(my_arg, "--version");
+        fuse_opt_add_arg(&fuse_args, string_buffer_peek(my_arg));
 
         fuse_parse_cmdline(&fuse_args, NULL, NULL, NULL);
+
+        string_buffer_delete(my_arg);
 
         printf("\n");
     }

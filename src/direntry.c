@@ -20,6 +20,7 @@
 #include "inode_map.h"
 #include "listing.h"
 #include "parser.h"
+#include "string_buffer.h"
 
 
 TRACE_DEFINE(direntry)
@@ -190,8 +191,8 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
 #if DEBUG
-    char trace_str[1024] = "";
-#endif
+    string_buffer_t *trace_str = string_buffer_new();
+#endif /* DEBUG */
 
 
     assert(de->ref_count);
@@ -201,11 +202,11 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
     pthread_mutex_unlock(de->lock);
 
 #if DEBUG
-    sprintf(trace_str,
-            "[direntry %p] post (" CALLER_FORMAT ") ref %u",
+    string_buffer_printf(trace_str,
+            "[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
             (void *)de, CALLER_PASS de->ref_count);
-    strcat(trace_str, "\n");
-    direntry_trace(trace_str);
+    direntry_trace(string_buffer_peek(trace_str));
+    string_buffer_delete(trace_str);
 #endif /* DEBUG */
 
 
@@ -216,16 +217,14 @@ void direntry_delete (CALLER_DECL direntry_t *de)
 {
     unsigned refc;
 #if DEBUG
-    char trace_str[1024];
-#endif
+    string_buffer_t *trace_str = string_buffer_new();
 
 
-#if DEBUG
-    sprintf(trace_str,
-            "[direntry %p] delete (" CALLER_FORMAT ") ref %u",
+    string_buffer_printf(trace_str,
+            "[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
             (void *)de, CALLER_PASS de->ref_count - 1);
-    strcat(trace_str, "\n");
-    direntry_trace(trace_str);
+    direntry_trace(string_buffer_peek(trace_str));
+    string_buffer_delete(trace_str);
 #endif /* DEBUG */
 
     assert(de->ref_count);

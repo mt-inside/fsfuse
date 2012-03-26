@@ -32,6 +32,7 @@
 #include "fetcher.h"
 #include "indexnode.h"
 #include "queue.h"
+#include "string_buffer.h"
 #if FEATURE_PROGRESS_METER
 #include "progress.h"
 #endif
@@ -324,7 +325,8 @@ static chunk_t *chunk_get_next (thread_t *thread)
 static void *downloader_thread_main (void *arg)
 {
     thread_t *thread = (thread_t *)arg;
-    char range[1024];
+    string_buffer_t *range_buffer = string_buffer_new();
+    char *range_str;
     int rc;
     int first_time = 1;
 
@@ -392,16 +394,20 @@ static void *downloader_thread_main (void *arg)
 
         if (thread->current_chunk->start)
         {
-            sprintf(range, "%" PRIu64 "-", thread->current_chunk->start);
+            string_buffer_printf(range_buffer, "%" PRIu64 "-", thread->current_chunk->start);
         }
+        range_str = string_buffer_commit(range_buffer);
         thread->download_offset = thread->current_chunk->start;
-        dl_thr_trace("fetching range \"%s\"\n", range);
+        dl_thr_trace("fetching range \"%s\"\n", range_str);
 
         /* begin the download */
         rc = fetcher_fetch_file(direntry_get_hash(thread->de),
-                                (thread->current_chunk->start) ? range : NULL,
+                                (thread->current_chunk->start) ? range_str : NULL,
                                 (curl_write_callback)&thread_pool_consumer,
                                 (void *)thread                              );
+
+        free(range_str);
+
     } while (rc == 0);
 
 

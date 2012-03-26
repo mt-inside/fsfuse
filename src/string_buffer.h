@@ -29,6 +29,7 @@ extern void string_buffer_delete (string_buffer_t *sb);
 
 extern void string_buffer_set (string_buffer_t *sb, const char *string);
 extern void string_buffer_append (string_buffer_t *sb, const char *string);
+extern void string_buffer_printf (string_buffer_t *sb, const char *format, ...);
 
 extern char *string_buffer_get (string_buffer_t *sb);
 extern const char *string_buffer_peek (string_buffer_t *sb);
