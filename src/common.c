@@ -412,3 +412,8 @@ char *uri_get_fragment (uri_t *uri)
     assert(uri);
     return strdup(uri->fragment);
 }
+
+int hash_equal (char *h1, char *h2)
+{
+    return !strcmp(h1, h2);
+}

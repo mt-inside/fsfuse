@@ -20,6 +20,7 @@ OUR_OBJS :=                         \
             config.o                \
             config_define.o         \
             direntry.o              \
+            download_thread.o       \
             download_thread_pool.o  \
             fetcher.o               \
             hash.o                  \

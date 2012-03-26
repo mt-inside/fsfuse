@@ -43,6 +43,8 @@ void listing_attribute_add (
     const char *value
 );
 
+extern int listing_equal (listing_t *li, listing_t *other);
+
 extern char *          listing_get_name          (listing_t *li);
 extern char *          listing_get_hash          (listing_t *li);
 extern listing_type_t  listing_get_type          (listing_t *li);

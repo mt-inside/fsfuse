@@ -138,7 +138,15 @@ void listing_delete (CALLER_DECL listing_t *li)
 }
 
 
-/* listing attribute getters =============================================== */
+/* listing equality ========================================================= */
+
+int listing_equal (listing_t *li, listing_t *other)
+{
+    return hash_equal(li->hash, other->hash);
+}
+
+
+/* listing attribute getters ================================================ */
 
 char *listing_get_name (listing_t *li)
 {

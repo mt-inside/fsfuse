@@ -264,6 +264,14 @@ void direntry_delete_list (CALLER_DECL direntry_t *de)
 }
 
 
+/* direntry equality ======================================================== */
+
+int direntry_equal (direntry_t *de, direntry_t *other)
+{
+    return listing_equal(de->li, other->li);
+}
+
+
 /* direntry tree traversal functions ======================================== */
 /* for now, we only provide these simple wrappers around the underlying
  * implementation details. Iterator functions could be built from these */

@@ -112,4 +112,6 @@ extern char *uri_get_path      (uri_t *uri);
 extern char *uri_get_query     (uri_t *uri);
 extern char *uri_get_fragment  (uri_t *uri);
 
+extern int hash_equal (char *h1, char *h2);
+
 #endif /* _included_common_h */
