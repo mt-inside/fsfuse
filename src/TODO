@@ -4,9 +4,15 @@ instead of hand-rolling an http impl, use libevent, which claims to have http su
 
 Refactoring to improve quality :)
 =======
+- why do threads have two mutexes? shouldn't they have a r/w for the chunk list?
+- add hash_equals
 - everywhere one sees char foo[xxx] - string_builder!
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
+- rename hash.c -> hash_table.c
+- move stuff out of common.c. Make utils.c for stuff.
+- make hash (as in de hash) a 1stclass type(def)
+- add const annotations (and * const) ... everywhere!
 - Unit tests
 - Integration tests (mock or real indexnode, client c program / bash script)
 - dtp to become pool and downloader_thread
