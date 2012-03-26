@@ -38,7 +38,7 @@ string_buffer_t *string_buffer_new (void)
     return ptr;
 }
 
-string_buffer_t *string_buffer_from_chars (char *string)
+string_buffer_t *string_buffer_from_chars (const char *string)
 {
     string_buffer_t *sb = string_buffer_new();
 
@@ -54,7 +54,7 @@ void string_buffer_delete (string_buffer_t *sb)
 }
 
 
-void string_buffer_set (string_buffer_t *sb, char *string)
+void string_buffer_set (string_buffer_t *sb, const char *string)
 {
     size_t len = strlen(string);
     string_buffer_ensure_capacity(sb, len);
@@ -63,7 +63,7 @@ void string_buffer_set (string_buffer_t *sb, char *string)
     (**sb).length = len;
 }
 
-void string_buffer_append (string_buffer_t *sb, char *string)
+void string_buffer_append (string_buffer_t *sb, const char *string)
 {
     size_t len = strlen(string);
     string_buffer_ensure_capacity(sb, (**sb).length + len);
@@ -84,6 +84,15 @@ char *string_buffer_get (string_buffer_t *sb)
 const char *string_buffer_peek (string_buffer_t *sb)
 {
     return (**sb).s;
+}
+
+char *string_buffer_commit (string_buffer_t *sb)
+{
+    char *s = (**sb).s;
+
+    free(sb);
+
+    return s;
 }
 
 static void string_buffer_ensure_capacity (string_buffer_t *sb, size_t cap)

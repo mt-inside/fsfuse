@@ -79,10 +79,6 @@ extern int compare_dotted_version (const char *ver, const char *cmp);
 extern int is_ip4_address (const char *s);
 extern int is_ip6_address (const char *s);
 
-extern str_buf_t *str_buf_new (void);
-extern void str_buf_add (str_buf_t *buf, const char *s);
-extern char *str_buf_commit (str_buf_t *buf);
-
 /* See RFC2396.
  * We assume a "generic uri" with a "server-based naming authority".
  * e.g.:

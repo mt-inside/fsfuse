@@ -17,8 +17,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include "common.h"
 #include "http.h"
+#include "string_buffer.h"
 
 
 TRACE_DEFINE(http)
@@ -72,13 +72,13 @@ static const char *make_req_string (http_req_t *req)
 {
     unsigned count, i;
     const char **headers, *key, *val;
-    str_buf_t *buf;
+    string_buffer_t *buf;
     char *ret = NULL, *path;
 
 
     assert(req);
 
-    buf = str_buf_new();
+    buf = string_buffer_new();
     if (buf)
     {
         path = uri_get_path(req->uri);
@@ -87,9 +87,9 @@ static const char *make_req_string (http_req_t *req)
 
         assert(path);
 
-        str_buf_add(buf, "GET ");
-        str_buf_add(buf, path);
-        str_buf_add(buf, " HTTP/1.1\n\n");
+        string_buffer_append(buf, "GET ");
+        string_buffer_append(buf, path);
+        string_buffer_append(buf, " HTTP/1.1\n\n");
 
         free(path);
 
@@ -98,13 +98,13 @@ static const char *make_req_string (http_req_t *req)
             key = *(headers + (i * 2));
             val = *(headers + (i * 2) + 1);
 
-            str_buf_add(buf, key);
-            str_buf_add(buf, ": ");
-            str_buf_add(buf, val);
-            str_buf_add(buf, "\n");
+            string_buffer_append(buf, key);
+            string_buffer_append(buf, ": ");
+            string_buffer_append(buf, val);
+            string_buffer_append(buf, "\n");
         }
 
-        ret = str_buf_commit(buf);
+        ret = string_buffer_commit(buf);
     }
 
 

@@ -11,14 +11,8 @@
 #include <pthread.h>
 
 #include "common.h"
+#include "string_buffer.h"
 
-
-struct _str_buf_t
-{
-    unsigned size; /* size of memory block */
-    unsigned len;  /* length of string s */
-    char *s;
-};
 
 struct _uri_t
 {
@@ -168,59 +162,6 @@ int is_ip6_address (const char *s)
 }
 
 
-str_buf_t *str_buf_new (void)
-{
-    str_buf_t *buf = calloc(sizeof(str_buf_t), 1);
-
-    buf->size = 1;
-    buf->s = malloc(sizeof(char));
-    *(buf->s) = '\0';
-    buf->len = 0;
-
-    return buf;
-}
-
-void str_buf_add (str_buf_t *buf, const char *s)
-{
-    unsigned new_size;
-
-
-    assert(buf);
-    if (!s) return;
-
-    buf->len += strlen(s);
-
-    new_size = buf->size;
-    if (!new_size) new_size = 1;
-    while (buf->len >= new_size)
-    {
-        new_size *= 2;
-    }
-    if (new_size != buf->size)
-    {
-        buf->size = new_size;
-        buf->s = realloc(buf->s, buf->size);
-    }
-
-    strcat(buf->s, s);
-}
-
-char *str_buf_commit (str_buf_t *buf)
-{
-    char *s;
-
-
-    assert(buf);
-
-    s = buf->s;
-
-    free(buf);
-
-
-    return s;
-}
-
-
 uri_t *uri_new (void)
 {
     uri_t *uri = calloc(sizeof(uri_t), 1);
@@ -312,7 +253,7 @@ char *uri_get (uri_t *uri)
 {
     /* This could prove to be a bit slow - be careful how often you call it, or
      * optimise it :P */
-    str_buf_t *buf = str_buf_new();
+    string_buffer_t *buf = string_buffer_new();
     char *auth;
 
 
@@ -320,34 +261,34 @@ char *uri_get (uri_t *uri)
 
     if (uri->scheme)
     {
-        str_buf_add(buf, uri->scheme);
-        str_buf_add(buf, ":");
+        string_buffer_append(buf, uri->scheme);
+        string_buffer_append(buf, ":");
     }
 
     auth = uri_get_authority(uri);
     if (auth)
     {
-        str_buf_add(buf, "//");
-        str_buf_add(buf, auth);
+        string_buffer_append(buf, "//");
+        string_buffer_append(buf, auth);
         free(auth);
     }
 
     assert(uri->path);
-    str_buf_add(buf, uri->path);
+    string_buffer_append(buf, uri->path);
 
     if (uri->query)
     {
-        str_buf_add(buf, "?");
-        str_buf_add(buf, uri->query);
+        string_buffer_append(buf, "?");
+        string_buffer_append(buf, uri->query);
     }
     if (uri->fragment)
     {
-        str_buf_add(buf, "#");
-        str_buf_add(buf, uri->fragment);
+        string_buffer_append(buf, "#");
+        string_buffer_append(buf, uri->fragment);
     }
 
 
-    return str_buf_commit(buf);
+    return string_buffer_commit(buf);
 }
 
 char *uri_get_scheme (uri_t *uri)
@@ -357,30 +298,30 @@ char *uri_get_scheme (uri_t *uri)
 }
 char *uri_get_authority (uri_t *uri)
 {
-    str_buf_t *buf = str_buf_new();
+    string_buffer_t *buf = string_buffer_new();
 
 
     assert(uri);
 
     if (uri->userinfo)
     {
-        str_buf_add(buf, uri->userinfo);
-        str_buf_add(buf, "@");
+        string_buffer_append(buf, uri->userinfo);
+        string_buffer_append(buf, "@");
     }
 
     if (uri->host)
     {
-        str_buf_add(buf, uri->host);
+        string_buffer_append(buf, uri->host);
     }
 
     if (uri->port)
     {
-        str_buf_add(buf, ":");
-        str_buf_add(buf, uri->port);
+        string_buffer_append(buf, ":");
+        string_buffer_append(buf, uri->port);
     }
 
 
-    return str_buf_commit(buf);
+    return string_buffer_commit(buf);
 }
 char *uri_get_userinfo (uri_t *uri)
 {
