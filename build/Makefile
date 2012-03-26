@@ -143,7 +143,7 @@ depend: $(DEPENDS)
 objects: $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) buildnumber.c gmon.out
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) buildnumber.c buildnumber.o gmon.out
 
 count:
 	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l
