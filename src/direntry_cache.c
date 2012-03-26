@@ -1,7 +1,7 @@
 /*
  * Caching mechanism for direntrys and direntry trees.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
  *
  * $Id$
  */
@@ -14,7 +14,7 @@
 #include <parser.h>
 
 #include "common.h"
-#include "hash.h"
+#include "hash_table.h"
 #include "locks.h"
 #include "config.h"
 #include "alarms.h"

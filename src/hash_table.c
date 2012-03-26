@@ -1,7 +1,7 @@
 /*
  * Simple hash table implementation.
  *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2009-2012. All rights reserved.
  *
  * $Id$
  */
@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hash.h"
+#include "hash_table.h"
 
 
 typedef struct _hash_table_entry_t hash_table_entry_t;

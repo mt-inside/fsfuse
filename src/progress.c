@@ -1,7 +1,7 @@
 /*
  * Progress indication using curses to draw pretty things.
  *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
  *
  * $Id$
  */
@@ -24,7 +24,7 @@
 #include <sys/time.h>
 
 #include "common.h"
-#include "hash.h"
+#include "hash_table.h"
 #include "locks.h"
 #include "config.h"
 #include "progress.h"

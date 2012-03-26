@@ -1,7 +1,7 @@
 #
 # Directory makefile fragment.
 #
-# Copyright (C) Matthew Turner 2008-2010. All rights reserved.
+# Copyright (C) Matthew Turner 2008-2012. All rights reserved.
 #
 # $Id$
 #
@@ -23,7 +23,7 @@ OUR_OBJS :=                         \
             download_thread.o       \
             download_thread_pool.o  \
             fetcher.o               \
-            hash.o                  \
+            hash_table.o            \
             http.o                  \
             indexnode.o             \
             indexnodes.o            \

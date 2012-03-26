@@ -1,13 +1,13 @@
 /*
  * Simple hash table API.
  *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
+ * Copyright (C) Matthew Turner 2009-2012. All rights reserved.
  *
  * $Id$
  */
 
-#ifndef _INCLUDED_HASH_H
-#define _INCLUDED_HASH_H
+#ifndef _INCLUDED_HASH_TABLE_H
+#define _INCLUDED_HASH_TABLE_H
 
 typedef struct _hash_table_t hash_table_t;
 typedef struct _hash_table_iterator_t hash_table_iterator_t;
@@ -32,4 +32,4 @@ extern void *hash_table_iterator_current_data (hash_table_iterator_t *iter);
 extern int hash_table_iterator_next (hash_table_iterator_t *iter);
 extern int hash_table_iterator_at_end (hash_table_iterator_t *iter);
 
-#endif /* _INCLUDED_HASH_H */
+#endif /* _INCLUDED_HASH_TABLE_H */
