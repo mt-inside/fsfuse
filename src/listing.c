@@ -14,6 +14,7 @@
 #include "common.h"
 #include "config.h"
 #include "listing.h"
+#include "utils.h"
 
 
 TRACE_DEFINE(listing)

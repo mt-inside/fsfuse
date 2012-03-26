@@ -43,6 +43,7 @@
 #include "indexnodes.h"
 #include "localei.h"
 #include "string_buffer.h"
+#include "utils.h"
 
 #include "fsfuse_ops/fsfuse_ops.h"
 
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
 
     /* Inits */
     if (trace_init()          ||
-        common_init()         ||
+        utils_init()          ||
         locale_init()         ||
         alarms_init()         ||
         indexnodes_init()     ||
@@ -190,7 +191,7 @@ int main(int argc, char *argv[])
     alarms_finalise();
     indexnodes_finalise();
     locale_finalise();
-    common_finalise();
+    utils_finalise();
     trace_finalise();
 
 pre_init_bail:

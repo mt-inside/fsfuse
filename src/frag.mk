@@ -16,7 +16,6 @@ vpath %.xsl $(HERE)
 # fsfuse.o isn't listed because it isn't always wanted.
 OUR_OBJS :=                         \
             alarms.o                \
-            common.o                \
             config.o                \
             config_define.o         \
             direntry.o              \
@@ -34,6 +33,8 @@ OUR_OBJS :=                         \
             parser.o                \
             peerstats.o             \
             string_buffer.o         \
-            trace.o
+            trace.o                 \
+            uri.o                   \
+            utils.o
 
 OBJECTS += $(OUR_OBJS)

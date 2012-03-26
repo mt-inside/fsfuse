@@ -23,6 +23,7 @@
 #include "indexnodes.h"
 #include "peerstats.h"
 #include "string_buffer.h"
+#include "utils.h"
 
 
 #define URL_LEN 1024

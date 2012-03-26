@@ -22,6 +22,7 @@
 #include "indexnode.h"
 #include "fetcher.h"
 #include "string_buffer.h"
+#include "utils.h"
 
 
 typedef struct _listener_thread_info_t

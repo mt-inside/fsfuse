@@ -9,6 +9,9 @@
 #ifndef _INCLUDED_STRING_BUFFER_H
 #define _INCLUDED_STRING_BUFFER_H
 
+#include "trace.h"
+
+
 TRACE_DECLARE(string_buffer)
 #define string_buffer_trace(...) TRACE(string_buffer,__VA_ARGS__)
 #define string_buffer_trace_indent() TRACE_INDENT(string_buffer)

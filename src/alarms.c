@@ -13,6 +13,7 @@
 
 #include <sys/time.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "common.h"
 #include "locks.h"

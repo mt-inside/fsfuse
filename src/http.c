@@ -19,6 +19,7 @@
 
 #include "http.h"
 #include "string_buffer.h"
+#include "uri.h"
 
 
 TRACE_DEFINE(http)

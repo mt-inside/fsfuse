@@ -16,6 +16,7 @@
 
 #include "common.h"
 #include "trace.h"
+#include "utils.h"
 
 
 TRACE_DEFINE(uncond)

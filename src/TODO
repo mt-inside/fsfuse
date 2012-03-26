@@ -7,7 +7,6 @@ Refactoring to improve quality :)
 - can chunk_list lock be a rwlock?
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
-- move stuff out of common.c. Make utils.c for stuff.
 - make hash (as in de hash) a 1stclass type(def)
 - Unit tests
 - Integration tests (mock or real indexnode, client c program / bash script)
