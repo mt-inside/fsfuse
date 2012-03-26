@@ -28,7 +28,6 @@ typedef void (*thread_end_cb_t)(thread_t *thread);
 
 
 extern thread_t *download_thread_new (direntry_t *de, thread_end_cb_t end_cb);
-//extern void download_thread_delete (void);
 extern int download_thread_is_for (thread_t *thread, direntry_t *de);
 extern void download_thread_chunk_add (thread_t *thread,
                                        off_t start,
