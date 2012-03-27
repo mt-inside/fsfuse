@@ -129,10 +129,12 @@ char *string_buffer_commit (string_buffer_t *sb)
 
 static void string_buffer_ensure_capacity (string_buffer_t *sb, size_t cap)
 {
+    cap += 1; /* Account for NUL character */
+
     if( (*sb)->capacity < cap )
     {
         /* TODO: should prolly round up to power of 2 or something */
-        (*sb) = realloc( *sb, sizeof(struct _string_buffer_t) + cap + 1 );
+        (*sb) = realloc( *sb, sizeof(struct _string_buffer_t) + cap );
         (*sb)->capacity = cap;
     }
 }
