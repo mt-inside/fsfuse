@@ -6,7 +6,8 @@
  * $Id$
  */
 
-extern void common_test (void);
-extern void hash_test (void);
+extern void utils_test (void);
+extern void uri_test (void);
+extern void hash_table_test (void);
 extern void http_test (void);
 extern void string_buffer_test (void);

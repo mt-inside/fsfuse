@@ -15,10 +15,11 @@ int main (int argc, char **argv)
     NOT_USED(argc);
     NOT_USED(argv);
 
-    common_test();
-    hash_test();
+    hash_table_test();
     http_test();
     string_buffer_test();
+    uri_test();
+    utils_test();
 
 
     return 0;

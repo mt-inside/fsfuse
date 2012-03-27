@@ -10,10 +10,10 @@
 
 #include "common.h"
 #include "tests.h"
-#include "hash.h"
+#include "hash_table.h"
 
 
-void hash_test (void)
+void hash_table_test (void)
 {
     char *ak = "one",
          *bk = "two",
