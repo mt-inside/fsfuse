@@ -20,9 +20,9 @@ TRACE_DEFINE(string_buffer)
 /* Essentially a bstring, but with a terminating NUL */
 struct _string_buffer_t
 {
-    size_t capacity;
-    size_t length;
-    char s[]; /* Including terminating NUL */
+    size_t capacity; /* size of memory allocated for s      */
+    size_t length;   /* length of string in s (not inc NUL) */
+    char s[];        /* Including terminating NUL           */
 };
 
 
@@ -83,17 +83,20 @@ void string_buffer_printf (string_buffer_t *sb, const char *format, ...)
     va_end(ap);
     assert(output_size >= 0);
 
-    if ((unsigned)output_size > (*sb)->capacity)
+    if ((unsigned)output_size >= (*sb)->capacity)
     {
+        /* return of vsnprintf is exclusive of the space needed for the NUL, but
+         * ensure_capacity accounts for that */
         string_buffer_ensure_capacity(sb, output_size);
 
         va_start(ap, format);
         output_size = vsnprintf((**sb).s, (*sb)->capacity, format, ap);
         va_end(ap);
 
-        assert(output_size >= 0 && (unsigned)output_size <= (*sb)->capacity);
+        assert(output_size >= 0 && (unsigned)output_size < (*sb)->capacity);
     }
 
+    (**sb).length = output_size;
 }
 
 char *string_buffer_get (string_buffer_t *sb)
@@ -112,7 +115,12 @@ const char *string_buffer_peek (string_buffer_t *sb)
 
 char *string_buffer_commit (string_buffer_t *sb)
 {
-    char *s = (**sb).s;
+    /* Can't just return (**sb).s because it points to half-way through a block
+     * and can't be freed */
+    /* sb_get() does a copy, but the other option would be to memmove() the
+     * string to the front then realloc() - just as expensive */
+
+    char *s = string_buffer_get(sb);
 
     free(sb);
 
@@ -124,7 +132,7 @@ static void string_buffer_ensure_capacity (string_buffer_t *sb, size_t cap)
     if( (*sb)->capacity < cap )
     {
         /* TODO: should prolly round up to power of 2 or something */
-        (*sb) = realloc( *sb, sizeof(struct _string_buffer_t) + (cap * sizeof(char)) );
+        (*sb) = realloc( *sb, sizeof(struct _string_buffer_t) + cap + 1 );
         (*sb)->capacity = cap;
     }
 }
