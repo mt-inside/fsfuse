@@ -21,6 +21,7 @@
 #include "listing.h"
 #include "parser.h"
 #include "string_buffer.h"
+#include "indexnodes.h"
 
 
 TRACE_DEFINE(direntry)
@@ -85,7 +86,7 @@ int direntry_ensure_children (
 
 
         /* fetch the directory listing from the indexnode */
-        url = make_url("browse", path + 1);
+        url = make_url(indexnodes_get_globalton(), "browse", path + 1);
         rc = parser_fetch_listing(url, &lis);
         free(path);
         free(url);
@@ -316,8 +317,6 @@ char *direntry_get_path (direntry_t *de)
 {
     string_buffer_t *path = string_buffer_new();
 
-
-    path[0] = '\0';
 
     direntry_get_path_inner(de, path);
 

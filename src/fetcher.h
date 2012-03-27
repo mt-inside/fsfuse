@@ -57,13 +57,9 @@ extern void fetcher_get_indexnode_version (indexnode_t *in,
 extern int http2errno (int http_code);
 
 extern char *make_url (
+    indexnode_t *in,
     const char * const path_prefix,
     const char * const resource
 );
-extern char *make_escaped_url (
-    const char * const path_prefix,
-    const char * const resource
-);
-
 
 #endif /* _INCLUDED_FETCHER_H */

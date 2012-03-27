@@ -83,7 +83,7 @@ int fetcher_fetch_file (const char * const   hash,
 
 
     /* Find alternatives */
-    url = make_url("alternatives", hash);
+    url = make_url(indexnodes_get_globalton(), "alternatives", hash);
     rc = parser_fetch_listing(url, &lis);
     free(url);
 
@@ -122,7 +122,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    url = make_url("stats", "");
+    url = make_url(indexnodes_get_globalton(), "stats", "");
     rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
     free(url);
 
@@ -293,7 +293,7 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     }
 
     /* URL */
-    url = make_url("browse", "");
+    url = make_url(in, "browse", "");
     curl_easy_setopt(eh, CURLOPT_URL, url);
 
     /* Other headers */
@@ -316,8 +316,10 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     /* Do a HEAD request */
     curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
 
-    /* Do it */
+    /* Do it - blocks */
     curl_rc = curl_easy_perform(eh);
+
+    free(pair);
 
     fetcher_trace("curl returned %d, error: %s\n", curl_rc,
         (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
@@ -346,7 +348,6 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
         pair->callback(pair->indexnode, header);
     }
 
-    free(pair);
 
     return size * nmemb;
 }
@@ -478,12 +479,13 @@ static void curl_eh_delete (CURL *eh)
 /* API to make URLs                                                           */
 /* ========================================================================== */
 
+/* TODO: should this be a member function of an indexnode? */
 char *make_url (
+    indexnode_t *in,
     const char * const path_prefix,
     const char * const resource
 )
 {
-    indexnode_t *in = indexnodes_get_globalton();
     char *host = indexnode_get_host(in), *port = indexnode_get_port(in);
     char *fmt;
     char *resource_esc, *url;
