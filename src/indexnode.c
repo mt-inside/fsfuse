@@ -24,6 +24,7 @@ struct _indexnode_t
     char *host;
     char *port;
     char *version;
+    char *id;
 };
 
 
@@ -32,10 +33,13 @@ indexnode_t *indexnode_new (void)
     indexnode_t *in;
 
 
+    /* TODO: don't have to alloc these cause strdup allocats */
+    /* TODO: This class should return copies of strings! */
     in = malloc(sizeof(indexnode_t));
     in->host    = (char *)malloc(NI_MAXHOST * sizeof(char));
     in->port    = (char *)malloc(NI_MAXSERV * sizeof(char));
     in->version = (char *)malloc(1024       * sizeof(char));
+    in->id      = (char *)malloc(1024       * sizeof(char));
 
 
     return in;
@@ -46,6 +50,7 @@ void indexnode_delete (indexnode_t *in)
     free(in->host);
     free(in->port);
     free(in->version);
+    free(in->id);
 
     free(in);
 }
@@ -54,7 +59,6 @@ void indexnode_set_host (indexnode_t *in, char *host)
 {
     in->host = strdup(host);
 }
-
 char *indexnode_get_host (indexnode_t *in)
 {
     return in->host;
@@ -64,7 +68,6 @@ void indexnode_set_port (indexnode_t *in, char *port)
 {
     in->port = strdup(port);
 }
-
 char *indexnode_get_port (indexnode_t *in)
 {
     return in->port;
@@ -74,8 +77,16 @@ void indexnode_set_version (indexnode_t *in, char *version)
 {
     in->version = strdup(version);
 }
-
 char *indexnode_get_version (indexnode_t *in)
 {
     return in->version;
+}
+
+void indexnode_set_id (indexnode_t *in, char *id)
+{
+    in->id = strdup(id);
+}
+char *indexnode_get_id (indexnode_t *in)
+{
+    return in->id;
 }

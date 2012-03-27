@@ -158,23 +158,54 @@ static int indexnode_parse_version (const char *buf, char **version)
     return rc;
 }
 
-static int parse_advert_packet (const char *buf, char **port, char **version)
+static char *get_next_field (const char **buf)
 {
-    int rc = 1;
-    char *s = malloc(strlen(buf) * sizeof(char));
-    char *p = malloc(strlen(buf) * sizeof(char));
+    char *loc, *s = NULL;
+    size_t off;
 
-    if (s && p &&
-        sscanf(buf, "%[^:]:%[^:]:*", s, p) == 2 &&
-        !indexnode_parse_version(s, version))
+    loc = strchr(*buf, ':');
+    if (loc)
     {
-        *port = p;
-        rc = 0;
+        off = loc - *buf;
+        s = malloc(off + 1);
+        strncpy(s, *buf, off);
+        *buf = loc + 1;
     }
 
-    free(s);
+    return s;
+}
 
-    return rc;
+static int parse_advert_packet (const char *buf, char **port, char **version, char **id)
+{
+    char *tmp;
+
+
+    tmp = get_next_field(&buf);
+    if (!tmp) return 1;
+    if (indexnode_parse_version(tmp, version)) return 1;
+
+    tmp = get_next_field(&buf);
+    if (!tmp) return 1;
+    if (!strcmp(tmp, "autoindexnode"))
+    {
+        /* FIXME we don't support autoindex nodes yet. What's their port? */
+        return 1;
+
+        tmp = get_next_field(&buf);
+        if (!tmp) return 1;
+        /* *weight = tmp; */
+    }
+    else
+    {
+        *port = tmp;
+    }
+
+    tmp = get_next_field(&buf);
+    if (!tmp) return 1;
+    *id = tmp;
+
+
+    return 0;
 }
 
 /* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
@@ -325,13 +356,18 @@ static void *indexnodes_listen_main(void *args)
     if (s4_ok) FD_SET(s4, &r_fds);
     if (s6_ok) FD_SET(s6, &r_fds);
 
+    /* TODO: select() needs a timeout (or a pipe to signal exit), otherwise if
+     * there are no indexnode packets then this thread will never exit. */
+    /* TODO: on shutdown with no indexnodes running, I seem to get stuck in
+     * recvfrom() for ip4. No idea how that socket became live if recvfrom()
+     * will block. */
     while (!s_exiting)
     {
         int found = 0;
         errno = 0;
         char buf[1024], host[NI_MAXHOST];
         string_buffer_t *buffer = string_buffer_new();
-        char **port = NULL, **version = NULL;
+        char **port = NULL, **version = NULL, **id = NULL;
         their_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
 
         switch (their_rc)
@@ -361,7 +397,7 @@ static void *indexnodes_listen_main(void *args)
                     if (their_rc == 0 &&
                         socklen == sizeof(sa4))
                     {
-                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version) &&
+                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
                             inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
                         {
                             found = 1;
@@ -384,7 +420,7 @@ static void *indexnodes_listen_main(void *args)
                     if (their_rc == 0 &&
                         socklen == sizeof(sa6))
                     {
-                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version) &&
+                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
                             inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
                         {
                             found = 1;
@@ -401,12 +437,11 @@ static void *indexnodes_listen_main(void *args)
 
         if (found)
         {
-            indexnode_set_host(in, host);
+            indexnode_set_host(in, host );
             indexnode_set_port(in, *port);
+            indexnode_set_id(  in, *id  );
             indexnode_set_version(in, *version);
 
-            //TODO: port is coming out as "autoindexnode" - pardin error?
-            //TODO: dedup!
             trace_info("Found index node, version %s, at %s:%s\n", *version, host, *port);
 
             indexnodes_add(in);
@@ -424,12 +459,12 @@ static void *indexnodes_listen_main(void *args)
 
 static void version_cb (indexnode_t *in, char *buf)
 {
-    char **version = NULL;
+    char *version = NULL;
 
-    if (!indexnode_parse_version(buf, version))
+    if (!indexnode_parse_version(buf, &version))
     {
-        indexnode_set_version(in, *version);
-        free(*version);
+        indexnode_set_version(in, version);
+        free(version);
 
         trace_info(
             "Static index node configured at %s:%s - version %s\n",
@@ -452,7 +487,6 @@ static indexnode_t *indexnode_from_config (void)
         indexnode_set_host(in, config_indexnode_host);
         indexnode_set_port(in, config_indexnode_port);
         fetcher_get_indexnode_version(in, &version_cb);
-
     }
 
 
