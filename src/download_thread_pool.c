@@ -146,5 +146,5 @@ static thread_t *tp_thread_get (direntry_t *de)
     rw_lock_runlock(thread_list_lock);
 
 
-    return ti->thread;
+    return ti ? ti->thread : NULL;
 }
