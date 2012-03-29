@@ -51,10 +51,10 @@ rw_lock_t *thread_list_lock = NULL;
 
 
 static void thread_end_cb (thread_t *t);
-static thread_t *tp_thread_get (direntry_t *de);
+static thread_t *get_thread (direntry_t *de);
 
 
-int thread_pool_init (void)
+int download_thread_pool_init (void)
 {
     dtp_trace("thread_pool_init()\n");
 
@@ -65,7 +65,7 @@ int thread_pool_init (void)
     return 0;
 }
 
-void thread_pool_finalise (void)
+void download_thread_pool_finalise (void)
 {
     dtp_trace("thread_pool_finalise()\n");
 
@@ -78,12 +78,12 @@ void thread_pool_finalise (void)
  * TODO: when we move to a pool, we need to cope with no free threads here and
  * return EBUSY or block */
 /* EXECUTES IN THREAD: read() */
-void thread_pool_chunk_add (direntry_t *de,
-                            off_t start,
-                            off_t end,
-                            char *buf,
-                            chunk_done_cb_t cb,
-                            void *ctxt          )
+void download_thread_pool_chunk_add (direntry_t *de,
+                                     off_t start,
+                                     off_t end,
+                                     char *buf,
+                                     chunk_done_cb_t cb,
+                                     void *ctxt          )
 {
     thread_t *thread;
 
@@ -97,7 +97,7 @@ void thread_pool_chunk_add (direntry_t *de,
 
     rw_lock_wlock(thread_list_lock);
 
-    thread = tp_thread_get(de);
+    thread = get_thread(de);
 
     if (!thread)
     {
@@ -131,7 +131,7 @@ static void thread_end_cb (thread_t *t)
 /* Return the thread currently dealing with hash, or NULL */
 /* EXECUTES IN THREAD: read()
  * Accesses thread_list - mutex needed! */
-static thread_t *tp_thread_get (direntry_t *de)
+static thread_t *get_thread (direntry_t *de)
 {
     thread_list_item_t *ti = NULL;
 

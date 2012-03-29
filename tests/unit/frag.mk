@@ -1,7 +1,7 @@
 #
 # Unit tests makefile fragment.
 #
-# Copyright (C) Matthew Turner 2008-2011. All rights reserved.
+# Copyright (C) Matthew Turner 2008-2012. All rights reserved.
 #
 # $Id$
 #

@@ -154,11 +154,10 @@ int download_thread_is_for (thread_t *thread, direntry_t *de)
 
 /* Add a chunk to the chunk list for an individual thread.
  * These go in in order - start of file to end of file */
-/* EXECUTES IN THREAD: read().
- * Accesses a thread - ?no mutex needed */
+/* Note that start and end can be the same value indicating a 0 byte range */
 void download_thread_chunk_add (thread_t *thread,
-                                off_t start,
-                                off_t end,
+                                off_t start, /* inclusive */
+                                off_t end,   /* exclusive */
                                 char *buf,
                                 chunk_done_cb_t cb,
                                 void *ctxt          )
@@ -166,26 +165,9 @@ void download_thread_chunk_add (thread_t *thread,
     chunk_t *c = NULL, *curr;
 
 
-    /* proto-chunks (start and end offsets) must come in here partially
-     * sanitised. They are not allowed to be completely out of the range of the
-     * file, but may overshoot the end */
-    /* TODO: this fix-up should happen at the same place as the
-     * totally-out-of-range chunk fixup that happens in read() currently */
-    assert(start < direntry_get_size(thread->de));
-    if (end > direntry_get_size(thread->de))
-    {
-        /* fix the chunk up so that it within the extents of the file. This way
-         * when the consumer is passed the last buffer of the file this chunk
-         * ends too and will be disposed of. This means any remaining chunks
-         * actually need something meaningful done with them */
-        /* Also, I have discovered that if you ask the indexnode for a range
-         * that goes off the end of the file it completely ignores your range
-         * request and feeds you the whole file from the start... While this
-         * could be contstrued as undesirable behaviour on behalf of the
-         * indexnode, it's probably best to stay within the bounds of the file
-         * as you never know what a server's edge conditions are */
-        end = direntry_get_size(thread->de);
-    }
+    assert(start <= end);
+    assert(start <= direntry_get_size(thread->de));
+    assert(end   <= direntry_get_size(thread->de));
 
     c = chunk_new(start, end, buf, cb, ctxt);
 

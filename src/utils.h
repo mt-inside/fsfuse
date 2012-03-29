@@ -14,6 +14,7 @@ extern void utils_finalise (void);
 
 extern char *fsfuse_dirname (const char *path);
 extern char *fsfuse_basename (const char *path);
+extern char *path_combine (const char *a, const char *b);
 
 extern unsigned fsfuse_get_thread_index (void);
 

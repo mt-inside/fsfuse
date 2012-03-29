@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "utils.h"
 
@@ -92,6 +93,32 @@ char *fsfuse_basename (const char *path)
 
 
     return base;
+}
+
+/* TODO: is there a library call for this? */
+/* TODO: unit test me */
+char *path_combine (const char *a, const char *b)
+{
+    size_t a_len = strlen(a),
+           b_len = strlen(b),
+           r_len = a_len + b_len;
+    char *r;
+    int add_delimiter = 0;
+
+
+    if (a[a_len - 1] != '/') add_delimiter = 1;
+    assert(b[0] != '/');
+
+    if (add_delimiter) r_len++;
+    r = malloc(r_len + 1);
+    strcpy(r, a);
+    if (add_delimiter) { r[a_len] = '/'; a_len++; }
+    assert(a_len + b_len == r_len);
+    strcpy(r + a_len, b);
+    r[r_len] = '\0';
+
+
+    return r;
 }
 
 

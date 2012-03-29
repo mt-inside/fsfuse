@@ -53,7 +53,7 @@ static void fsfuse_destroy (void *userdata)
 
 struct fuse_lowlevel_ops fsfuse_ops =
 {
-    &fsfuse_init,        /* init */
+    .init = &fsfuse_init,        /* init */
     &fsfuse_destroy,     /* destroy */
     &fsfuse_lookup,      /* lookup */
     &fsfuse_forget,      /* forget */

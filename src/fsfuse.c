@@ -151,22 +151,22 @@ int main(int argc, char *argv[])
 
 
     /* Inits */
-    if (trace_init()          ||
-        utils_init()          ||
-        locale_init()         ||
-        alarms_init()         ||
-        indexnodes_init()     ||
-        fetcher_init()        ||
-        parser_init()         ||
-        direntry_init()       ||
+    if (trace_init()                ||
+        utils_init()                ||
+        locale_init()               ||
+        alarms_init()               ||
+        indexnodes_init()           ||
+        fetcher_init()              ||
+        parser_init()               ||
+        direntry_init()             ||
 #if FEATURE_DIRENTRY_CACHE
-        direntry_cache_init() ||
+        direntry_cache_init()       ||
 #endif
 #if FEATURE_PROGRESS_METER
-        progress_init()       ||
+        progress_init()             ||
 #endif
-        peerstats_init()      ||
-        thread_pool_init()    )
+        peerstats_init()            ||
+        download_thread_pool_init()    )
     {
         trace_error("initialisation failed\n");
         goto pre_init_bail;
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 
 
     /* finalisations */
-    thread_pool_finalise();
+    download_thread_pool_finalise();
     peerstats_finalise();
 #if FEATURE_PROGRESS_METER
     progress_finalise();

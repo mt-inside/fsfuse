@@ -51,8 +51,17 @@ static void chunk_done (void *read_ctxt, int rc, size_t size);
  * The FUSE docs also assert that read() will only be called on a file that's
  * been successfully open()ed. This means we don't have to check it's a file,
  * its permissions, etc. We /do/ have to check it (still) exists though.
+ *
+ * Note that we still do the network round-trip for 0 byte ranges. This is
+ * because userspace could have made that request for whatever reason (e.g. to
+ * measure latency) and they have morally "interacted" with the file, so we
+ * should see if it still exists and return error if it doesn't.
  */
-void fsfuse_read (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+void fsfuse_read (fuse_req_t req,
+                  fuse_ino_t ino,
+                  size_t size,
+                  off_t off,
+                  struct fuse_file_info *fi)
 {
     int rc; /* +ve: number of bytes read
                -ve: -ERRNO */
@@ -69,41 +78,43 @@ void fsfuse_read (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct
 
     if (!rc)
     {
-        /* check file limits - despite always calling getattr() first (so it
-         * knows the length), fuse sometimes asks for ranges completely
-         * past the end of the file */
+        read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
+        void *buf;
+
+
+        /* Userspace, and therefore fuse, can ask for any range of bytes,
+         * regardless of the file length. E.g. ext2 just gets over it. If:
+         *   start > length: return 0 bytes
+         *   end   > length: return length - start bytes.
+         */
         if (off >= direntry_get_size(de))
         {
             size = 0;
         }
-        else
+        else if ((unsigned)(off + size) >= direntry_get_size(de))
         {
-            read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
-            void *buf = malloc(size);
-
-
-            read_ctxt->req  = req;
-            read_ctxt->de   = de;
-            read_ctxt->size = size;
-            read_ctxt->buf  = buf;
-
-            thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
+            size = direntry_get_size(de) - off;
         }
+
+        buf = malloc(size);
+
+        read_ctxt->req  = req;
+        read_ctxt->de   = de;
+        read_ctxt->size = size;
+        read_ctxt->buf  = buf;
+
+        download_thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
     }
-
-    method_trace_dedent();
-
-
-    if (rc)
+    else
     {
         fuse_reply_err(req, rc);
     }
-    if (!size)
-    {
-        fuse_reply_buf(req, NULL, size);
-    }
+
+    method_trace_dedent();
 }
 
+/* This, and hence fuse_reply, are called on a different thread to the one the
+ * request came in on. This doesn't seem to matter. */
 static void chunk_done (void *read_ctxt, int rc, size_t size)
 {
     read_context_t *ctxt = (read_context_t *)read_ctxt;

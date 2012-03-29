@@ -8,6 +8,10 @@ Refactoring to improve quality :)
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
 - make hash (as in de hash) a 1stclass type(def)
+- The cache: start just holding onto listings until the kernel says to forget
+  them or that file/dir has stopped existing on the indexnode. This can just be addressed by
+  inode and will stop repeated lookups for getattr etc.
+  Then elaborate to direntry that knows where it is in the tree and will invalidate parents etc.
 - Unit tests
 - Integration tests (mock or real indexnode, client c program / bash script)
 - dtp to become pool and downloader_thread
@@ -30,6 +34,10 @@ Refactoring to improve quality :)
 - add const annotations (and * const) ... everywhere!
 - cache to tell kernel when a file has been "deleted". There was a fuselib git
   path on 6th dec 2011 which allows this
+- There should be a very clear indication as to which calls could block so that
+  you can pass them continuations. Of course whether they blocks depends on whether they've been called recently.
+  For read() it makes perfect sense to pass a continuation and return because we use a thread pool for downloading.
+  However getattr is one/one threads - eg you may as well had wait for your getattr call.
 
 
 **WARNING** THIS IS NOT UNDER VERSION CONTROL.

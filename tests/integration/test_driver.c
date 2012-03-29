@@ -1,9 +1,9 @@
 /*
- * Unit tests "driver" - provides the main() symbol in unit test builds.
+ * Integration tests "driver" - provides the main() symbol in integration test builds.
  *
  * Copyright (C) Matthew Turner 2010-2012. All rights reserved.
  *
- * $Id$
+ * $Id: test_driver.c 595 2012-03-27 13:53:09Z matt $
  */
 
 #include "common.h"
@@ -15,11 +15,8 @@ int main (int argc, char **argv)
     NOT_USED(argc);
     NOT_USED(argv);
 
-    hash_table_test();
-    http_test();
-    string_buffer_test();
-    uri_test();
-    utils_test();
+    list_test();
+    read_test();
 
 
     return 0;
