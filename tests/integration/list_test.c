@@ -10,6 +10,7 @@
 #include "tests.h"
 
 
-void list_test (void)
+void list_test (const char * const test_dir)
 {
+    NOT_USED(test_dir);
 }

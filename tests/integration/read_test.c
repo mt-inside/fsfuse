@@ -23,26 +23,23 @@
 #define BUF_LEN 1024
 
 
-static const char * const test_dir = "../../../tests/testdata/file_contents";
+static void test_zero_len (const char * const test_dir);
+static void test_1_nul    (const char * const test_dir);
+static void test_1_rand   (const char * const test_dir);
+static void test_1M_nul   (const char * const test_dir);
+static void test_1M_rand  (const char * const test_dir);
 
 
-static void test_zero_len (void);
-static void test_1_nul    (void);
-static void test_1_rand   (void);
-static void test_1M_nul   (void);
-static void test_1M_rand  (void);
-
-
-void read_test (void)
+void read_test (const char * const test_dir)
 {
-    test_zero_len();
-    test_1_nul();
-    test_1_rand();
-    test_1M_nul();
-    test_1M_rand();
+    test_zero_len(test_dir);
+    test_1_nul   (test_dir);
+    test_1_rand  (test_dir);
+    test_1M_nul  (test_dir);
+    test_1M_rand (test_dir);
 }
 
-static void test_zero_len (void)
+static void test_zero_len (const char * const test_dir)
 {
     unsigned char buf[BUF_LEN];
     int fd = open(path_combine(test_dir, "zero_length"), O_RDONLY);
@@ -58,7 +55,7 @@ static void test_zero_len (void)
     assert(rc == 0);
 }
 
-static void test_1_nul (void)
+static void test_1_nul (const char * const test_dir)
 {
     unsigned char buf[BUF_LEN];
     int fd = open(path_combine(test_dir, "1_nul"), O_RDONLY);
@@ -75,7 +72,7 @@ static void test_1_nul (void)
     assert(rc == 0);
 }
 
-static void test_1_rand (void)
+static void test_1_rand (const char * const test_dir)
 {
     unsigned char buf[BUF_LEN];
     int fd = open(path_combine(test_dir, "1_rand"), O_RDONLY);
@@ -92,7 +89,7 @@ static void test_1_rand (void)
     assert(rc == 0);
 }
 
-static void test_1M_nul (void)
+static void test_1M_nul (const char * const test_dir)
 {
     unsigned char buf[BUF_LEN];
     int fd = open(path_combine(test_dir, "1M_nul"), O_RDONLY);
@@ -134,8 +131,9 @@ static void test_1M_nul (void)
     /* TODO: md5sum all data and check checksum */
 }
 
-static void test_1M_rand (void)
+static void test_1M_rand (const char * const test_dir)
 {
+    NOT_USED(test_dir);
     /* TODO: check data at various points, as above */
     /* TODO: md5sum all data and check checksum */
 }

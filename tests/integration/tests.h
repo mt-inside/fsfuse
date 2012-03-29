@@ -6,5 +6,5 @@
  * $Id: tests.h 595 2012-03-27 13:53:09Z matt $
  */
 
-extern void list_test (void);
-extern void read_test (void);
+extern void list_test (const char * const test_dir);
+extern void read_test (const char * const test_dir);

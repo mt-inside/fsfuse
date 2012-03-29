@@ -6,17 +6,25 @@
  * $Id: test_driver.c 595 2012-03-27 13:53:09Z matt $
  */
 
+#include <unistd.h>
+
 #include "common.h"
 #include "tests.h"
 
 
 int main (int argc, char **argv)
 {
-    NOT_USED(argc);
-    NOT_USED(argv);
+    const char * test_dir;
 
-    list_test();
-    read_test();
+
+    assert(argc == 2);
+
+    test_dir = argv[1];
+    assert(!access(test_dir, R_OK));
+
+
+    list_test(test_dir);
+    read_test(test_dir);
 
 
     return 0;
