@@ -7,6 +7,9 @@ Refactoring to improve quality :)
 - can chunk_list lock be a rwlock?
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
+- deal with multiple indexnodes. I suggest a simple parse of the path. Check 1st
+  part against indexnode list, ENOENT if not. Then de to gain an indexnode pointer.
+  Although the file may exist on many a share, paths are only valid for one indexnode.
 - make hash (as in de hash) a 1stclass type(def)
 - The cache: start just holding onto listings until the kernel says to forget
   them or that file/dir has stopped existing on the indexnode. This can just be addressed by

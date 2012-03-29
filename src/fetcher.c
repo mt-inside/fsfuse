@@ -74,6 +74,7 @@ int fetcher_fetch_file (const char * const   hash,
     char *url;
     listing_list_t *lis;
     listing_t *li = NULL;
+    indexnode_t *in;
 
 
     assert(hash); assert(*hash);
@@ -83,27 +84,35 @@ int fetcher_fetch_file (const char * const   hash,
 
 
     /* Find alternatives */
-    url = make_url(indexnodes_get_globalton(), "alternatives", hash);
-    rc = parser_fetch_listing(url, &lis);
-    free(url);
-
-    if (lis)
+    in = indexnodes_get_globalton();
+    if (in)
     {
-        li = peerstats_chose_alternative(lis);
+        url = make_url(indexnodes_get_globalton(), "alternatives", hash);
+        rc = parser_fetch_listing(url, &lis);
+        free(url);
 
-        /* Get the file */
-        if (li)
+        if (lis)
         {
-            rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
-            listing_delete(CALLER_INFO li);
-        }
-        else
-        {
-            rc = EBUSY;
-            /* TODO sort out handling of this whole area */
-        }
+            li = peerstats_chose_alternative(lis);
 
-        listing_list_delete(CALLER_INFO lis);
+            /* Get the file */
+            if (li)
+            {
+                rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
+                listing_delete(CALLER_INFO li);
+            }
+            else
+            {
+                rc = EBUSY;
+                /* TODO sort out handling of this whole area */
+            }
+
+            listing_list_delete(CALLER_INFO lis);
+        }
+    }
+    else
+    {
+        rc = ENOENT;
     }
 
     fetcher_trace_dedent();
@@ -117,14 +126,25 @@ int fetcher_fetch_stats (curl_write_callback  cb,
 {
     int rc;
     char *url;
+    indexnode_t *in;
 
 
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    url = make_url(indexnodes_get_globalton(), "stats", "");
-    rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
-    free(url);
+    in = indexnodes_get_globalton();
+    if (in)
+    {
+        url = make_url(indexnodes_get_globalton(), "stats", "");
+        rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
+        free(url);
+    }
+    else
+    {
+        /* Need to simply add all the indexnodes' stats here.
+         * If there are none, return 0s */
+        rc = ENOENT;
+    }
 
     fetcher_trace_dedent();
 

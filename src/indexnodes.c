@@ -136,7 +136,7 @@ indexnode_t *indexnodes_get_globalton (void)
 
 
     pthread_mutex_lock(&s_indexnodes_lock);
-    in = s_indexnodes->in;
+    in = s_indexnodes ? s_indexnodes->in : NULL;
     pthread_mutex_unlock(&s_indexnodes_lock);
 
 
