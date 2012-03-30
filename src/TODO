@@ -16,8 +16,6 @@ Refactoring to improve quality :)
   inode and will stop repeated lookups for getattr etc.
   Then elaborate to direntry that knows where it is in the tree and will invalidate parents etc.
 - Unit tests
-- Integration tests (mock or real indexnode, client c program / bash script)
-- dtp to become pool and downloader_thread
 - names for threads (like "getattr for /foo/bar", "read bar 4k-8k") and a collapsed thread id
 - make indexnode_listener class. Instantiate one per address to listen on (e.g.
   IP4 all, IP6 all). Thread each? Call a static method to use a master thread?

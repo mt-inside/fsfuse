@@ -11,7 +11,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
 
 #include "common.h"
 #include "config.h"
@@ -28,18 +27,14 @@ struct _indexnode_t
 };
 
 
+/* TODO: this shouldn't be mutable, data to be passed to ctor */
+/* TODO: state machine */
 indexnode_t *indexnode_new (void)
 {
     indexnode_t *in;
 
 
-    /* TODO: don't have to alloc these cause strdup allocats */
-    /* TODO: This class should return copies of strings! */
-    in = malloc(sizeof(indexnode_t));
-    in->host    = (char *)malloc(NI_MAXHOST * sizeof(char));
-    in->port    = (char *)malloc(NI_MAXSERV * sizeof(char));
-    in->version = (char *)malloc(1024       * sizeof(char));
-    in->id      = (char *)malloc(1024       * sizeof(char));
+    in = calloc(sizeof(indexnode_t), 1);
 
 
     return in;
@@ -47,10 +42,10 @@ indexnode_t *indexnode_new (void)
 
 void indexnode_delete (indexnode_t *in)
 {
-    free(in->host);
-    free(in->port);
-    free(in->version);
-    free(in->id);
+    if (in->host)    free(in->host);
+    if (in->port)    free(in->port);
+    if (in->version) free(in->version);
+    if (in->id)      free(in->id);
 
     free(in);
 }
