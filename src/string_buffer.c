@@ -17,7 +17,9 @@
 TRACE_DEFINE(string_buffer)
 
 
-/* Essentially a bstring, but with a terminating NUL */
+/* Essentially a bstring, but with a terminating NUL.
+ * It is just easier to maintain the terminating-NUL invariant because e.g.
+ * vsnprintf() will always write one, and peek() is then simple. */
 struct _string_buffer_t
 {
     size_t capacity; /* size of memory allocated for s      */
@@ -33,7 +35,10 @@ string_buffer_t *string_buffer_new (void)
 {
     string_buffer_t *ptr = malloc(sizeof(string_buffer_t));
 
-    *ptr = calloc(sizeof(struct _string_buffer_t), 1);
+    *ptr = malloc(sizeof(struct _string_buffer_t) + 1);
+    (**ptr).capacity = 1;
+    (**ptr).length   = 0;
+    (**ptr).s[0] = '\0';
 
     return ptr;
 }

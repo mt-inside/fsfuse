@@ -307,7 +307,7 @@ static chunk_t *chunk_get_next (thread_t *thread)
 static void *downloader_thread_main (void *arg)
 {
     thread_t *thread = (thread_t *)arg;
-    string_buffer_t *range_buffer = string_buffer_new();
+    string_buffer_t *range_buffer;
     char *range_str;
     int rc;
     int first_time = 1;
@@ -374,6 +374,7 @@ static void *downloader_thread_main (void *arg)
             }
         }
 
+        range_buffer = string_buffer_new();
         if (thread->current_chunk->start)
         {
             string_buffer_printf(range_buffer, "%" PRIu64 "-", thread->current_chunk->start);
