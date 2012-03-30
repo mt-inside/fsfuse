@@ -5,6 +5,15 @@ instead of hand-rolling an http impl, use libevent, which claims to have http su
 Refactoring to improve quality :)
 =======
 - can chunk_list lock be a rwlock?
+- move indexnodes lock to rwlock
+- need lifetime support for indexnodes, inc removing ones that don't exist.
+  - we could poll them and kick them if they don't reply.
+  - or we could wait until a a request to one fails.
+  - we should poll them, because when you list / you want an up-to-date response
+  - what we should acutally do is have a list_update function, and add states
+    DYING[1,2,3] to their machine. If it's missing from the list it gets pushed down a state
+    From 3 it disappears from the list (and tell the kernel it's gone thorough clever new mechanism)
+- move listing_list_T into its own class
 - inode lifecycle (don't keep all inodes forever, dump them when fuse says
   FORGET)
 - deal with multiple indexnodes. I suggest a simple parse of the path. Check 1st

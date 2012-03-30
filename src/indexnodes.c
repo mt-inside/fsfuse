@@ -30,22 +30,22 @@ typedef struct _listener_thread_info_t
     pthread_t pthread_id;
 } listener_thread_info_t;
 
+/* TODO: why we no use TAILQ? */
 typedef struct _indexnodes_list_t
 {
     indexnode_t *in;
-    struct _indexnodes_list_t *next;
+    TAILQ_ENTRY(_indexnodes_list_t) next;
 } indexnode_list_t;
 
 
 static int s_exiting = 0;
 static listener_thread_info_t *s_listener_thread_info;
-static indexnode_list_t *s_indexnodes = NULL;
-static pthread_mutex_t s_indexnodes_lock;
+static TAILQ_HEAD(,_indexnodes_list_t) s_indexnodes;
+static pthread_mutex_t s_indexnodes_lock; /* TODO: rwlock */
 
 
 static void *indexnodes_listen_main(void *args);
 static void indexnodes_delete (void);
-static indexnode_t *indexnode_from_config (void);
 
 
 int indexnodes_init (void)
@@ -54,18 +54,21 @@ int indexnodes_init (void)
 
     pthread_mutex_init(&s_indexnodes_lock, NULL);
 
+    TAILQ_INIT(&s_indexnodes);
+
     /* Instantiate statically configured indexnodes */
-    /* TODO
-     * foreach(indexnode_info in config_file)
-     * {
-     *     in = indexnode_from_config(indexnode_info);
-     *     indexnodes_add(in);
-     * }
-     */
-    //For now:
-    if (!config_indexnode_autodetect)
+    int i = 0;
+    char *host, *port;
+    while (host = config_indexnode_host[i] &&
+           port = config_indexnode_post[i])
     {
-        indexnode_from_config();
+        indexnode_t *in = indexnode_new();
+
+        indexnode_set_host(in, host);
+        indexnode_set_port(in, port);
+        fetcher_get_indexnode_version(in, &version_cb);
+
+        indexnodes_add(in);
     }
 
     /* Start listening for broadcasting indexnodes */
@@ -107,13 +110,19 @@ static void indexnodes_add (indexnode_t *in)
         pthread_mutex_lock(&s_indexnodes_lock);
 
         item->in = in;
-        item->next = s_indexnodes;
-        s_indexnodes = item;
+        TAILQ_INSERT_HEAD(&s_indexnodes, item, next);
 
         pthread_mutex_unlock(&s_indexnodes_lock);
     }
 }
 
+void indexnode_delete (int id)
+{
+    /* TODO */
+    DO_NOTHING;
+}
+
+/* TODO: for shutdown time, presumably? */
 static void indexnodes_delete (void)
 {
     indexnode_list_t *item = s_indexnodes;
@@ -129,14 +138,34 @@ static void indexnodes_delete (void)
     pthread_mutex_unlock(&s_indexnodes_lock);
 }
 
-/* TODO: support multiple indexnodes throughout the filesystem... */
-indexnode_t *indexnodes_get_globalton (void)
+/* FIXME: argh!
+ * indexnodes list can be mutated so needs to be copied under the lock
+ * indexnodes themselves can be deleted, so they'd need to be copied too or ref
+ * counted.
+ * Easier to just make listing_ts directly here.
+ * Listings should have indexnode as one of their fields. The li_ts for / just
+ * have a path of /. Everywhere that gets an indexnode acutally just makes a uri
+ * from it.
+ * If de's hold indexnodes then they either need to live for ever in state DEAD,
+ * or be ref-counted and die. I suggest they're refcounted, and don't work when
+ * in state dead. If ref-count hits 0 AND they're dead then they can die. de's
+ * with DEAD indexnodes are dead themselves - when they discover that they
+ * should act like they did a fetch and got a 404 */
+indexnode_t **indexnodes_get (unsigned *count)
 {
-    indexnode_t *in;
+    indexnode_t **ins;
+    unsigned i = 0;
 
 
     pthread_mutex_lock(&s_indexnodes_lock);
-    in = s_indexnodes ? s_indexnodes->in : NULL;
+
+    TAILQ_FOREACH(ti, &thread_list, next) i++;
+
+    ins = malloc(sizeof(indexnode_t
+    TAILQ_FOREACH(ti, &thread_list, next)
+    {
+        if (download_thread_is_for(ti->thread, de)) break;
+    }
     pthread_mutex_unlock(&s_indexnodes_lock);
 
 
@@ -474,21 +503,4 @@ static void version_cb (indexnode_t *in, char *buf)
 
         indexnodes_add(in);
     }
-}
-
-/* TODO: config currently only supports one indexnode. */
-static indexnode_t *indexnode_from_config (void)
-{
-    indexnode_t *in = indexnode_new();
-
-
-    if (in)
-    {
-        indexnode_set_host(in, config_indexnode_host);
-        indexnode_set_port(in, config_indexnode_port);
-        fetcher_get_indexnode_version(in, &version_cb);
-    }
-
-
-    return in;
 }

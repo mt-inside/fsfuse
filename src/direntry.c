@@ -87,28 +87,20 @@ int direntry_ensure_children (
 
 
         /* fetch the directory listing from the indexnode */
-        in = indexnodes_get_globalton();
-        if (in)
+        url = indexnode_make_url(de->in, "browse", path + 1);
+        rc = parser_fetch_listing(url, &lis);
+        free(path);
+        free(url);
+
+        if (!rc && lis)
         {
-            url = make_url(in, "browse", path + 1);
-            rc = parser_fetch_listing(url, &lis);
-            free(path);
-            free(url);
+            dirents = direntries_from_listing_list (lis, de);
 
-            if (!rc && lis)
-            {
-                dirents = direntries_from_listing_list (lis, de);
-
-                listing_list_delete(CALLER_INFO lis);
-            }
-
-            de->children = dirents;
-            de->looked_for_children = 1;
+            listing_list_delete(CALLER_INFO lis);
         }
-        else
-        {
-            rc = ENOENT;
-        }
+
+        de->children = dirents;
+        de->looked_for_children = 1;
     }
 
 

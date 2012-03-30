@@ -34,15 +34,15 @@
         <xpath>/config/indexnode/autodetect/text()</xpath>
     </item>
     <item>
-        <symbol>indexnode_host</symbol>
-        <type>string</type>
-        <default />
+        <symbol>indexnode_hosts</symbol>
+        <type>string_collection</type>
+        <default>NULL</default>
         <xpath>/config/indexnode/host/text()</xpath>
     </item>
     <item>
-        <symbol>indexnode_port</symbol>
-        <type>string</type>
-        <default />
+        <symbol>indexnode_ports</symbol>
+        <type>string_collection</type>
+        <default>NULL</default>
         <xpath>/config/indexnode/port/text()</xpath>
     </item>
     <item>

@@ -65,7 +65,7 @@ void fetcher_finalise (void)
 /*      File Operations                                                       */
 /* ========================================================================== */
 
-int fetcher_fetch_file (const char * const   hash,
+int fetcher_fetch_file (listing_t           *li,
                         const char * const   range,
                         curl_write_callback  cb,
                         void                *cb_data)
@@ -84,35 +84,27 @@ int fetcher_fetch_file (const char * const   hash,
 
 
     /* Find alternatives */
-    in = indexnodes_get_globalton();
-    if (in)
-    {
-        url = make_url(indexnodes_get_globalton(), "alternatives", hash);
-        rc = parser_fetch_listing(url, &lis);
-        free(url);
+    url = indexnode_make_url(li->in, "alternatives", li->hash);
+    rc = parser_fetch_listing(url, &lis);
+    free(url);
 
-        if (lis)
+    if (lis)
+    {
+        li = peerstats_chose_alternative(lis);
+
+        /* Get the file */
+        if (li)
         {
-            li = peerstats_chose_alternative(lis);
-
-            /* Get the file */
-            if (li)
-            {
-                rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
-                listing_delete(CALLER_INFO li);
-            }
-            else
-            {
-                rc = EBUSY;
-                /* TODO sort out handling of this whole area */
-            }
-
-            listing_list_delete(CALLER_INFO lis);
+            rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
+            listing_delete(CALLER_INFO li);
         }
-    }
-    else
-    {
-        rc = ENOENT;
+        else
+        {
+            rc = EBUSY;
+            /* TODO sort out handling of this whole area */
+        }
+
+        listing_list_delete(CALLER_INFO lis);
     }
 
     fetcher_trace_dedent();
@@ -132,10 +124,12 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
+    /* TODO: rather roundabout, but list / and call indexnode_make_url(de->in,
+     * "stats", "") on all of them... */
     in = indexnodes_get_globalton();
     if (in)
     {
-        url = make_url(indexnodes_get_globalton(), "stats", "");
+        url = make_url(in, "stats", "");
         rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
         free(url);
     }
