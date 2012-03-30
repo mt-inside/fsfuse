@@ -51,6 +51,7 @@ rw_lock_t *thread_list_lock = NULL;
 
 
 static void thread_end_cb (thread_t *t);
+static thread_t *new_thread (direntry_t *de);
 static thread_t *get_thread (direntry_t *de);
 
 
@@ -102,7 +103,7 @@ void download_thread_pool_chunk_add (direntry_t *de,
     if (!thread)
     {
         dtp_trace("no thread found - creating a new one\n");
-        thread = download_thread_new(de, &thread_end_cb);
+        thread = new_thread(de);
     }
 
     rw_lock_wunlock(thread_list_lock);
@@ -126,6 +127,23 @@ static void thread_end_cb (thread_t *t)
             TAILQ_REMOVE(&thread_list, item, next);
         }
     }
+}
+
+static thread_t *new_thread (direntry_t *de)
+{
+    thread_t *t;
+    thread_list_item_t *tli;
+
+    t = download_thread_new(de, &thread_end_cb);
+
+    tli = malloc(sizeof(thread_list_item_t));
+    tli->thread = t;
+
+    rw_lock_wlock(thread_list_lock);
+    TAILQ_INSERT_HEAD(&thread_list, tli, next);
+    rw_lock_wunlock(thread_list_lock);
+
+    return t;
 }
 
 /* Return the thread currently dealing with hash, or NULL */
