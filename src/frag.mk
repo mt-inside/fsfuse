@@ -1,9 +1,7 @@
 #
+# Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+#
 # Directory makefile fragment.
-#
-# Copyright (C) Matthew Turner 2008-2012. All rights reserved.
-#
-# $Id$
 #
 
 HERE := $(SRC_ROOT)

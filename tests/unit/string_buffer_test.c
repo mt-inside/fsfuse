@@ -1,9 +1,13 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * String Buffer unit tests.
- *
- * Copyright (C) Matthew Turner 2008-2011. All rights reserved.
- *
- * $Id: hash_test.c 474 2010-01-29 00:01:07Z matt $
  */
 
 #include <stdlib.h>

@@ -1,9 +1,13 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Peer Statistics Module
- *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
- *
- * $Id: hash.c 366 2009-10-23 14:09:30Z matt $
  */
 
 #include <stdlib.h>

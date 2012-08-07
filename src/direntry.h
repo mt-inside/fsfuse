@@ -1,10 +1,8 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * API for dealing with "direntries" - "entries in a directory". This is
  * basically our internal file system tree implementation.
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_DIRENTRY_H

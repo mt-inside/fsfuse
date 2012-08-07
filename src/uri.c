@@ -1,9 +1,13 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Uniform Resource Identifier Class
- *
- * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
- *
- * $Id: common.c 586 2012-03-26 18:14:00Z matt $
  */
 
 #include "common.h"

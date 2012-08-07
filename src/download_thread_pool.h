@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * External API for the file downloader thread pool.
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _included_download_thread_pool_h

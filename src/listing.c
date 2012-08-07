@@ -1,10 +1,14 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * This file deals with "listings", which are descriptions of all the nodes in a
  * directory.
- *
- * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
- *
- * $Id: direntry.h 519 2010-04-21 21:54:28Z matt $
  */
 
 #include <stdlib.h>

@@ -1,11 +1,8 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Simple configuration component API.
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
-
 
 #include "config_internal.h"
 #include "config_declare.h"

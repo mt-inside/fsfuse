@@ -1,13 +1,17 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Simple alarm multiplexer, allowing multiple timed callbacks per process, in a
  * portable manner.
  * timer_create() et all look to be a reasonable way to do this, but they're in
  * the POSIX realtime annex, so /certain/ OSes (*cough* OS X) don't implement
  * them
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
 
 

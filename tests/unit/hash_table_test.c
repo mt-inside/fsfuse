@@ -1,9 +1,13 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Hash module unit tests
- *
- * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
- *
- * $Id$
  */
 
 #include <string.h>

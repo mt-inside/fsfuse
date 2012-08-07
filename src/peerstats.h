@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Peer Statistics Module Interface
- *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
- *
- * $Id: hash.h 321 2009-09-22 23:09:52Z matt $
  */
 
 #ifndef _INCLUDED_PEERSTATS_H

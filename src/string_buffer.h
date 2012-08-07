@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Safe, secure string_[builder|buffer] clone.
- *
- * Copyright (C) Matthew Turner 2011. All rights reserved.
- *
- * $Id: alarms.h 441 2010-01-11 23:56:17Z matt $
  */
 
 #ifndef _INCLUDED_STRING_BUFFER_H

@@ -1,11 +1,15 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * HTTP module implementation.
  * A simple module for sending simple HTTP requests and receiving simple
  * replies.
- *
- * Copyright (C) Matthew Turner 2010. All rights reserved.
- *
- * $Id: download_thread_pool.c 513 2010-03-08 22:27:27Z matt $
  */
 
 #include <sys/types.h>

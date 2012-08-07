@@ -1,10 +1,8 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Common header file, including important constants and over-rides. To be
  * included FIRST by every source file.
- *
- * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_COMMON_H
@@ -16,9 +14,9 @@
 
 
 #define FSFUSE_NAME      "fsfuse"
-#define FSFUSE_VERSION   "0.5.0 beta"
-#define FSFUSE_DATE      "February 2011"
-#define FSFUSE_COPYRIGHT "Copyright (C) Matthew Turner 2008-2012"
+#define FSFUSE_VERSION   "0.5.0"
+#define FSFUSE_DATE      "August 2012"
+#define FSFUSE_COPYRIGHT "Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3."
 
 /* Use fuse API version provided on this (the build) system up to the maximum
  * version that we support */

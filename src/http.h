@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * External API for the HTTP module.
- *
- * Copyright (C) Matthew Turner 2010. All rights reserved.
- *
- * $Id: download_thread_pool.h 513 2010-03-08 22:27:27Z matt $
  */
 
 #ifndef _included_http_h

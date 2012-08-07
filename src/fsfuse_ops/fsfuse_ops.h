@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
  * Declarations of all filesystem methods and the vtable.
- *
- * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_FSFUSE_OPS_H

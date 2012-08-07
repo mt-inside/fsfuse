@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Unit tests header.
- *
- * Copyright (C) Matthew Turner 2010-2012. All rights reserved.
- *
- * $Id$
  */
 
 extern void hash_table_test (void);

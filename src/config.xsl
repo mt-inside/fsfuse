@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
+    Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+
     Config xml to code generator.
-
-    Copyright (C) Matthew Turner 2009. All rights reserved.
-
-    $Id$
  -->
 
 <xsl:stylesheet

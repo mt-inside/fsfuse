@@ -1,9 +1,7 @@
 #
+# Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+#
 # Unit tests makefile fragment.
-#
-# Copyright (C) Matthew Turner 2008-2012. All rights reserved.
-#
-# $Id$
 #
 
 HERE := $(ROOT)/tests/unit

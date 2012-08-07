@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Uniform Resource Identifier Class
- *
- * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
- *
- * $Id: common.h 586 2012-03-26 18:14:00Z matt $
  */
 
 #ifndef _INCLUDED_URI_H

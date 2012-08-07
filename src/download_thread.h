@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Download Thread "Class" - a thread for downloading a file.
- *
- * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _included_download_thread_h

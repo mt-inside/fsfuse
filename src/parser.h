@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * API for the interface to the library used to parse e.g. metadata files.
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_PARSER_H

@@ -1,9 +1,13 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Definition of the vtable and some methods.
- *
- * Copyright (C) Matthew Turner 2008-2012. All rights reserved.
- *
- * $Id: fsfuse_ops.h 513 2010-03-08 22:27:27Z matt $
  */
 
 #include "common.h"
@@ -97,8 +101,8 @@ struct fuse_lowlevel_ops fsfuse_ops =
     NULL,                /* retrieve_reply */
     NULL,                /* forget_multi */
     NULL,                /* flock */
-    NULL,                /* mmap (CUSE only atm) */
-    NULL                 /* munmap (CUSE only atm) */
+    //NULL,                /* mmap (CUSE only atm) */
+    //NULL                 /* munmap (CUSE only atm) */
 #endif /* FUSE_USE_VERSION >= 29 */
 #endif /* FUSE_USE_VERSION >= 28 */
 #endif /* FUSE_USE_VERSION >= 26 */

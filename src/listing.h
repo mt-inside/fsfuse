@@ -1,10 +1,8 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * API for dealing with "listings", which are descriptions of all the nodes in a
  * directory.
- *
- * Copyright (C) Matthew Turner 2008-2010. All rights reserved.
- *
- * $Id: direntry.h 519 2010-04-21 21:54:28Z matt $
  */
 
 #ifndef _INCLUDED_LISTING_H

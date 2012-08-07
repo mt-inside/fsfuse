@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * locale(isation) module.
- *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
- *
- * $Id: direntry.h 414 2009-11-28 19:17:35Z matt $
  */
 
 #ifndef _INCLUDED_LOCALE_H

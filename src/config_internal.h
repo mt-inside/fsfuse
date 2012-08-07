@@ -1,3 +1,9 @@
+/*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
+ * Internal definitions for the configuration component.
+ */
+
 typedef enum
 {
     config_item_type_STRING,

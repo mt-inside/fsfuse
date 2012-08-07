@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * The inode -> direntry map interface.
- *
- * Copyright (C) Matthew Turner 2010. All rights reserved.
- *
- * $Id: direntry.c 510 2010-02-21 03:12:44Z matt $
  */
 
 #ifndef _INCLUDED_INODE_MAP_H

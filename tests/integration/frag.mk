@@ -1,9 +1,7 @@
 #
+# Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+#
 # Integration tests makefile fragment.
-#
-# Copyright (C) Matthew Turner 2008-2012. All rights reserved.
-#
-# $Id: frag.mk 595 2012-03-27 13:53:09Z matt $
 #
 
 HERE := $(ROOT)/tests/integration

@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Caching mechanism for direntrys and direntry trees - API definition.
- *
- * Copyright (C) Matthew Turner 2008-2009. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_DIRENTRY_CACHE_H

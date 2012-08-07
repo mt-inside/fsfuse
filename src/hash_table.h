@@ -1,9 +1,7 @@
 /*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Simple hash table API.
- *
- * Copyright (C) Matthew Turner 2009-2012. All rights reserved.
- *
- * $Id$
  */
 
 #ifndef _INCLUDED_HASH_TABLE_H

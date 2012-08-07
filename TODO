@@ -1,9 +1,22 @@
-- resurect the wiki :)
+copy config file into ~, look for one in /etc
 
 instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
 
+read and understand http://www.ibm.com/developerworks/linux/library/l-async/ and test every case
+
 Refactoring to improve quality :)
 =======
+- "Miscellaneous threads should be started from the init() method. Threads
+  started before fuse_main() will exit when the process goes into the background."
+  - indexnode listener thread, cache actor, etc.
+- inodes, lookup, forget, etc. readdir doesn't have to return inode numbers -
+  this should allow us to eliminate the inode table thingy. Look for FUSE_UNKNOWN_INO. Indeed, can pass null stat into readdir filler
+  - see next_id() in lib/fuse.c
+  - this probably isn't true, because one gets multiple lookups for the one
+    name; responding to one with an inode doesn't stop you getting more for the same file.
+- buffer lifetimes - how long as curl buffers valid? Just for duration of
+  callback? How long do buffers passed to fuse_reply_buf need to be valid? If it's just the duration of the call then can just pass curl bufs through as long as we stay on the thread that curl called us from
+- go through all mount options in fuse/README
 - can chunk_list lock be a rwlock?
 - move indexnodes lock to rwlock
 - need lifetime support for indexnodes, inc removing ones that don't exist.
