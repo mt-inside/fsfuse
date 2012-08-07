@@ -41,11 +41,15 @@
 
     <xsl:variable name="header_c">
         <xsl:text><![CDATA[/*
+ * Copyright (C) 2008-2012 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ *
  * Configuration system definitions.
- *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
- *
- * $Id$
  *
  * WARNING: THIS FILE IS AUTO-GENERATED. DO NOT ALTER!
  */
@@ -58,11 +62,9 @@
 
     <xsl:variable name="header_h">
         <xsl:text><![CDATA[/*
+ * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ *
  * Configuration system declarations.
- *
- * Copyright (C) Matthew Turner 2009. All rights reserved.
- *
- * $Id$
  *
  * WARNING: THIS FILE IS AUTO-GENERATED. DO NOT ALTER!
  */]]></xsl:text>
