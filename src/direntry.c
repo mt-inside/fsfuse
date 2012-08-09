@@ -22,7 +22,6 @@
 #include "direntry.h"
 #include "fetcher.h"
 #include "inode_map.h"
-#include "listing.h"
 #include "parser.h"
 #include "string_buffer.h"
 #include "indexnodes.h"
@@ -81,7 +80,6 @@ int direntry_ensure_children (
     char *path, *url;
     listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
-    indexnode_t *in;
 
 
     if (!de->looked_for_children)
@@ -91,7 +89,7 @@ int direntry_ensure_children (
 
 
         /* fetch the directory listing from the indexnode */
-        url = indexnode_make_url(de->in, "browse", path + 1);
+        url = indexnode_make_url(direntry_get_indexnode(de), "browse", path + 1);
         rc = parser_fetch_listing(url, &lis);
         free(path);
         free(url);
@@ -299,6 +297,11 @@ direntry_t *direntry_get_next_sibling (direntry_t *de)
 
 /* direntry attribute getters =============================================== */
 
+listing_t *direntry_peek_listing (direntry_t *de)
+{
+    return de->li;
+}
+
 ino_t direntry_get_inode (direntry_t *de)
 {
     return de->inode;
@@ -327,6 +330,11 @@ char *direntry_get_path (direntry_t *de)
 
 
     return string_buffer_commit(path);
+}
+
+indexnode_t *direntry_get_indexnode (direntry_t *de)
+{
+    return listing_get_indexnode(de->li);
 }
 
 char *direntry_get_name (direntry_t *de)

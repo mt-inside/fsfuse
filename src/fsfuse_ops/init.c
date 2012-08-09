@@ -16,8 +16,13 @@
 #include <errno.h>
 
 #include "fsfuse_ops/fsfuse_ops.h"
+#include "indexnodes.h"
 #include "trace.h"
 
+/* "Miscellaneous threads should be started from the init() method. Threads
+ *  started before fuse_main() will exit when the process goes into the
+ *  background."
+ */
 
 void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
 {
@@ -36,6 +41,8 @@ void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
         conn->max_write,
         conn->max_readahead
     );
+
+    indexnodes_start_listening();
 
     method_trace_dedent();
 

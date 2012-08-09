@@ -74,18 +74,16 @@ int fetcher_fetch_file (listing_t           *li,
     int rc = EIO;
     char *url;
     listing_list_t *lis;
-    listing_t *li = NULL;
-    indexnode_t *in;
 
 
-    assert(hash); assert(*hash);
+    assert(li);
 
-    fetcher_trace("fetcher_fetch_file(hash: %s, range: \"%s\")\n", hash, range);
+    fetcher_trace("fetcher_fetch_file(hash: %s, range: \"%s\")\n", listing_get_hash(li), range);
     fetcher_trace_indent();
 
 
     /* Find alternatives */
-    url = indexnode_make_url(li->in, "alternatives", li->hash);
+    url = indexnode_make_url(listing_get_indexnode(li), "alternatives", listing_get_hash(li));
     rc = parser_fetch_listing(url, &lis);
     free(url);
 

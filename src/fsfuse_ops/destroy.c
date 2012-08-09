@@ -16,6 +16,7 @@
 #include <errno.h>
 
 #include "fsfuse_ops/fsfuse_ops.h"
+#include "indexnodes.h"
 #include "trace.h"
 
 
@@ -24,6 +25,11 @@ void fsfuse_destroy (void *userdata)
     NOT_USED(userdata);
 
     method_trace("fsfuse_destroy()\n");
+    method_trace_indent();
+
+    indexnodes_stop_listening();
+
+    method_trace_dedent();
 
 
     /* No reply */

@@ -1,3 +1,10 @@
+indexnodes.c:160 is what needs thinking about next. Should we be able to get indexnodes, or should indexnodes just return lis? I think we should be able to get them actually, because that's not indexnodes.c's concern.
+
+jesus, just go throgh this shit and make it better.
+Start at the indexnodes thread and indexnode class. Add a listener for all the broadcasts for a particular indexnode after a class has been instantiated for it. Add a state machine for missed pings, active, dead etc
+Then start at the front - readdir(). Fetchers should be instantiated over URLs rather than a static thing. de, li to have clear separation, work properly, proper inheritance, etc
+Then go for read()
+
 copy config file into ~, look for one in /etc
 
 instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
@@ -6,6 +13,9 @@ read and understand http://www.ibm.com/developerworks/linux/library/l-async/ and
 
 Refactoring to improve quality :)
 =======
+- if a function's first argument is a class *, chances are it should be on that
+  class :)
+- do the direntry -> listing inheritance properly; de shouldn't habe an in*, its first member should be an li, so that it can be cast to one.
 - "Miscellaneous threads should be started from the init() method. Threads
   started before fuse_main() will exit when the process goes into the background."
   - indexnode listener thread, cache actor, etc.
@@ -61,6 +71,8 @@ Refactoring to improve quality :)
   you can pass them continuations. Of course whether they blocks depends on whether they've been called recently.
   For read() it makes perfect sense to pass a continuation and return because we use a thread pool for downloading.
   However getattr is one/one threads - eg you may as well had wait for your getattr call.
+- sort out headers: common.h first, module headers, sys headers, fsfuse headers
+  in alpha order. Minimal header sets always.
 
 
 **WARNING** THIS IS NOT UNDER VERSION CONTROL.

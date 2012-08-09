@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 
 #include "trace.h"
+#include "indexnode.h"
+#include "listing.h"
 
 
 TRACE_DECLARE(direntry)
@@ -40,8 +42,10 @@ extern direntry_t *direntry_get_parent       (direntry_t *de);
 extern direntry_t *direntry_get_first_child  (direntry_t *de);
 extern direntry_t *direntry_get_next_sibling (direntry_t *de);
 
+extern listing_t *     direntry_peek_listing            (direntry_t *de);
 extern ino_t           direntry_get_inode               (direntry_t *de);
 extern char *          direntry_get_path                (direntry_t *de);
+extern indexnode_t *   direntry_get_indexnode           (direntry_t *de);
 extern char *          direntry_get_name                (direntry_t *de);
 extern char *          direntry_get_hash                (direntry_t *de);
 extern direntry_type_t direntry_get_type                (direntry_t *de);

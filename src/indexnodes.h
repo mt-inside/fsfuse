@@ -10,6 +10,7 @@
 extern int indexnodes_init (void);
 extern void indexnodes_finalise (void);
 
-extern indexnode_t *indexnodes_get_globalton (void);
+extern void indexnodes_start_listening (void);
+extern void indexnodes_stop_listening (void);
 
 #endif /* _INCLUDED_INDEXNODES_H */

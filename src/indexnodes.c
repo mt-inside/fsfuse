@@ -8,6 +8,8 @@
  *
  *
  * The collection of known indexnodes.
+ * This module spanws a thread that listens for indexnode broadcats and
+ * maintains a list.
  */
 
 #include <stdlib.h>
@@ -20,6 +22,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+
+#include "queue.h"
 
 #include "common.h"
 #include "config.h"
@@ -34,7 +38,6 @@ typedef struct _listener_thread_info_t
     pthread_t pthread_id;
 } listener_thread_info_t;
 
-/* TODO: why we no use TAILQ? */
 typedef struct _indexnodes_list_t
 {
     indexnode_t *in;
@@ -42,56 +45,75 @@ typedef struct _indexnodes_list_t
 } indexnode_list_t;
 
 
-static int s_exiting = 0;
+static int s_exiting = 0; /* TODO: enum state machine */
 static listener_thread_info_t *s_listener_thread_info;
 static TAILQ_HEAD(,_indexnodes_list_t) s_indexnodes;
 static pthread_mutex_t s_indexnodes_lock; /* TODO: rwlock */
 
 
 static void *indexnodes_listen_main(void *args);
+
+static void indexnodes_add (indexnode_t *in);
 static void indexnodes_delete (void);
+
+static void version_cb (indexnode_t *in, char *buf);
 
 
 int indexnodes_init (void)
 {
-    s_listener_thread_info = (listener_thread_info_t *)malloc(sizeof(listener_thread_info_t));
-
     pthread_mutex_init(&s_indexnodes_lock, NULL);
-
     TAILQ_INIT(&s_indexnodes);
 
     /* Instantiate statically configured indexnodes */
     int i = 0;
     char *host, *port;
-    while (host = config_indexnode_host[i] &&
-           port = config_indexnode_post[i])
+    while ((host = config_indexnode_hosts[i]) &&
+           (port = config_indexnode_ports[i]))
     {
-        indexnode_t *in = indexnode_new();
+        indexnode_t *in = indexnode_new_static(host, port);
 
-        indexnode_set_host(in, host);
-        indexnode_set_port(in, port);
-        fetcher_get_indexnode_version(in, &version_cb);
+        /* TODO: should do this async, in parallel, so that it happens as fast
+         * as possible and that we can get on with other stuff straight away.
+         * The following logic would have to move to a callback. */
+        fetcher_get_indexnode_version(in, &version_cb); /* blocks */
 
         indexnodes_add(in);
-    }
 
-    /* Start listening for broadcasting indexnodes */
-    assert(!pthread_create(&(s_listener_thread_info->pthread_id), NULL, &indexnodes_listen_main, NULL));
+        trace_info(
+            "Static index node configured at %s:%s - version %s\n",
+            in->host,
+            in->port,
+            in->version);
+
+        i++;
+    }
 
     return 0;
 }
 
 void indexnodes_finalise (void)
 {
-    /* Signal and wait for thread */
-    s_exiting = 1;
-    pthread_join(s_listener_thread_info->pthread_id, NULL);
-
+    /* TODO: assert the thread state == stopped */
     indexnodes_delete();
 
     pthread_mutex_destroy(&s_indexnodes_lock);
 
     free(s_listener_thread_info);
+}
+
+void indexnodes_start_listening (void)
+{
+    s_listener_thread_info = (listener_thread_info_t *)malloc(sizeof(listener_thread_info_t));
+
+    /* Start listening for broadcasting indexnodes */
+    assert(!pthread_create(&(s_listener_thread_info->pthread_id), NULL, &indexnodes_listen_main, NULL));
+}
+
+void indexnodes_stop_listening (void)
+{
+    /* Signal and wait for thread */
+    s_exiting = 1;
+    pthread_join(s_listener_thread_info->pthread_id, NULL);
 }
 
 static void indexnodes_add (indexnode_t *in)
@@ -120,13 +142,6 @@ static void indexnodes_add (indexnode_t *in)
     }
 }
 
-void indexnode_delete (int id)
-{
-    /* TODO */
-    DO_NOTHING;
-}
-
-/* TODO: for shutdown time, presumably? */
 static void indexnodes_delete (void)
 {
     indexnode_list_t *item = s_indexnodes;
@@ -412,8 +427,6 @@ static void *indexnodes_listen_main(void *args)
                 trace_warn("Not found\n");
                 break;
             default:
-                in = indexnode_new();
-
                 if (FD_ISSET(s4, &r_fds))
                 {
                     socklen = sizeof(sa4);
@@ -470,14 +483,10 @@ static void *indexnodes_listen_main(void *args)
 
         if (found)
         {
-            indexnode_set_host(in, host );
-            indexnode_set_port(in, *port);
-            indexnode_set_id(  in, *id  );
-            indexnode_set_version(in, *version);
-
-            trace_info("Found index node, version %s, at %s:%s\n", *version, host, *port);
+            in = indexnode_new(host, *port, *id, *version);
 
             indexnodes_add(in);
+            trace_info("Found index node, version %s, at %s:%s (id: %s)\n", *version, host, *port, *id);
         }
 
         string_buffer_delete(buffer);
@@ -494,17 +503,12 @@ static void version_cb (indexnode_t *in, char *buf)
 {
     char *version = NULL;
 
+    assert(in);
+    assert(buf); assert(*buf);
+
     if (!indexnode_parse_version(buf, &version))
     {
         indexnode_set_version(in, version);
         free(version);
-
-        trace_info(
-            "Static index node configured at %s:%s - version %s\n",
-            indexnode_get_host(in),
-            indexnode_get_port(in),
-            indexnode_get_version(in));
-
-        indexnodes_add(in);
     }
 }

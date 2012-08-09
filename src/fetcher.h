@@ -11,6 +11,7 @@
 
 #include "common.h"
 #include "indexnode.h"
+#include "listing.h"
 
 
 typedef void (*indexnode_version_cb_t)(indexnode_t *, char *);
@@ -37,7 +38,7 @@ TRACE_DECLARE(fetcher)
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
-extern int fetcher_fetch_file (const char * const   path,
+extern int fetcher_fetch_file (listing_t           *li,
                                const char * const   range,
                                curl_write_callback  cb,
                                void                *cb_data);

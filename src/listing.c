@@ -26,6 +26,7 @@ TRACE_DEFINE(listing)
 
 struct _listing_t
 {
+    indexnode_t               *in;
     char                      *name;
     char                      *hash;
     listing_type_t             type;
@@ -152,6 +153,11 @@ int listing_equal (listing_t *li, listing_t *other)
 
 
 /* listing attribute getters ================================================ */
+
+indexnode_t *listing_get_indexnode (listing_t *li)
+{
+    return li->indexnode;
+}
 
 char *listing_get_name (listing_t *li)
 {

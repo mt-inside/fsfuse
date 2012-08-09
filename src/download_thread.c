@@ -388,7 +388,7 @@ static void *downloader_thread_main (void *arg)
         dl_thr_trace("fetching range \"%s\"\n", range_str);
 
         /* begin the download */
-        rc = fetcher_fetch_file(direntry_get_hash(thread->de),
+        rc = fetcher_fetch_file(direntry_peek_listing(thread->de),
                                 (thread->current_chunk->start) ? range_str : NULL,
                                 (curl_write_callback)&thread_pool_consumer,
                                 (void *)thread                              );

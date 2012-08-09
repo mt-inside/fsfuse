@@ -34,14 +34,36 @@ struct _indexnode_t
 };
 
 
-/* TODO: this shouldn't be mutable, data to be passed to ctor */
 /* TODO: state machine */
-indexnode_t *indexnode_new (void)
+indexnode_t *indexnode_new_static (char *host, char *port)
 {
     indexnode_t *in;
 
 
+    assert(host); assert(*host);
+    assert(port); assert(*port);
+
+
     in = calloc(sizeof(indexnode_t), 1);
+    in->host = strdup(host);
+    in->port = strdup(port);
+
+
+    return in;
+}
+
+indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
+{
+    indexnode_t *in;
+
+
+    assert(version); assert(*version);
+    assert(id);      assert(*id);
+
+
+    in = indexnode_new(host, port);
+    in->version = strdup(version);
+    in->id      = strdup(id     );
 
 
     return in;
@@ -49,32 +71,28 @@ indexnode_t *indexnode_new (void)
 
 void indexnode_delete (indexnode_t *in)
 {
-    if (in->host)    free(in->host);
-    if (in->port)    free(in->port);
+    free(in->host);
+    free(in->port);
     if (in->version) free(in->version);
     if (in->id)      free(in->id);
 
     free(in);
 }
 
-void indexnode_set_host (indexnode_t *in, char *host)
-{
-    in->host = strdup(host);
-}
 char *indexnode_get_host (indexnode_t *in)
 {
     return in->host;
 }
 
-void indexnode_set_port (indexnode_t *in, char *port)
-{
-    in->port = strdup(port);
-}
 char *indexnode_get_port (indexnode_t *in)
 {
     return in->port;
 }
 
+/* TODO: such is my hatred for mutable state that this has to go.
+ * Either indexnode_make_url has to take a host and a port, not an indexnode, or
+ * take a proto_indexnode (base class of indexnode), from which a full indexnode
+ * can be constructed when we know its version */
 void indexnode_set_version (indexnode_t *in, char *version)
 {
     in->version = strdup(version);
@@ -84,10 +102,6 @@ char *indexnode_get_version (indexnode_t *in)
     return in->version;
 }
 
-void indexnode_set_id (indexnode_t *in, char *id)
-{
-    in->id = strdup(id);
-}
 char *indexnode_get_id (indexnode_t *in)
 {
     return in->id;
