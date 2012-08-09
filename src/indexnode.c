@@ -15,11 +15,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <curl/curl.h>
 
 #include "common.h"
 #include "config.h"
+#include "curl_utils.h"
 #include "indexnode.h"
 #include "fetcher.h"
+#include "utils.h"
 
 
 struct _indexnode_t
@@ -88,4 +91,43 @@ void indexnode_set_id (indexnode_t *in, char *id)
 char *indexnode_get_id (indexnode_t *in)
 {
     return in->id;
+}
+
+/* API to make URLs ========================================================= */
+
+char *indexnode_make_url (
+    indexnode_t *in,
+    const char * const path_prefix,
+    const char * const resource
+)
+{
+    char *host = indexnode_get_host(in), *port = indexnode_get_port(in);
+    char *fmt;
+    char *resource_esc, *url;
+    size_t len;
+    CURL *eh = curl_eh_new();
+
+
+    if (is_ip4_address(host) || is_ip6_address(host))
+    {
+        fmt = "http://[%s]:%s/%s/%s";
+    }
+    else
+    {
+        fmt = "http://%s:%s/%s/%s";
+    }
+
+
+    /* we escape from resource + 1 and render the first '/' ourselves because
+     * the indexnode insists on it being real */
+    resource_esc = curl_easy_escape(eh, resource, 0);
+    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
+    url = (char *)malloc(len * sizeof(*url));
+    sprintf(url, fmt, indexnode_get_host(in), indexnode_get_port(in), path_prefix, resource_esc);
+    curl_free(resource_esc);
+
+    curl_eh_delete(eh);
+
+
+    return url;
 }

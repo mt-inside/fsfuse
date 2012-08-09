@@ -22,4 +22,10 @@ extern char *indexnode_get_version (indexnode_t *in);
 extern void  indexnode_set_id      (indexnode_t *in, char *id);
 extern char *indexnode_get_id      (indexnode_t *in);
 
+extern char *indexnode_make_url (
+    indexnode_t *in,
+    const char * const path_prefix,
+    const char * const resource
+);
+
 #endif /* _INCLUDED_INDEXNODE_H */

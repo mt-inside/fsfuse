@@ -15,13 +15,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include <curl/curl.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
 
 #include "common.h"
 #include "config.h"
+#include "curl_utils.h"
 #include "fetcher.h"
 #include "parser.h"
 #include "indexnodes.h"
@@ -35,9 +35,6 @@
 
 TRACE_DEFINE(fetcher)
 
-
-static CURL *curl_eh_new (void);
-static void curl_eh_delete (CURL *eh);
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream);
 
@@ -133,7 +130,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     in = indexnodes_get_globalton();
     if (in)
     {
-        url = make_url(in, "stats", "");
+        url = indexnode_make_url(in, "stats", "");
         rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
         free(url);
     }
@@ -311,7 +308,7 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     }
 
     /* URL */
-    url = make_url(in, "browse", "");
+    url = indexnode_make_url(in, "browse", "");
     curl_easy_setopt(eh, CURLOPT_URL, url);
 
     /* Other headers */
@@ -473,67 +470,6 @@ int http2errno (int http_code)
     return rc;
 }
 
-
-/* ========================================================================== */
-/*      Static Helpers                                                        */
-/* ========================================================================== */
-static CURL *curl_eh_new (void)
-{
-    CURL *eh = curl_easy_init();
-
-
-    curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
-
-
-    return eh;
-}
-
-static void curl_eh_delete (CURL *eh)
-{
-    curl_easy_cleanup(eh);
-}
-
-/* ========================================================================== */
-/* API to make URLs                                                           */
-/* ========================================================================== */
-
-/* TODO: should this be a member function of an indexnode? */
-char *make_url (
-    indexnode_t *in,
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    char *host = indexnode_get_host(in), *port = indexnode_get_port(in);
-    char *fmt;
-    char *resource_esc, *url;
-    size_t len;
-    CURL *eh = curl_eh_new();
-
-
-    if (is_ip4_address(host) || is_ip6_address(host))
-    {
-        fmt = "http://[%s]:%s/%s/%s";
-    }
-    else
-    {
-        fmt = "http://%s:%s/%s/%s";
-    }
-
-
-    /* we escape from resource + 1 and render the first '/' ourselves because
-     * the indexnode insists on it being real */
-    resource_esc = curl_easy_escape(eh, resource, 0);
-    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
-    url = (char *)malloc(len * sizeof(*url));
-    sprintf(url, fmt, indexnode_get_host(in), indexnode_get_port(in), path_prefix, resource_esc);
-    curl_free(resource_esc);
-
-    curl_eh_delete(eh);
-
-
-    return url;
-}
 
 /* ========================================================================== */
 /* Misc                                                                       */
