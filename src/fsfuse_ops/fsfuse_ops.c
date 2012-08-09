@@ -20,41 +20,6 @@
 TRACE_DEFINE(method)
 
 
-static void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
-{
-    NOT_USED(userdata);
-    NOT_USED(conn);
-
-    method_trace("fsfuse_init()\n");
-    method_trace_indent();
-
-    method_trace(
-        "proto_major: %u, proto_minor: %u, "
-        "async_read: %u, max_write: %u, max_readahead: %u\n",
-        conn->proto_major,
-        conn->proto_minor,
-        conn->async_read,
-        conn->max_write,
-        conn->max_readahead
-    );
-
-    method_trace_dedent();
-
-
-    /* No reply */
-}
-
-static void fsfuse_destroy (void *userdata)
-{
-    NOT_USED(userdata);
-
-    method_trace("fsfuse_destroy()\n");
-
-
-    /* No reply */
-}
-
-
 struct fuse_lowlevel_ops fsfuse_ops =
 {
     .init = &fsfuse_init,        /* init */

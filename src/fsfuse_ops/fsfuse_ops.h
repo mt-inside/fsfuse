@@ -29,9 +29,9 @@ TRACE_DECLARE(read)
 extern struct fuse_lowlevel_ops fsfuse_ops;
 
 
-/* fsfuse_init() is local to fsfuse_ops.c */
+extern void fsfuse_init (void *userdata, struct fuse_conn_info *conn);
 
-/* fsfuse_destroy() is local to fsfuse_ops.c */
+extern void fsfuse_destroy (void *userdata);
 
 extern void fsfuse_lookup (fuse_req_t req, fuse_ino_t parent, const char *name);
 
