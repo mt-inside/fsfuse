@@ -4,4 +4,4 @@
  * Declarations for auto-generated build number variables.
  */
 
-extern const char * const svn_rev;
+extern const char * const build_revision;

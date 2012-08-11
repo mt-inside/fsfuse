@@ -19,7 +19,7 @@ MAIN_OBJECT ?= fsfuse.o
 # == Basics ==
 
 default: fsfuse
-.PHONY: default depend objects clean count buildnumber.c
+.PHONY: default depend objects clean count build_revision.c
 
 OS:=$(shell uname -s)
 
@@ -110,11 +110,11 @@ config_declare.h: config.xsl config-config.xml
 config_define.c:  config.xsl config-config.xml
 	xsltproc --stringparam filetype c $^ > $@
 
-buildnumber.c:
-	@echo "Making buildnumber.c"
-	$(shell /bin/echo -n 'const char * const svn_rev = "'  > buildnumber.c)
-	$(shell /bin/echo -n `svnversion $(SRC_ROOT)`         >> buildnumber.c)
-	$(shell /bin/echo    '";'                             >> buildnumber.c)
+build_revision.c:
+	@echo "Making build_revision.c"
+	$(shell /bin/echo -n 'const char * const build_revision = "'  > build_revision.c)
+	$(shell /bin/echo -n `git show --pretty=format:'%h %cd' HEAD $(SRC_ROOT) | head -n1` >> build_revision.c)
+	$(shell /bin/echo    '";'                             >> build_revision.c)
 
 %.i: %.c
 	@echo "Preprocessing $< -> $@"
@@ -132,16 +132,16 @@ buildnumber.c:
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
-fsfuse: $(CONFIGS) objects buildnumber.o
+fsfuse: $(CONFIGS) objects build_revision.o
 	@echo "Linking $@"
-	@$(CC) -o $@ $(OBJECTS) buildnumber.o $(LDFLAGS)
+	@$(CC) -o $@ $(OBJECTS) build_revision.o $(LDFLAGS)
 
 depend: $(DEPENDS)
 
 objects: $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) buildnumber.c buildnumber.o gmon.out
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) build_revision.c build_revision.o gmon.out
 
 count:
 	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l
