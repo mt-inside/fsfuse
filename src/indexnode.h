@@ -36,4 +36,7 @@ extern char *indexnode_make_url (
     const char * const resource
 );
 
+extern void indexnode_seen (indexnode_t *in);
+extern int indexnode_timed_out (indexnode_t *in);
+
 #endif /* _INCLUDED_INDEXNODE_H */

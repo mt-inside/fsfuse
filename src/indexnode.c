@@ -34,6 +34,8 @@ struct _indexnode_t
     char *port;
     char *version;
     char *id;
+
+    time_t last_seen;
 };
 
 /* essentially Pair<host, port>. Here because nature abhors a mutable type */
@@ -87,6 +89,8 @@ indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
         in->port    = strdup(port);
         in->version = strdup(version);
         in->id      = strdup(id);
+
+        indexnode_seen(in);
     }
     else
     {
@@ -117,6 +121,8 @@ indexnode_t *indexnode_from_proto (proto_indexnode_t *pin, char *version)
         in->host    = pin->host;
         in->port    = pin->port;
         in->version = strdup(version);
+
+        indexnode_seen(in);
     }
     else
     {
@@ -256,4 +262,14 @@ static char *make_url_inner (
 
 
     return url;
+}
+
+void indexnode_seen (indexnode_t *in)
+{
+    in->last_seen = time(NULL);
+}
+
+int indexnode_timed_out (indexnode_t *in)
+{
+    return (time(NULL) - in->last_seen) < config_indexnode_timeout;
 }

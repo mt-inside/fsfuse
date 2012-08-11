@@ -32,6 +32,12 @@
         <xpath>/config/indexnode/autodetect/text()</xpath>
     </item>
     <item>
+        <symbol>indexnode_timeout</symbol>
+        <type>integer</type>
+        <default>3</default>
+        <xpath>/config/indexnode/timeout/text()</xpath>
+    </item>
+    <item>
         <symbol>indexnode_hosts</symbol>
         <type>string_collection</type>
         <default>NULL</default>
