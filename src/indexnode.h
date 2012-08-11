@@ -21,8 +21,8 @@ extern void indexnode_delete (indexnode_t *in);
 
 extern char *indexnode_get_host    (indexnode_t *in);
 extern char *indexnode_get_port    (indexnode_t *in);
-extern void  indexnode_set_version (indexnode_t *in, char *version);
 extern char *indexnode_get_version (indexnode_t *in);
+/* NULL if we can't get an ID, e.g. it's statically configured */
 extern char *indexnode_get_id      (indexnode_t *in);
 
 extern char *proto_indexnode_make_url (

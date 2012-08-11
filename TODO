@@ -1,5 +1,3 @@
-indexnodes.c:160 is what needs thinking about next. Should we be able to get indexnodes, or should indexnodes just return lis? I think we should be able to get them actually, because that's not indexnodes.c's concern.
-
 factor refcounting out into macros - one for the struct definition, one for the post and delete methods
 where are indexnodes free()d?
 get to the point where each lib (libxml, curl) is refd and understood by only 1 file.
