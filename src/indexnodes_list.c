@@ -7,14 +7,16 @@
  * (at your option) any later version.
  *
  *
- * The collection of known indexnodes.
- * This module spanws a thread that listens for indexnode broadcats and
- * maintains a list.
+ * A list type for a list of indexnodes.
+ * TODO: now this has been factored out, is is so simple it can be merged back
+ * into indexnodes.c? Especially if indexnodes have an intrinsic list (that's
+ * kept private to in/ins via an indexnode_internal.h
  */
 
 #include "common.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "indexnodes_list.h"
 
@@ -43,6 +45,32 @@ void indexnodes_list_add (indexnodes_list_t *ins,
     item->in = indexnode_post(in);
     TAILQ_INSERT_HEAD(&ins->list, item, next);
 }
+
+/* TODO: take a bool (*indexnode_matcher)(in) instead of this id */
+indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id)
+{
+    indexnodes_list_item_t *item;
+    indexnode_t *in = NULL;
+    char *item_id;
+    int found = 0;
+
+
+    TAILQ_FOREACH(item, &ins->list, next)
+    {
+        item_id = indexnode_get_id(item->in);
+        if (item_id && !strcmp(item_id, id))
+        {
+            in = item->in;
+            found = 1;
+        }
+        free(item_id);
+        if (found) break;
+    }
+
+
+    return in;
+}
+
 
 /* TODO: don't return lists directly, have an itterator class.
  * When that's done, copy() can be internal, I think (or the iterator just ref

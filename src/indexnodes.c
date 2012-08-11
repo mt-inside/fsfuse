@@ -12,6 +12,18 @@
  * maintains a list.
  */
 
+/* TODO:
+ * this assumes indexnodes live forever. Need to have the thread try to match
+ * broadcasts against existing indexnodes. Unknown indexnodes are new. Known
+ * indexnodes have their timeout put back to 0. Also needs to be a thread on a
+ * timer that goes over all the indexnodes. If the timout has exceeded some
+ * constant, change its state and remove it from the list, and dec ref count.
+ * Anything that's still using it (they're ref-counted) sees it's in state dead,
+ * and should error and return asap, deleting the indexnode as they do so.
+ * For refcount to hit 0, the indexnode must not be owned by the list (assert
+ * this) and so it can be free()d
+ */
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -72,6 +84,9 @@ int indexnodes_init (void)
         indexnode_t *in = indexnode_from_proto(pin, version);
         if (in)
         {
+            /* Currently no way to get the id of a static indexnode (if you
+             * can't see its broadcasts, so we just add them and assume there
+             * are no duplicates */
             indexnodes_list_add(s_indexnodes, in);
 
             trace_info(
@@ -435,7 +450,15 @@ static void *indexnodes_listen_main(void *args)
             if (in)
             {
                 pthread_mutex_lock(&s_indexnodes_lock);
-                indexnodes_list_add(s_indexnodes, in);
+                if (!indexnodes_list_find(s_indexnodes, indexnode_get_id(in)))
+                {
+                    /* If it's not been seen before, add it */
+                    indexnodes_list_add(s_indexnodes, in);
+                }
+                else
+                {
+                    /* TODO: reset timeout */
+                }
                 pthread_mutex_unlock(&s_indexnodes_lock);
 
                 trace_info("Found index node, version %s, at %s:%s (id: %s)\n", *version, host, *port, *id);

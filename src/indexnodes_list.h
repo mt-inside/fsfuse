@@ -31,6 +31,7 @@ typedef struct _indexnodes_list_t
 
 extern indexnodes_list_t *indexnodes_list_new (void);
 extern void indexnodes_list_add (indexnodes_list_t *ins, indexnode_t *in);
+extern indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id);
 extern indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *ins);
 extern void indexnodes_list_delete (indexnodes_list_t *ins);
 
