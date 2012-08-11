@@ -199,9 +199,8 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 #endif /* DEBUG */
 
 
-    assert(de->ref_count);
-
     pthread_mutex_lock(de->lock);
+    assert(de->ref_count);
     ++de->ref_count;
     pthread_mutex_unlock(de->lock);
 
@@ -231,9 +230,8 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     string_buffer_delete(trace_str);
 #endif /* DEBUG */
 
-    assert(de->ref_count);
-
     pthread_mutex_lock(de->lock);
+    assert(de->ref_count);
     refc = --de->ref_count;
     pthread_mutex_unlock(de->lock);
 
