@@ -27,6 +27,9 @@
 
 struct _indexnode_t
 {
+    pthread_mutex_t    *lock;
+    unsigned ref_count;
+
     char *host;
     char *port;
     char *version;
@@ -45,6 +48,11 @@ indexnode_t *indexnode_new_static (char *host, char *port)
 
 
     in = calloc(sizeof(indexnode_t), 1);
+
+    in->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(in->lock, NULL);
+    in->ref_count = 1;
+
     in->host = strdup(host);
     in->port = strdup(port);
 
@@ -69,14 +77,39 @@ indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
     return in;
 }
 
+indexnode_t *indexnode_post (indexnode_t *in)
+{
+    pthread_mutex_lock(in->lock);
+    assert(in->ref_count);
+    ++in->ref_count;
+    pthread_mutex_unlock(in->lock);
+
+
+    return in;
+}
+
 void indexnode_delete (indexnode_t *in)
 {
-    free(in->host);
-    free(in->port);
-    if (in->version) free(in->version);
-    if (in->id)      free(in->id);
+    unsigned refc;
 
-    free(in);
+
+    pthread_mutex_lock(in->lock);
+    assert(in->ref_count);
+    refc = --in->ref_count;
+    pthread_mutex_unlock(in->lock);
+
+    if (!refc)
+    {
+        pthread_mutex_destroy(in->lock);
+        free(in->lock);
+
+        free(in->host);
+        free(in->port);
+        if (in->version) free(in->version);
+        if (in->id)      free(in->id);
+
+        free(in);
+    }
 }
 
 char *indexnode_get_host (indexnode_t *in)
