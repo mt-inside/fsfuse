@@ -158,8 +158,8 @@ void indexnode_delete (indexnode_t *in)
 
         free(in->host);
         free(in->port);
-        if (in->version) free(in->version);
-        if (in->id)      free(in->id);
+        free(in->version);
+        if (in->id) free(in->id);
 
         free(in);
     }
