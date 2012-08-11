@@ -75,6 +75,8 @@ indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id)
 /* TODO: don't return lists directly, have an itterator class.
  * When that's done, copy() can be internal, I think (or the iterator just ref
  * counts the list).
+ * It's really nasty that fetcher, etc see the internals of
+ * this
  */
 indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 {
@@ -90,6 +92,33 @@ indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 
     return ret;
 }
+
+/* TODO: make remove_where(Predicate<indexnode>) */
+indexnodes_list_t *indexnodes_list_remove_expired (indexnodes_list_t *orig)
+{
+    indexnodes_list_t *ret = indexnodes_list_new();
+    indexnodes_list_item_t *item;
+
+
+    TAILQ_FOREACH(item, &orig->list, next)
+    {
+        if (indexnode_still_valid(item->in))
+        {
+            indexnodes_list_add(ret, indexnode_post(item->in));
+        }
+        else
+        {
+            /* simply don't post here, and they will be deleted when the old
+             * list is deleted */
+        }
+    }
+
+    indexnodes_list_delete(orig);
+
+
+    return ret;
+}
+
 
 void indexnodes_list_delete (indexnodes_list_t *ins)
 {

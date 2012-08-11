@@ -145,6 +145,9 @@ indexnodes_list_t *indexnodes_get (void)
 
 
     pthread_mutex_lock(&s_indexnodes_lock);
+    /* currently only happens lazily, here. Might be worth putting on a bg
+     * thread, if only for debugging */
+    s_indexnodes = indexnodes_list_remove_expired(s_indexnodes);
     ins = indexnodes_list_copy(s_indexnodes);
     pthread_mutex_unlock(&s_indexnodes_lock);
 

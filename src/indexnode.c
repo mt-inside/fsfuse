@@ -269,7 +269,7 @@ void indexnode_seen (indexnode_t *in)
     in->last_seen = time(NULL);
 }
 
-int indexnode_timed_out (indexnode_t *in)
+int indexnode_still_valid (indexnode_t *in)
 {
     return (time(NULL) - in->last_seen) < config_indexnode_timeout;
 }
