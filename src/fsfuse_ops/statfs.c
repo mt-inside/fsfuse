@@ -53,6 +53,14 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
     parser = parser_new();
 
     /* fetch the stats page and feed it into the parser */
+    /* TODO: this is so amazinlgy wrong. fetcher_f_s uses parser many times,
+     * thata has to stop. */
+    /* TODO: it's awful that the fetcher and this file share the state of the
+     * parser, that should be wrapped up in an object */
+    /* TODO: this file should not be concerned with libxml or any parsing. that
+     * should sit somwhere else. How about a ctor that gets a new "i eat stats
+     * results and return a total" object? */
+    /* TODO: the parser_consumer callback shouldn't be in another file */
     rc = fetcher_fetch_stats((curl_write_callback)&parser_consumer,
                              (void *)parser);
 

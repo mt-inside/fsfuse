@@ -22,12 +22,6 @@ TRACE_DECLARE(direntry)
 #define direntry_trace_dedent() TRACE_DEDENT(direntry)
 
 
-typedef enum
-{
-    direntry_type_FILE,
-    direntry_type_DIRECTORY
-} direntry_type_t;
-
 typedef struct _direntry_t direntry_t;
 
 extern int direntry_init (void);
@@ -45,10 +39,9 @@ extern direntry_t *direntry_get_next_sibling (direntry_t *de);
 extern listing_t *     direntry_peek_listing            (direntry_t *de);
 extern ino_t           direntry_get_inode               (direntry_t *de);
 extern char *          direntry_get_path                (direntry_t *de);
-extern indexnode_t *   direntry_get_indexnode           (direntry_t *de);
 extern char *          direntry_get_name                (direntry_t *de);
 extern char *          direntry_get_hash                (direntry_t *de);
-extern direntry_type_t direntry_get_type                (direntry_t *de);
+extern listing_type_t  direntry_get_type                (direntry_t *de);
 extern off_t           direntry_get_size                (direntry_t *de);
 extern unsigned long   direntry_get_link_count          (direntry_t *de);
 extern char *          direntry_get_href                (direntry_t *de);
@@ -56,6 +49,11 @@ extern int             direntry_get_looked_for_children (direntry_t *de);
 extern void            direntry_set_looked_for_children (direntry_t *de, int val);
 extern int             direntry_is_root                 (direntry_t *de);
 extern void            direntry_de2stat                 (direntry_t *de, struct stat *st);
+extern char *direntry_make_url (
+    direntry_t *de,
+    const char * const path_prefix,
+    const char * const resource
+);
 extern void            direntry_still_exists            (direntry_t *de);
 extern void            direntry_no_longer_exists        (direntry_t *de);
 

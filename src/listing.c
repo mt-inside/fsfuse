@@ -17,6 +17,7 @@
 
 #include "common.h"
 #include "config.h"
+#include "indexnode.h"
 #include "listing.h"
 #include "utils.h"
 
@@ -154,11 +155,6 @@ int listing_equal (listing_t *li, listing_t *other)
 
 /* listing attribute getters ================================================ */
 
-indexnode_t *listing_get_indexnode (listing_t *li)
-{
-    return li->indexnode;
-}
-
 char *listing_get_name (listing_t *li)
 {
     return li->name;
@@ -226,6 +222,15 @@ void listing_li2stat (listing_t *li, struct stat *st)
 
             break;
     }
+}
+
+char *listing_make_url (
+    listing_t *li,
+    const char * const path_prefix,
+    const char * const resource
+)
+{
+    return indexnode_make_url(li->in, path_prefix, resource);
 }
 
 

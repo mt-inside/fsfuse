@@ -27,7 +27,7 @@
 
 #include "common.h"
 #include "config.h"
-#include "indexnode.h"
+#include "indexnodes.h"
 #include "fetcher.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -38,52 +38,48 @@ typedef struct _listener_thread_info_t
     pthread_t pthread_id;
 } listener_thread_info_t;
 
-typedef struct _indexnodes_list_t
-{
-    indexnode_t *in;
-    TAILQ_ENTRY(_indexnodes_list_t) next;
-} indexnode_list_t;
-
 
 static int s_exiting = 0; /* TODO: enum state machine */
 static listener_thread_info_t *s_listener_thread_info;
-static TAILQ_HEAD(,_indexnodes_list_t) s_indexnodes;
+static indexnodes_list_t *s_indexnodes;
 static pthread_mutex_t s_indexnodes_lock; /* TODO: rwlock */
-
 
 static void *indexnodes_listen_main(void *args);
 
-static void indexnodes_add (indexnode_t *in);
-static void indexnodes_delete (void);
-
-static void version_cb (indexnode_t *in, char *buf);
+static char *version_cb (proto_indexnode_t *in, char *buf);
 
 
 int indexnodes_init (void)
 {
+    s_indexnodes = indexnodes_list_new();
+
+
     pthread_mutex_init(&s_indexnodes_lock, NULL);
-    TAILQ_INIT(&s_indexnodes);
 
     /* Instantiate statically configured indexnodes */
     int i = 0;
-    char *host, *port;
+    char *host, *port, *version;
     while ((host = config_indexnode_hosts[i]) &&
            (port = config_indexnode_ports[i]))
     {
-        indexnode_t *in = indexnode_new_static(host, port);
+        proto_indexnode_t *pin = proto_indexnode_new(host, port);
 
         /* TODO: should do this async, in parallel, so that it happens as fast
          * as possible and that we can get on with other stuff straight away.
          * The following logic would have to move to a callback. */
-        fetcher_get_indexnode_version(in, &version_cb); /* blocks */
+        version = fetcher_get_indexnode_version(pin, &version_cb); /* blocks */
 
-        indexnodes_add(in);
+        indexnode_t *in = indexnode_from_proto(pin, version);
+        if (in)
+        {
+            indexnodes_list_add(s_indexnodes, in);
 
-        trace_info(
-            "Static index node configured at %s:%s - version %s\n",
-            in->host,
-            in->port,
-            in->version);
+            trace_info(
+                "Static index node configured at %s:%s - version %s\n",
+                indexnode_get_host(in),
+                indexnode_get_port(in),
+                indexnode_get_version(in));
+        }
 
         i++;
     }
@@ -94,7 +90,9 @@ int indexnodes_init (void)
 void indexnodes_finalise (void)
 {
     /* TODO: assert the thread state == stopped */
-    indexnodes_delete();
+    /* TODO: should we do this, or should the thread bump their statemachine to
+     * dead, let them die, then just assert they're dead here? */
+    indexnodes_list_delete(s_indexnodes);
 
     pthread_mutex_destroy(&s_indexnodes_lock);
 
@@ -116,80 +114,29 @@ void indexnodes_stop_listening (void)
     pthread_join(s_listener_thread_info->pthread_id, NULL);
 }
 
-static void indexnodes_add (indexnode_t *in)
-{
-    indexnode_list_t *item = NULL;
-
-
-    /* Check indexnode version */
-    if (compare_dotted_version(PROTO_MINIMUM, indexnode_get_version(in)) > 0 ||
-        compare_dotted_version(indexnode_get_version(in), PROTO_MAXIMUM) > 0)
-    {
-        trace_warn("Ignoring indexnode of version %s, only versions %s <= x <= %s are supported\n",
-                    indexnode_get_version(in), PROTO_MINIMUM, PROTO_MAXIMUM);
-    }
-    else
-    {
-        /* Add indexnode to list */
-        item = (indexnode_list_t *)malloc(sizeof(indexnode_list_t));
-
-        pthread_mutex_lock(&s_indexnodes_lock);
-
-        item->in = in;
-        TAILQ_INSERT_HEAD(&s_indexnodes, item, next);
-
-        pthread_mutex_unlock(&s_indexnodes_lock);
-    }
-}
-
-static void indexnodes_delete (void)
-{
-    indexnode_list_t *item = s_indexnodes;
-
-
-    pthread_mutex_lock(&s_indexnodes_lock);
-
-    while( item )
-    {
-        /* FIXME: us, do something... */
-    }
-
-    pthread_mutex_unlock(&s_indexnodes_lock);
-}
-
-/* FIXME: argh!
- * indexnodes list can be mutated so needs to be copied under the lock
- * indexnodes themselves can be deleted, so they'd need to be copied too or ref
- * counted.
- * Easier to just make listing_ts directly here.
- * Listings should have indexnode as one of their fields. The li_ts for / just
- * have a path of /. Everywhere that gets an indexnode acutally just makes a uri
- * from it.
- * If de's hold indexnodes then they either need to live for ever in state DEAD,
+ /* TODO: If de's hold indexnodes then they either need to live for ever in state DEAD,
  * or be ref-counted and die. I suggest they're refcounted, and don't work when
  * in state dead. If ref-count hits 0 AND they're dead then they can die. de's
  * with DEAD indexnodes are dead themselves - when they discover that they
- * should act like they did a fetch and got a 404 */
-indexnode_t **indexnodes_get (unsigned *count)
+ * should act like they did a fetch and got a 404
+ *
+ * de's should make their own URIs and have their own fetch and list functions,
+ * deferring to the right place. The ops should really only interact with them.
+ * For now, still get the list of indexnodes for stat() at least.
+ */
+indexnodes_list_t *indexnodes_get (void)
 {
-    indexnode_t **ins;
-    unsigned i = 0;
+    indexnodes_list_t *ins;
 
 
     pthread_mutex_lock(&s_indexnodes_lock);
-
-    TAILQ_FOREACH(ti, &thread_list, next) i++;
-
-    ins = malloc(sizeof(indexnode_t
-    TAILQ_FOREACH(ti, &thread_list, next)
-    {
-        if (download_thread_is_for(ti->thread, de)) break;
-    }
+    ins = indexnodes_list_copy(s_indexnodes);
     pthread_mutex_unlock(&s_indexnodes_lock);
 
 
-    return in;
+    return ins;
 }
+
 
 static int indexnode_parse_version (const char *buf, char **version)
 {
@@ -485,8 +432,14 @@ static void *indexnodes_listen_main(void *args)
         {
             in = indexnode_new(host, *port, *id, *version);
 
-            indexnodes_add(in);
-            trace_info("Found index node, version %s, at %s:%s (id: %s)\n", *version, host, *port, *id);
+            if (in)
+            {
+                pthread_mutex_lock(&s_indexnodes_lock);
+                indexnodes_list_add(s_indexnodes, in);
+                pthread_mutex_unlock(&s_indexnodes_lock);
+
+                trace_info("Found index node, version %s, at %s:%s (id: %s)\n", *version, host, *port, *id);
+            }
         }
 
         string_buffer_delete(buffer);
@@ -499,16 +452,14 @@ static void *indexnodes_listen_main(void *args)
     return NULL;
 }
 
-static void version_cb (indexnode_t *in, char *buf)
+static char *version_cb (proto_indexnode_t *in, char *buf)
 {
     char *version = NULL;
 
     assert(in);
     assert(buf); assert(*buf);
 
-    if (!indexnode_parse_version(buf, &version))
-    {
-        indexnode_set_version(in, version);
-        free(version);
-    }
+    indexnode_parse_version(buf, &version);
+
+    return version;
 }

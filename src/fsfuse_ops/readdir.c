@@ -78,7 +78,7 @@ void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, str
     rc = direntry_get_by_inode(ino, &de);
     if (!rc)
     {
-        if (direntry_get_type(de) != direntry_type_DIRECTORY) rc = ENOTDIR;
+        if (direntry_get_type(de) != listing_type_DIRECTORY) rc = ENOTDIR;
 
         if (!rc)
         {

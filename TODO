@@ -1,5 +1,10 @@
 indexnodes.c:160 is what needs thinking about next. Should we be able to get indexnodes, or should indexnodes just return lis? I think we should be able to get them actually, because that's not indexnodes.c's concern.
 
+factor refcounting out into macros - one for the struct definition, one for the post and delete methods
+where are indexnodes free()d?
+get to the point where each lib (libxml, curl) is refd and understood by only 1 file.
+things like indexnodes should be represented as a singleton object so that one delete call can shut down the thread and free everything. Alternately, init and finalise should do that stuff. I don't like the temporal coupling of methods
+
 jesus, just go throgh this shit and make it better.
 Start at the indexnodes thread and indexnode class. Add a listener for all the broadcasts for a particular indexnode after a class has been instantiated for it. Add a state machine for missed pings, active, dead etc
 Then start at the front - readdir(). Fetchers should be instantiated over URLs rather than a static thing. de, li to have clear separation, work properly, proper inheritance, etc

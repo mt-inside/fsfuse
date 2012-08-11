@@ -36,10 +36,10 @@ void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask)
     {
         switch (direntry_get_type(de))
         {
-            case direntry_type_DIRECTORY:
+            case listing_type_DIRECTORY:
                 if (mask & ~config_attr_mode_dir)  rc = EACCES;
                 break;
-            case direntry_type_FILE:
+            case listing_type_FILE:
                 if (mask & ~config_attr_mode_file) rc = EACCES;
                 break;
         }

@@ -43,7 +43,6 @@ void listing_attribute_add (
 
 extern int listing_equal (listing_t *li, listing_t *other);
 
-extern indexnode_t *   listing_get_indexnode     (listing_t *li);
 extern char *          listing_get_name          (listing_t *li);
 extern char *          listing_get_hash          (listing_t *li);
 extern listing_type_t  listing_get_type          (listing_t *li);
@@ -53,6 +52,11 @@ extern char *          listing_get_href          (listing_t *li);
 extern char *          listing_get_client        (listing_t *li);
 extern void            listing_li2stat           (listing_t *li,
                                                   struct stat *st);
+extern char *          listing_make_url (
+    listing_t *li,
+    const char * const path_prefix,
+    const char * const resource
+);
 
 
 extern listing_list_t *listing_list_new (unsigned count);

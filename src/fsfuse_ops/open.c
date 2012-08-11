@@ -35,8 +35,8 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
     {
         /* Ordering below is deliberate - the reverse of our order of precedence
          * for complaining (TODO: which is a guess anyway). */
-        if ((fi->flags & 3) != O_RDONLY)                 rc = EROFS;
-        if (direntry_get_type(de) != direntry_type_FILE) rc = EISDIR;
+        if ((fi->flags & 3) != O_RDONLY)                rc = EROFS;
+        if (direntry_get_type(de) != listing_type_FILE) rc = EISDIR;
     }
 
     method_trace_dedent();

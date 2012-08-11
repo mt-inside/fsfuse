@@ -16,6 +16,7 @@ OUR_OBJS :=                         \
             alarms.o                \
             config.o                \
             config_define.o         \
+	    curl_utils.o            \
             direntry.o              \
             download_thread.o       \
             download_thread_pool.o  \
@@ -24,6 +25,7 @@ OUR_OBJS :=                         \
             http.o                  \
             indexnode.o             \
             indexnodes.o            \
+            indexnodes_list.o       \
             inode_map.o             \
             listing.o               \
             localei.o               \

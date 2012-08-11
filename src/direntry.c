@@ -89,7 +89,7 @@ int direntry_ensure_children (
 
 
         /* fetch the directory listing from the indexnode */
-        url = indexnode_make_url(direntry_get_indexnode(de), "browse", path + 1);
+        url = direntry_make_url(de, "browse", path + 1);
         rc = parser_fetch_listing(url, &lis);
         free(path);
         free(url);
@@ -330,11 +330,6 @@ char *direntry_get_path (direntry_t *de)
     return string_buffer_commit(path);
 }
 
-indexnode_t *direntry_get_indexnode (direntry_t *de)
-{
-    return listing_get_indexnode(de->li);
-}
-
 char *direntry_get_name (direntry_t *de)
 {
     return listing_get_name(de->li);
@@ -345,7 +340,7 @@ char *direntry_get_hash (direntry_t *de)
     return listing_get_hash(de->li);
 }
 
-direntry_type_t direntry_get_type (direntry_t *de)
+listing_type_t direntry_get_type (direntry_t *de)
 {
     return listing_get_type(de->li);
 }
@@ -385,6 +380,15 @@ void direntry_de2stat (direntry_t *de, struct stat *st)
     listing_li2stat(de->li, st);
 
     st->st_ino = de->inode;
+}
+
+char *direntry_make_url (
+    direntry_t *de,
+    const char * const path_prefix,
+    const char * const resource
+)
+{
+    return listing_make_url(de->li, path_prefix, resource);
 }
 
 void direntry_still_exists (direntry_t *de)

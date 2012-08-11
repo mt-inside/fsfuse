@@ -83,7 +83,7 @@ int fetcher_fetch_file (listing_t           *li,
 
 
     /* Find alternatives */
-    url = indexnode_make_url(listing_get_indexnode(li), "alternatives", listing_get_hash(li));
+    url = listing_make_url(li, "alternatives", listing_get_hash(li));
     rc = parser_fetch_listing(url, &lis);
     free(url);
 
@@ -117,27 +117,21 @@ int fetcher_fetch_stats (curl_write_callback  cb,
 {
     int rc;
     char *url;
-    indexnode_t *in;
+    indexnodes_list_t *ins;
+    indexnodes_list_item_t *item;
 
 
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    /* TODO: rather roundabout, but list / and call indexnode_make_url(de->in,
-     * "stats", "") on all of them... */
-    in = indexnodes_get_globalton();
-    if (in)
+    ins = indexnodes_get();
+    TAILQ_FOREACH(item, &ins->list, next)
     {
-        url = indexnode_make_url(in, "stats", "");
+        url = indexnode_make_url(item->in, "stats", "");
         rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
         free(url);
     }
-    else
-    {
-        /* Need to simply add all the indexnodes' stats here.
-         * If there are none, return 0s */
-        rc = ENOENT;
-    }
+    indexnodes_list_delete(ins);
 
     fetcher_trace_dedent();
 
@@ -275,10 +269,10 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-void fetcher_get_indexnode_version (indexnode_t *in,
-                                    indexnode_version_cb_t cb)
+char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
+                                     indexnode_version_cb_t cb)
 {
-    char *url, *error_buffer;
+    char *url, *error_buffer, *version;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
     long http_code;
@@ -288,11 +282,11 @@ void fetcher_get_indexnode_version (indexnode_t *in,
         malloc(sizeof(indexnode_version_cb_pair_t));
 
 
-    fetcher_trace("fetcher_get_indexnode_version(%p)\n", in);
+    fetcher_trace("fetcher_get_indexnode_version(%p)\n", pin);
     fetcher_trace_indent();
 
     /* Package data for header callback */
-    pair->indexnode = in;
+    pair->indexnode = pin;
     pair->callback = cb;
 
     /* New handle */
@@ -306,7 +300,7 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     }
 
     /* URL */
-    url = indexnode_make_url(in, "browse", "");
+    url = proto_indexnode_make_url(pin, "browse", "");
     curl_easy_setopt(eh, CURLOPT_URL, url);
 
     /* Other headers */
@@ -332,6 +326,7 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     /* Do it - blocks */
     curl_rc = curl_easy_perform(eh);
 
+    version = pair->version;
     free(pair);
 
     fetcher_trace("curl returned %d, error: %s\n", curl_rc,
@@ -345,6 +340,8 @@ void fetcher_get_indexnode_version (indexnode_t *in,
     }
 
     fetcher_trace_dedent();
+
+    return version;
 }
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
@@ -358,7 +355,7 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        pair->callback(pair->indexnode, header);
+        pair->version = pair->callback(pair->indexnode, header);
     }
 
 
