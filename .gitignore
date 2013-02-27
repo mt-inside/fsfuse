@@ -1,4 +1,4 @@
-build/*/*.d
-build/*/*.o
-build/*/config_*
+*.d
+*.o
+config_*
 *.swp
