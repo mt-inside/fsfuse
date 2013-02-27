@@ -11,6 +11,9 @@
  */
 
 #include "common.h"
+
+#include <stdio.h>
+
 #include "tests.h"
 
 
@@ -19,11 +22,14 @@ int main (int argc, char **argv)
     NOT_USED(argc);
     NOT_USED(argv);
 
-    hash_table_test();
-    http_test();
-    string_buffer_test();
-    uri_test();
-    utils_test();
+    //hash_table_test();
+    //http_test();
+    test_proto_indexnode();
+    //string_buffer_test();
+    //uri_test();
+    //utils_test();
+
+    printf( "OK.\n" );
 
 
     return 0;

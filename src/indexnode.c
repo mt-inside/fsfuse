@@ -13,56 +13,34 @@
  /* NB: this file relies on _POSIX_SOURCE to get NI_MAX[HOST|etc], even though
   * the man page and netdb.h seem to say it really should be _BSD_SOURCE */
 
+#include "common.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
 
-#include "common.h"
-#include "config.h"
-#include "curl_utils.h"
 #include "indexnode.h"
+#include "proto_indexnode_internal.h"
+
+#include "config.h"
 #include "fetcher.h"
 #include "utils.h"
 
 
 struct _indexnode_t
 {
-    pthread_mutex_t    *lock;
+    proto_indexnode_t pin;
+
+    pthread_mutex_t *lock;
     unsigned ref_count;
 
-    char *host;
-    char *port;
     char *version;
     char *id;
 
     time_t last_seen;
 };
 
-/* essentially Pair<host, port>. Here because nature abhors a mutable type */
-struct _proto_indexnode_t
-{
-    char *host;
-    char *port;
-};
+#define BASE_CLASS(in) ((proto_indexnode_t *)in)
 
-
-proto_indexnode_t *proto_indexnode_new (char *host, char *port)
-{
-    proto_indexnode_t *pin;
-
-
-    assert(host); assert(*host);
-    assert(port); assert(*port);
-
-
-    pin = calloc(sizeof(proto_indexnode_t), 1);
-
-    pin->host = strdup(host);
-    pin->port = strdup(port);
-
-
-    return pin;
-}
 
 static int check_version (const char * const version)
 {
@@ -70,7 +48,7 @@ static int check_version (const char * const version)
             compare_dotted_version(version, PROTO_MAXIMUM) < 0);
 }
 
-/* TODO: state machine */
+/* TODO: state machine for active, missed 1 ping, etc */
 indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
 {
     indexnode_t *in = NULL;
@@ -85,8 +63,8 @@ indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
     {
         in = calloc(sizeof(indexnode_t), 1);
 
-        in->host    = strdup(host);
-        in->port    = strdup(port);
+        BASE_CLASS(in)->host = strdup(host);
+        BASE_CLASS(in)->port = strdup(port);
         in->version = strdup(version);
         in->id      = strdup(id);
 
@@ -107,7 +85,7 @@ indexnode_t *indexnode_new (char *host, char *port, char *version, char *id)
  * check_version in base ctor */
 indexnode_t *indexnode_from_proto (proto_indexnode_t *pin, char *version)
 {
-    indexnode_t *in;
+    indexnode_t *in = NULL;
 
 
     assert(pin);
@@ -117,9 +95,8 @@ indexnode_t *indexnode_from_proto (proto_indexnode_t *pin, char *version)
     {
         in = calloc(sizeof(indexnode_t), 1);
 
-        /* usurp ownership of these. Slightly nasty, but it's all in one class. */
-        in->host    = pin->host;
-        in->port    = pin->port;
+        BASE_CLASS(in)->host = proto_indexnode_host( pin );
+        BASE_CLASS(in)->port = proto_indexnode_port( pin );
         in->version = strdup(version);
 
         indexnode_seen(in);
@@ -130,7 +107,7 @@ indexnode_t *indexnode_from_proto (proto_indexnode_t *pin, char *version)
                    version, PROTO_MINIMUM, PROTO_MAXIMUM);
     }
 
-    free(pin);
+    proto_indexnode_delete(pin);
 
 
     return in;
@@ -162,8 +139,8 @@ void indexnode_delete (indexnode_t *in)
         pthread_mutex_destroy(in->lock);
         free(in->lock);
 
-        free(in->host);
-        free(in->port);
+        free_const(BASE_CLASS(in)->host);
+        free_const(BASE_CLASS(in)->port);
         free(in->version);
         if (in->id) free(in->id);
 
@@ -173,44 +150,25 @@ void indexnode_delete (indexnode_t *in)
 
 char *indexnode_get_host (indexnode_t *in)
 {
-    return in->host;
+    return proto_indexnode_host( BASE_CLASS(in) );
 }
 
 char *indexnode_get_port (indexnode_t *in)
 {
-    return in->port;
+    return proto_indexnode_port( BASE_CLASS(in) );
 }
 
 char *indexnode_get_version (indexnode_t *in)
 {
-    return in->version;
+    return strdup( in->version );
 }
 
 char *indexnode_get_id (indexnode_t *in)
 {
-    return in->id;
+    return strdup( in->id );
 }
 
 /* API to make URLs ========================================================= */
-
-static char *make_url_inner (
-    const char * const host,
-    const char * const port,
-    const char * const path_prefix,
-    const char * const resource
-);
-
-/* Neccessary to get an static indexnode's version before making a full one */
-/* TODO: have in inherit pin so in can be downcast and there can be just one
- * function */
-char *proto_indexnode_make_url (
-    proto_indexnode_t *pin,
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    return make_url_inner(pin->host, pin->port, path_prefix, resource);
-}
 
 char *indexnode_make_url (
     indexnode_t *in,
@@ -218,50 +176,7 @@ char *indexnode_make_url (
     const char * const resource
 )
 {
-    return make_url_inner(in->host, in->port, path_prefix, resource);
-}
-
-static char *make_url_inner (
-    const char * const host,
-    const char * const port,
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    char *fmt;
-    char *resource_esc, *url;
-    size_t len;
-    CURL *eh;
-
-
-    assert(host); assert(*host);
-    assert(port); assert(*port);
-
-    eh = curl_eh_new();
-
-
-    if (is_ip4_address(host) || is_ip6_address(host))
-    {
-        fmt = "http://[%s]:%s/%s/%s";
-    }
-    else
-    {
-        fmt = "http://%s:%s/%s/%s";
-    }
-
-
-    /* we escape from resource + 1 and render the first '/' ourselves because
-     * the indexnode insists on it being real */
-    resource_esc = curl_easy_escape(eh, resource, 0);
-    len = strlen(host) + strlen(port) + strlen(path_prefix) + strlen(resource_esc) + strlen(fmt) + 1;
-    url = (char *)malloc(len * sizeof(*url));
-    sprintf(url, fmt, host, port, path_prefix, resource_esc);
-    curl_free(resource_esc);
-
-    curl_eh_delete(eh);
-
-
-    return url;
+    return proto_indexnode_make_url( BASE_CLASS(in), path_prefix, resource );
 }
 
 void indexnode_seen (indexnode_t *in)

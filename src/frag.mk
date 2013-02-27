@@ -32,6 +32,7 @@ OUR_OBJS :=                         \
             locks.o                 \
             parser.o                \
             peerstats.o             \
+            proto_indexnode.o       \
             string_buffer.o         \
             trace.o                 \
             uri.o                   \
