@@ -1,3 +1,4 @@
+Bake compiler into output and show in version
 factor refcounting out into macros - one for the struct definition, one for the post and delete methods
 where are indexnodes free()d?
 get to the point where each lib (libxml, curl) is refd and understood by only 1 file.
