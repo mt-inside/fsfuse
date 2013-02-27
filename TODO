@@ -1,5 +1,6 @@
-Bake compiler into output and show in version
-factor refcounting out into macros - one for the struct definition, one for the post and delete methods
+factor refcounting out into methods
+move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
+
 where are indexnodes free()d?
 get to the point where each lib (libxml, curl) is refd and understood by only 1 file.
 things like indexnodes should be represented as a singleton object so that one delete call can shut down the thread and free everything. Alternately, init and finalise should do that stuff. I don't like the temporal coupling of methods
