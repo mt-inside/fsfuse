@@ -9,23 +9,32 @@
 
 #include "proto_indexnode.h"
 
+#include "trace.h"
+
+TRACE_DECLARE(indexnode)
+#define indexnode_trace(...) TRACE(indexnode,__VA_ARGS__)
+#define indexnode_trace_indent() TRACE_INDENT(indexnode)
+#define indexnode_trace_dedent() TRACE_DEDENT(indexnode)
+
 
 typedef struct _indexnode_t indexnode_t;
 
 
 extern indexnode_t *indexnode_new(
+    CALLER_DECL
     const char * const host,
     const char * const port,
     const char * const version,
     const char * const id
 );
 extern indexnode_t *indexnode_from_proto(
+    CALLER_DECL
     const proto_indexnode_t * const pin,
     const char * const version
 );
 
-extern indexnode_t *indexnode_post( indexnode_t * const in);
-extern void indexnode_delete( indexnode_t * const in );
+extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in);
+extern void indexnode_delete( CALLER_DECL indexnode_t * const in );
 
 extern const char *indexnode_host   ( const indexnode_t * const in );
 extern const char *indexnode_port   ( const indexnode_t * const in );

@@ -81,7 +81,7 @@ int indexnodes_init (void)
          * The following logic would have to move to a callback. */
         version = fetcher_get_indexnode_version(pin, &version_cb); /* blocks */
 
-        indexnode_t *in = indexnode_from_proto(pin, version);
+        indexnode_t *in = indexnode_from_proto(CALLER_INFO pin, version);
         if (in)
         {
             /* Currently no way to get the id of a static indexnode (if you
@@ -448,7 +448,7 @@ static void *indexnodes_listen_main(void *args)
 
         if (found)
         {
-            in = indexnode_new(host, *port, *id, *version);
+            in = indexnode_new(CALLER_INFO host, *port, *id, *version);
 
             if (in)
             {

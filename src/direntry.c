@@ -197,20 +197,10 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
-#if DEBUG
-    string_buffer_t *trace_str = string_buffer_new();
-#endif /* DEBUG */
-
-
     REF_COUNT_INC(de);
 
-#if DEBUG
-    string_buffer_printf(trace_str,
-            "[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
-            (void *)de, CALLER_PASS de->ref_count);
-    direntry_trace(string_buffer_peek(trace_str));
-    string_buffer_delete(trace_str);
-#endif /* DEBUG */
+    direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
+                   de, CALLER_PASS refc);
 
 
     return de;
@@ -218,20 +208,10 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
-    unsigned refc;
-#if DEBUG
-    string_buffer_t *trace_str = string_buffer_new();
-
-
-    string_buffer_printf(trace_str,
-            "[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
-            (void *)de, CALLER_PASS de->ref_count - 1);
-    direntry_trace(string_buffer_peek(trace_str));
-    string_buffer_delete(trace_str);
-#endif /* DEBUG */
-
     REF_COUNT_DEC(de);
 
+    direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
+                   de, CALLER_PASS refc);
     direntry_trace_indent();
 
     if (!refc)

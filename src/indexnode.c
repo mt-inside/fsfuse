@@ -27,6 +27,9 @@
 #include "utils.h"
 
 
+TRACE_DEFINE(indexnode)
+
+
 struct _indexnode_t
 {
     proto_indexnode_t pin;
@@ -50,6 +53,7 @@ static int check_version( const char * const version )
 
 /* TODO: state machine for active, missed 1 ping, etc */
 indexnode_t *indexnode_new(
+    CALLER_DECL
     const char * const host,
     const char * const port,
     const char * const version,
@@ -76,6 +80,11 @@ indexnode_t *indexnode_new(
         in->id               = strdup( id );
 
         indexnode_seen( in );
+
+        indexnode_trace(
+            "[indexnode @%p id %s] new (" CALLER_FORMAT ") ref %u\n",
+            in, in->id, CALLER_PASS in->ref_count
+        );
     }
     else
     {
@@ -91,6 +100,7 @@ indexnode_t *indexnode_new(
 /* TODO: when in inherits pin, these ctors can be combined, e.g only
  * check_version in base ctor */
 indexnode_t *indexnode_from_proto(
+    CALLER_DECL
     const proto_indexnode_t * const pin,
     const char * const version )
 {
@@ -111,6 +121,11 @@ indexnode_t *indexnode_from_proto(
         in->version = strdup( version );
 
         indexnode_seen( in );
+
+        indexnode_trace(
+            "[indexnode @%p id %s] new (" CALLER_FORMAT ") ref %u\n",
+            in, in->id, CALLER_PASS in->ref_count
+        );
     }
     else
     {
@@ -124,23 +139,33 @@ indexnode_t *indexnode_from_proto(
     return in;
 }
 
-indexnode_t * indexnode_post( indexnode_t * const in )
+indexnode_t * indexnode_post( CALLER_DECL indexnode_t * const in )
 {
     REF_COUNT_INC(in);
+
+    indexnode_trace("[indexnode @%p id %s] post (" CALLER_FORMAT ") ref %u\n",
+                   in, in->id, CALLER_PASS refc);
 
 
     return in;
 }
 
-void indexnode_delete( indexnode_t * const in )
+void indexnode_delete( CALLER_DECL indexnode_t * const in )
 {
-    unsigned refc;
-
-
     REF_COUNT_DEC(in);
+
+    /* This should go in the dec method, which should take the logger (which can
+     * be queried for class_name, or know how to log a delete). This way it can
+     * be done under the lock (at least copy the data out under the lock - file
+     * IO under the lock is not clever) */
+    indexnode_trace("[indexnode @%p] delete (" CALLER_FORMAT ") ref %u\n",
+                     in, CALLER_PASS refc);
+    indexnode_trace_indent();
 
     if (!refc)
     {
+        indexnode_trace("refcount == 0 => free()ing\n");
+
         REF_COUNT_TEARDOWN(in);
 
         free_const( BASE_CLASS(in)->host );
@@ -150,6 +175,8 @@ void indexnode_delete( indexnode_t * const in )
 
         free( in );
     }
+
+    indexnode_trace_dedent();
 }
 
 const char *indexnode_host( const indexnode_t * const in )

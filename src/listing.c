@@ -95,7 +95,7 @@ listing_t *listing_post (CALLER_DECL listing_t *li)
     REF_COUNT_INC(li);
 
     listing_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS li->ref_count);
+                   li, CALLER_PASS refc);
 
 
     return li;
@@ -103,9 +103,6 @@ listing_t *listing_post (CALLER_DECL listing_t *li)
 
 void listing_delete (CALLER_DECL listing_t *li)
 {
-    unsigned refc;
-
-
     REF_COUNT_DEC(li);
 
     listing_trace("[listing %p] delete (" CALLER_FORMAT ") ref %u\n",

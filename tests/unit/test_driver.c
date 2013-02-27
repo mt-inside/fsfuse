@@ -24,6 +24,8 @@ int main (int argc, char **argv)
     NOT_USED(argc);
     NOT_USED(argv);
 
+    trace_init( );
+
     //hash_table_test();
     //http_test();
     test_indexnode( );
@@ -31,6 +33,8 @@ int main (int argc, char **argv)
     //string_buffer_test();
     //uri_test();
     //utils_test();
+
+    trace_finalise( );
 
     printf( "OK.\n" );
 

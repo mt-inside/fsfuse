@@ -35,13 +35,13 @@ void indexnode_can_be_created_and_destroyed( void )
     const char *id_in = "d34db33f";
 
     /* Action */
-    indexnode_t *in = indexnode_new( host_in, port_in, version_in, id_in );
+    indexnode_t *in = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
 
     /* Assert */
     test_not_null( in );
 
     /* Teardown */
-    indexnode_delete( in );
+    indexnode_delete( CALLER_INFO in );
 }
 
 void indexnode_can_be_created_from_proto( void )
@@ -53,13 +53,13 @@ void indexnode_can_be_created_from_proto( void )
     const proto_indexnode_t *pin = proto_indexnode_new( host_in, port_in );
 
     /* Action */
-    indexnode_t *in = indexnode_from_proto( pin, version_in );
+    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, version_in );
 
     /* Assert */
     test_not_null( in );
 
     /* Teardown */
-    indexnode_delete( in );
+    indexnode_delete( CALLER_INFO in );
 }
 
 void indexnode_is_sane_property_bag( void )
@@ -72,7 +72,7 @@ void indexnode_is_sane_property_bag( void )
     const char *host_out, *port_out, *version_out, *id_out;
 
     /* Action */
-    indexnode_t *in = indexnode_new( host_in, port_in, version_in, id_in );
+    indexnode_t *in = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
 
     /* Assert */
     host_out = indexnode_host( in );
@@ -91,7 +91,7 @@ void indexnode_is_sane_property_bag( void )
     free_const( id_out );
 
     /* Teardown */
-    indexnode_delete( in );
+    indexnode_delete( CALLER_INFO in );
 }
 
 void indexnode_can_be_copied_and_copy_outlives_original( void )
@@ -102,11 +102,11 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
     const char *version_in = "0.13";
     const char *id_in = "d34db33f";
     const char *host_out2;
-    indexnode_t *in1 = indexnode_new( host_in, port_in, version_in, id_in );
+    indexnode_t *in1 = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
 
     /* Action */
-    indexnode_t *in2 = indexnode_post( in1 );
-    indexnode_delete( in1 );
+    indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
+    indexnode_delete( CALLER_INFO in1 );
 
     /* Assert */
     host_out2 = indexnode_host( in2 );
@@ -116,7 +116,7 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
     free_const( host_out2 );
 
     /* Teardown */
-    indexnode_delete( in2 );
+    indexnode_delete( CALLER_INFO in2 );
 }
 
 void indexnode_can_be_copied_and_has_right_data( void )
@@ -127,10 +127,10 @@ void indexnode_can_be_copied_and_has_right_data( void )
     const char *version_in = "0.13";
     const char *id_in = "d34db33f";
     const char *host_out1, *host_out2;
-    indexnode_t *in1 = indexnode_new( host_in, port_in, version_in, id_in );
+    indexnode_t *in1 = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
 
     /* Action */
-    indexnode_t *in2 = indexnode_post( in1 );
+    indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
 
     /* Assert */
     host_out1 = indexnode_host( in1 );
@@ -143,8 +143,8 @@ void indexnode_can_be_copied_and_has_right_data( void )
     free_const( host_out2 );
 
     /* Teardown */
-    indexnode_delete( in1 );
-    indexnode_delete( in2 );
+    indexnode_delete( CALLER_INFO in1 );
+    indexnode_delete( CALLER_INFO in2 );
 }
 
 /* TODO: test seen and still valid. Don't make the unit tests sleep...
@@ -153,9 +153,13 @@ void indexnode_can_be_copied_and_has_right_data( void )
 
 void test_indexnode( void )
 {
+    indexnode_trace_on( );
+
     indexnode_can_be_created_and_destroyed( );
     indexnode_can_be_created_from_proto( );
     indexnode_is_sane_property_bag( );
     indexnode_can_be_copied_and_copy_outlives_original( );
     indexnode_can_be_copied_and_has_right_data( );
+
+    indexnode_trace_off( );
 }

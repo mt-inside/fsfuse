@@ -42,7 +42,7 @@ void indexnodes_list_add (indexnodes_list_t *ins,
 
     item = (indexnodes_list_item_t *)malloc(sizeof(indexnodes_list_item_t));
 
-    item->in = indexnode_post(in);
+    item->in = indexnode_post(CALLER_INFO in);
     TAILQ_INSERT_HEAD(&ins->list, item, next);
 }
 
@@ -86,7 +86,7 @@ indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 
     TAILQ_FOREACH(item, &orig->list, next)
     {
-        indexnodes_list_add(ret, indexnode_post(item->in));
+        indexnodes_list_add(ret, indexnode_post(CALLER_INFO item->in));
     }
 
 
@@ -104,7 +104,7 @@ indexnodes_list_t *indexnodes_list_remove_expired (indexnodes_list_t *orig)
     {
         if (indexnode_still_valid(item->in))
         {
-            indexnodes_list_add(ret, indexnode_post(item->in));
+            indexnodes_list_add(ret, indexnode_post(CALLER_INFO item->in));
         }
         else
         {
@@ -128,7 +128,7 @@ void indexnodes_list_delete (indexnodes_list_t *ins)
     TAILQ_FOREACH(item, &ins->list, next)
     {
         free(item);
-        indexnode_delete(item->in);
+        indexnode_delete(CALLER_INFO item->in);
     }
 
     free(ins);
