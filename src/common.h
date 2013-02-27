@@ -20,7 +20,7 @@
 
 /* Use fuse API version provided on this (the build) system up to the maximum
  * version that we support */
-#define MAX_FUSE_VERSION 29
+#define MAX_FUSE_VERSION 30
 #define FUSE_USE_VERSION MIN(FUSE_VERSION, MAX_FUSE_VERSION)
 
 /* Greatest protocol version that we know we support */
