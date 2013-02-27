@@ -475,11 +475,24 @@ static void fsfuse_versions (void)
         uname(&un);
 
         printf("Using kernel %s %s\n"
+               "Compiled with %s %s\n"
                "Using libfuse version %d (built against %d, using API version %d)\n"
                "Using %s\n"
                "Using libxml2 %s",
-               un.sysname,
-               un.release,
+               un.sysname, un.release,
+#if defined(__clang__)
+               "clang",
+               __clang_version__,
+#elif defined(__llvm__)
+               "llvm-gcc",
+               __VERSION__,
+#elif defined(__GNUC__)
+               "gcc",
+               __VERSION__,
+#else
+               "Unknown compiler",
+               "Unknown version",
+#endif
                fuse_version(), FUSE_VERSION, FUSE_USE_VERSION,
                curl_version(),
                LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
