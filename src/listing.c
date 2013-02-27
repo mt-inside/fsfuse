@@ -11,14 +11,17 @@
  * directory.
  */
 
+#include "common.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "common.h"
-#include "config.h"
 #include "indexnode.h"
+
+#include "config.h"
 #include "listing.h"
+#include "ref_count.h"
 #include "utils.h"
 
 
@@ -37,9 +40,7 @@ struct _listing_t
 
     char                      *client;
 
-    unsigned                   ref_count;
-    pthread_mutex_t           *lock;
-
+    REF_COUNT_FIELDS;
 };
 
 struct _listing_list_t
@@ -81,10 +82,7 @@ listing_t *listing_new (CALLER_DECL_ONLY)
     listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
 
 
-    li->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(li->lock, NULL);
-
-    li->ref_count = 1;
+    REF_COUNT_INIT(li);
 
     listing_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS li->ref_count);
@@ -94,17 +92,10 @@ listing_t *listing_new (CALLER_DECL_ONLY)
 
 listing_t *listing_post (CALLER_DECL listing_t *li)
 {
-    unsigned refc;
-
-
-    assert(li->ref_count);
-
-    pthread_mutex_lock(li->lock);
-    refc = ++li->ref_count;
-    pthread_mutex_unlock(li->lock);
+    REF_COUNT_INC(li);
 
     listing_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS refc);
+                   li, CALLER_PASS li->ref_count);
 
 
     return li;
@@ -115,12 +106,7 @@ void listing_delete (CALLER_DECL listing_t *li)
     unsigned refc;
 
 
-    /* hacky attempt to detect overflow */
-    assert((signed)li->ref_count > 0);
-
-    pthread_mutex_lock(li->lock);
-    refc = --li->ref_count;
-    pthread_mutex_unlock(li->lock);
+    REF_COUNT_DEC(li);
 
     listing_trace("[listing %p] delete (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS refc);
@@ -130,8 +116,7 @@ void listing_delete (CALLER_DECL listing_t *li)
     {
         listing_trace("refcount == 0 => free()ing\n");
 
-        pthread_mutex_destroy(li->lock);
-        free(li->lock);
+        REF_COUNT_TEARDOWN(li);
 
         if (li->name)   free(li->name);
         if (li->hash)   free(li->hash);

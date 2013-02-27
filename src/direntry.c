@@ -11,31 +11,37 @@
  * basically our internal file system tree implementation.
  */
 
+#include "common.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
-#include "config.h"
 #include "direntry.h"
+
+#include "config.h"
 #include "fetcher.h"
+#include "indexnodes.h"
 #include "inode_map.h"
 #include "parser.h"
+#include "ref_count.h"
 #include "string_buffer.h"
-#include "indexnodes.h"
 
 
 TRACE_DEFINE(direntry)
 
 
+/* TODO:
+ * wtf does this add ref_counting fields again?
+ * wtf dies this have-an li, when it could /be/ and li?
+ */
 struct _direntry_t
 {
     listing_t          *li;
 
-    unsigned            ref_count;
-    pthread_mutex_t    *lock;
+    REF_COUNT_FIELDS;
 
     ino_t               inode;
     struct _direntry_t *next;
@@ -143,10 +149,7 @@ static direntry_t *direntry_new (CALLER_DECL ino_t inode)
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
 
-    de->lock = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(de->lock, NULL);
-
-    de->ref_count = 1;
+    REF_COUNT_INIT(de);
 
     de->inode = inode;
     inode_map_add(de);
@@ -199,10 +202,7 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 #endif /* DEBUG */
 
 
-    pthread_mutex_lock(de->lock);
-    assert(de->ref_count);
-    ++de->ref_count;
-    pthread_mutex_unlock(de->lock);
+    REF_COUNT_INC(de);
 
 #if DEBUG
     string_buffer_printf(trace_str,
@@ -230,10 +230,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     string_buffer_delete(trace_str);
 #endif /* DEBUG */
 
-    pthread_mutex_lock(de->lock);
-    assert(de->ref_count);
-    refc = --de->ref_count;
-    pthread_mutex_unlock(de->lock);
+    REF_COUNT_DEC(de);
 
     direntry_trace_indent();
 
@@ -241,8 +238,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
-        pthread_mutex_destroy(de->lock);
-        free(de->lock);
+        REF_COUNT_TEARDOWN(de);
 
         listing_delete(CALLER_INFO de->li);
 

@@ -21,6 +21,7 @@
 #include "indexnode.h"
 #include "proto_indexnode_internal.h"
 
+#include "ref_count.h"
 #include "config.h"
 #include "fetcher.h"
 #include "utils.h"
@@ -30,8 +31,7 @@ struct _indexnode_t
 {
     proto_indexnode_t pin;
 
-    pthread_mutex_t lock;
-    unsigned ref_count;
+    REF_COUNT_FIELDS;
 
     const char *version;
     const char *id;
@@ -68,8 +68,7 @@ indexnode_t *indexnode_new(
     {
         in = calloc( sizeof(indexnode_t), 1 );
 
-        pthread_mutex_init( &in->lock, NULL );
-        in->ref_count = 1;
+        REF_COUNT_INIT(in);
 
         BASE_CLASS(in)->host = strdup( host );
         BASE_CLASS(in)->port = strdup( port );
@@ -105,8 +104,7 @@ indexnode_t *indexnode_from_proto(
     {
         in = calloc( sizeof(indexnode_t), 1 );
 
-        pthread_mutex_init( &in->lock, NULL );
-        in->ref_count = 1;
+        REF_COUNT_INIT(in);
 
         BASE_CLASS(in)->host = proto_indexnode_host( pin );
         BASE_CLASS(in)->port = proto_indexnode_port( pin );
@@ -128,10 +126,7 @@ indexnode_t *indexnode_from_proto(
 
 indexnode_t * indexnode_post( indexnode_t * const in )
 {
-    pthread_mutex_lock( &in->lock );
-    assert( in->ref_count );
-    ++in->ref_count;
-    pthread_mutex_unlock( &in->lock );
+    REF_COUNT_INC(in);
 
 
     return in;
@@ -142,14 +137,11 @@ void indexnode_delete( indexnode_t * const in )
     unsigned refc;
 
 
-    pthread_mutex_lock( &in->lock );
-    assert( in->ref_count );
-    refc = --in->ref_count;
-    pthread_mutex_unlock( &in->lock );
+    REF_COUNT_DEC(in);
 
     if (!refc)
     {
-        pthread_mutex_destroy( &in->lock );
+        REF_COUNT_TEARDOWN(in);
 
         free_const( BASE_CLASS(in)->host );
         free_const( BASE_CLASS(in)->port );
