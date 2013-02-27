@@ -58,7 +58,7 @@ static pthread_mutex_t s_indexnodes_lock; /* TODO: rwlock */
 
 static void *indexnodes_listen_main(void *args);
 
-static char *version_cb (proto_indexnode_t *in, char *buf);
+static char *version_cb (const proto_indexnode_t *in, char *buf);
 
 
 int indexnodes_init (void)
@@ -70,11 +70,11 @@ int indexnodes_init (void)
 
     /* Instantiate statically configured indexnodes */
     int i = 0;
-    char *host, *port, *version;
+    const char *host, *port, *version;
     while ((host = config_indexnode_hosts[i]) &&
            (port = config_indexnode_ports[i]))
     {
-        proto_indexnode_t *pin = proto_indexnode_new(host, port);
+        const proto_indexnode_t *pin = proto_indexnode_new(host, port);
 
         /* TODO: should do this async, in parallel, so that it happens as fast
          * as possible and that we can get on with other stuff straight away.
@@ -478,7 +478,7 @@ static void *indexnodes_listen_main(void *args)
     return NULL;
 }
 
-static char *version_cb (proto_indexnode_t *in, char *buf)
+static char *version_cb (const proto_indexnode_t *in, char *buf)
 {
     char *version = NULL;
 

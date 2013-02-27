@@ -269,10 +269,11 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
+const char *fetcher_get_indexnode_version (const proto_indexnode_t *pin,
                                      indexnode_version_cb_t cb)
 {
-    char *url, *error_buffer, *version;
+    const char *url, *version;
+    char *error_buffer;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
     long http_code;
