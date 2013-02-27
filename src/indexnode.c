@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner.
+ * Copyright (C) 2008-2013 Matthew Turner.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ struct _indexnode_t
 {
     proto_indexnode_t pin;
 
-    REF_COUNT_FIELDS;
+    ref_count_t *ref_count;
 
     const char *version;
     const char *id;
@@ -72,7 +72,7 @@ indexnode_t *indexnode_new(
     {
         in = calloc( sizeof(indexnode_t), 1 );
 
-        REF_COUNT_INIT(in);
+        in->ref_count = ref_count_new( );
 
         BASE_CLASS(in)->host = strdup( host );
         BASE_CLASS(in)->port = strdup( port );
@@ -114,7 +114,7 @@ indexnode_t *indexnode_from_proto(
     {
         in = calloc( sizeof(indexnode_t), 1 );
 
-        REF_COUNT_INIT(in);
+        in->ref_count = ref_count_new( );
 
         BASE_CLASS(in)->host = proto_indexnode_host( pin );
         BASE_CLASS(in)->port = proto_indexnode_port( pin );
@@ -141,7 +141,7 @@ indexnode_t *indexnode_from_proto(
 
 indexnode_t * indexnode_post( CALLER_DECL indexnode_t * const in )
 {
-    REF_COUNT_INC(in);
+    unsigned refc = ref_count_inc( in->ref_count );
 
     indexnode_trace("[indexnode @%p id %s] post (" CALLER_FORMAT ") ref %u\n",
                    in, in->id, CALLER_PASS refc);
@@ -152,7 +152,7 @@ indexnode_t * indexnode_post( CALLER_DECL indexnode_t * const in )
 
 void indexnode_delete( CALLER_DECL indexnode_t * const in )
 {
-    REF_COUNT_DEC(in);
+    unsigned refc = ref_count_dec( in->ref_count );
 
     /* This should go in the dec method, which should take the logger (which can
      * be queried for class_name, or know how to log a delete). This way it can
@@ -166,7 +166,7 @@ void indexnode_delete( CALLER_DECL indexnode_t * const in )
     {
         indexnode_trace("refcount == 0 => free()ing\n");
 
-        REF_COUNT_TEARDOWN(in);
+        ref_count_delete( in->ref_count );
 
         free_const( BASE_CLASS(in)->host );
         free_const( BASE_CLASS(in)->port );

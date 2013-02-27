@@ -33,6 +33,7 @@ OUR_OBJS :=                         \
             parser.o                \
             peerstats.o             \
             proto_indexnode.o       \
+            ref_count.o             \
             string_buffer.o         \
             trace.o                 \
             uri.o                   \

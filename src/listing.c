@@ -30,6 +30,8 @@ TRACE_DEFINE(listing)
 
 struct _listing_t
 {
+    ref_count_t               *ref_count;
+
     indexnode_t               *in;
     char                      *name;
     char                      *hash;
@@ -39,8 +41,6 @@ struct _listing_t
     char                      *href;
 
     char                      *client;
-
-    REF_COUNT_FIELDS;
 };
 
 struct _listing_list_t
@@ -82,7 +82,7 @@ listing_t *listing_new (CALLER_DECL_ONLY)
     listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
 
 
-    REF_COUNT_INIT(li);
+    li->ref_count = ref_count_new( );
 
     listing_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS li->ref_count);
@@ -92,7 +92,7 @@ listing_t *listing_new (CALLER_DECL_ONLY)
 
 listing_t *listing_post (CALLER_DECL listing_t *li)
 {
-    REF_COUNT_INC(li);
+    unsigned refc = ref_count_inc( li->ref_count );
 
     listing_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS refc);
@@ -103,7 +103,7 @@ listing_t *listing_post (CALLER_DECL listing_t *li)
 
 void listing_delete (CALLER_DECL listing_t *li)
 {
-    REF_COUNT_DEC(li);
+    unsigned refc = ref_count_dec( li->ref_count );
 
     listing_trace("[listing %p] delete (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS refc);
@@ -113,7 +113,7 @@ void listing_delete (CALLER_DECL listing_t *li)
     {
         listing_trace("refcount == 0 => free()ing\n");
 
-        REF_COUNT_TEARDOWN(li);
+        ref_count_delete( li->ref_count );
 
         if (li->name)   free(li->name);
         if (li->hash)   free(li->hash);

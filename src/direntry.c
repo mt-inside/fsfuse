@@ -41,7 +41,7 @@ struct _direntry_t
 {
     listing_t          *li;
 
-    REF_COUNT_FIELDS;
+    ref_count_t        *ref_count;
 
     ino_t               inode;
     struct _direntry_t *next;
@@ -149,7 +149,7 @@ static direntry_t *direntry_new (CALLER_DECL ino_t inode)
     direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
 
-    REF_COUNT_INIT(de);
+    de->ref_count = ref_count_new( );
 
     de->inode = inode;
     inode_map_add(de);
@@ -197,7 +197,7 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
-    REF_COUNT_INC(de);
+    unsigned refc = ref_count_inc( de->ref_count );
 
     direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
                    de, CALLER_PASS refc);
@@ -208,7 +208,7 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
-    REF_COUNT_DEC(de);
+    unsigned refc = ref_count_dec( de->ref_count );
 
     direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
                    de, CALLER_PASS refc);
@@ -218,7 +218,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
-        REF_COUNT_TEARDOWN(de);
+        ref_count_delete( de->ref_count );
 
         listing_delete(CALLER_INFO de->li);
 
