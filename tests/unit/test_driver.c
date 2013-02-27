@@ -24,7 +24,8 @@ int main (int argc, char **argv)
 
     //hash_table_test();
     //http_test();
-    test_proto_indexnode();
+    test_indexnode( );
+    test_proto_indexnode( );
     //string_buffer_test();
     //uri_test();
     //utils_test();
