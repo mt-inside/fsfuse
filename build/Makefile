@@ -116,7 +116,7 @@ config_define.c:  config.xsl config-config.xml
 build_revision.c:
 	@echo "Making build_revision.c"
 	$(shell /bin/echo -n 'const char * const build_revision = "'  > build_revision.c)
-	$(shell /bin/echo -n `git show --pretty=format:'%h %cd' HEAD $(SRC_ROOT) | head -n1` >> build_revision.c)
+	$(shell /bin/echo -n `git show --pretty=format:'%h' HEAD | head -n1` >> build_revision.c)
 	$(shell /bin/echo    '";'                             >> build_revision.c)
 
 %.i: %.c
