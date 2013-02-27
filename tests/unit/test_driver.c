@@ -13,6 +13,8 @@
 #include "common.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "tests.h"
 
@@ -33,5 +35,8 @@ int main (int argc, char **argv)
     printf( "OK.\n" );
 
 
-    return 0;
+    close( 0 );
+    close( 1 );
+    close( 2 );
+    exit( EXIT_SUCCESS );
 }
