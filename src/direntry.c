@@ -77,7 +77,7 @@ int direntry_ensure_children (
 )
 {
     int rc = EIO;
-    char *path, *url;
+    const char *path, *url;
     listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
 
@@ -91,8 +91,8 @@ int direntry_ensure_children (
         /* fetch the directory listing from the indexnode */
         url = direntry_make_url(de, "browse", path + 1);
         rc = parser_fetch_listing(url, &lis);
-        free(path);
-        free(url);
+        free_const(path);
+        free_const(url);
 
         if (!rc && lis)
         {
@@ -382,7 +382,7 @@ void direntry_de2stat (direntry_t *de, struct stat *st)
     st->st_ino = de->inode;
 }
 
-char *direntry_make_url (
+const char *direntry_make_url (
     direntry_t *de,
     const char * const path_prefix,
     const char * const resource

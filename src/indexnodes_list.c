@@ -35,7 +35,7 @@ indexnodes_list_t *indexnodes_list_new (void)
 }
 
 void indexnodes_list_add (indexnodes_list_t *ins,
-                                 indexnode_t *in)
+                          indexnode_t *in)
 {
     indexnodes_list_item_t *item = NULL;
 
@@ -47,11 +47,11 @@ void indexnodes_list_add (indexnodes_list_t *ins,
 }
 
 /* TODO: take a bool (*indexnode_matcher)(in) instead of this id */
-indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id)
+indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, const char * const id)
 {
     indexnodes_list_item_t *item;
     indexnode_t *in = NULL;
-    char *item_id;
+    const char *item_id;
     int found = 0;
 
 
@@ -63,7 +63,7 @@ indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id)
             in = item->in;
             found = 1;
         }
-        free(item_id);
+        free_const(item_id);
         if (found) break;
     }
 

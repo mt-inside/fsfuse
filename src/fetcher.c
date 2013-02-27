@@ -72,7 +72,7 @@ int fetcher_fetch_file (listing_t           *li,
                         void                *cb_data)
 {
     int rc = EIO;
-    char *url;
+    const char *url;
     listing_list_t *lis;
 
 
@@ -85,7 +85,7 @@ int fetcher_fetch_file (listing_t           *li,
     /* Find alternatives */
     url = listing_make_url(li, "alternatives", listing_get_hash(li));
     rc = parser_fetch_listing(url, &lis);
-    free(url);
+    free_const(url);
 
     if (lis)
     {
@@ -116,7 +116,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
                          void                *cb_data)
 {
     int rc;
-    char *url;
+    const char *url;
     indexnodes_list_t *ins;
     indexnodes_list_item_t *item;
 
@@ -129,7 +129,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     {
         url = indexnode_make_url(item->in, "stats", "");
         rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
-        free(url);
+        free_const(url);
     }
     indexnodes_list_delete(ins);
 

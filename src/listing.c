@@ -224,7 +224,7 @@ void listing_li2stat (listing_t *li, struct stat *st)
     }
 }
 
-char *listing_make_url (
+const char *listing_make_url (
     listing_t *li,
     const char * const path_prefix,
     const char * const resource

@@ -52,7 +52,9 @@ extern char *          listing_get_href          (listing_t *li);
 extern char *          listing_get_client        (listing_t *li);
 extern void            listing_li2stat           (listing_t *li,
                                                   struct stat *st);
-extern char *          listing_make_url (
+
+/* TODO: again, so wrong that listing make their URIs */
+extern const char *    listing_make_url (
     listing_t *li,
     const char * const path_prefix,
     const char * const resource

@@ -33,8 +33,8 @@ struct _indexnode_t
     pthread_mutex_t *lock;
     unsigned ref_count;
 
-    char *version;
-    char *id;
+    const char *version;
+    const char *id;
 
     time_t last_seen;
 };
@@ -49,7 +49,12 @@ static int check_version( const char * const version )
 }
 
 /* TODO: state machine for active, missed 1 ping, etc */
-indexnode_t *indexnode_new( char *host, char *port, char *version, char *id )
+indexnode_t *indexnode_new(
+    const char * const host,
+    const char * const port,
+    const char * const version,
+    const char * const id
+)
 {
     indexnode_t *in = NULL;
 
@@ -83,7 +88,9 @@ indexnode_t *indexnode_new( char *host, char *port, char *version, char *id )
 
 /* TODO: when in inherits pin, these ctors can be combined, e.g only
  * check_version in base ctor */
-indexnode_t *indexnode_from_proto( proto_indexnode_t *pin, char *version )
+indexnode_t *indexnode_from_proto(
+    const proto_indexnode_t * const pin,
+    const char * const version )
 {
     indexnode_t *in = NULL;
 
@@ -113,7 +120,7 @@ indexnode_t *indexnode_from_proto( proto_indexnode_t *pin, char *version )
     return in;
 }
 
-indexnode_t *indexnode_post( indexnode_t *in )
+indexnode_t * indexnode_post( indexnode_t * const in )
 {
     pthread_mutex_lock( in->lock );
     assert( in->ref_count );
@@ -124,7 +131,7 @@ indexnode_t *indexnode_post( indexnode_t *in )
     return in;
 }
 
-void indexnode_delete( indexnode_t *in )
+void indexnode_delete( indexnode_t * const in )
 {
     unsigned refc;
 
@@ -141,37 +148,37 @@ void indexnode_delete( indexnode_t *in )
 
         free_const( BASE_CLASS(in)->host );
         free_const( BASE_CLASS(in)->port );
-        free( in->version );
-        if( in->id ) free( in->id );
+        free_const( in->version );
+        if( in->id ) free_const( in->id );
 
         free( in );
     }
 }
 
-char *indexnode_host( indexnode_t *in )
+const char *indexnode_host( const indexnode_t * const in )
 {
     return proto_indexnode_host( BASE_CLASS(in) );
 }
 
-char *indexnode_port( indexnode_t *in )
+const char *indexnode_port( const indexnode_t * const in )
 {
     return proto_indexnode_port( BASE_CLASS(in) );
 }
 
-char *indexnode_version( indexnode_t *in )
+const char *indexnode_version( const indexnode_t * const in )
 {
     return strdup( in->version );
 }
 
-char *indexnode_id( indexnode_t *in )
+const char *indexnode_id( const indexnode_t * const in )
 {
     return strdup( in->id );
 }
 
 /* API to make URLs ========================================================= */
 
-char *indexnode_make_url(
-    indexnode_t *in,
+const char *indexnode_make_url(
+    const indexnode_t * const in,
     const char * const path_prefix,
     const char * const resource
 )
@@ -179,12 +186,12 @@ char *indexnode_make_url(
     return proto_indexnode_make_url( BASE_CLASS(in), path_prefix, resource );
 }
 
-void indexnode_seen( indexnode_t *in )
+void indexnode_seen( indexnode_t * const in )
 {
     in->last_seen = time( NULL );
 }
 
-int indexnode_still_valid( indexnode_t *in )
+int indexnode_still_valid( const indexnode_t * const in )
 {
     return ( time( NULL ) - in->last_seen ) < config_indexnode_timeout;
 }
