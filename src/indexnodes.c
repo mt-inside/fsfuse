@@ -91,9 +91,9 @@ int indexnodes_init (void)
 
             trace_info(
                 "Static index node configured at %s:%s - version %s\n",
-                indexnode_get_host(in),
-                indexnode_get_port(in),
-                indexnode_get_version(in));
+                indexnode_host(in),
+                indexnode_port(in),
+                indexnode_version(in));
         }
 
         i++;
@@ -453,7 +453,7 @@ static void *indexnodes_listen_main(void *args)
             if (in)
             {
                 pthread_mutex_lock(&s_indexnodes_lock);
-                if (!indexnodes_list_find(s_indexnodes, indexnode_get_id(in)))
+                if (!indexnodes_list_find(s_indexnodes, indexnode_id(in)))
                 {
                     /* If it's not been seen before, add it */
                     indexnodes_list_add(s_indexnodes, in);

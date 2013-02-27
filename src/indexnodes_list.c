@@ -57,7 +57,7 @@ indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, char *id)
 
     TAILQ_FOREACH(item, &ins->list, next)
     {
-        item_id = indexnode_get_id(item->in);
+        item_id = indexnode_id(item->in);
         if (item_id && !strcmp(item_id, id))
         {
             in = item->in;
