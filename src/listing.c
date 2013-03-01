@@ -85,7 +85,7 @@ listing_t *listing_new (CALLER_DECL_ONLY)
     li->ref_count = ref_count_new( );
 
     listing_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
-                   li, CALLER_PASS li->ref_count);
+                   li, CALLER_PASS 1);
 
     return li;
 }

@@ -155,8 +155,8 @@ static direntry_t *direntry_new (CALLER_DECL ino_t inode)
     inode_map_add(de);
 
     direntry_trace(
-        "[direntry %p] new (" CALLER_FORMAT ") ref %u inode %lu\n",
-        de, CALLER_PASS de->ref_count, de->inode
+        "[direntry %p inode %lu] new (" CALLER_FORMAT ") ref %u\n",
+        de, de->inode, CALLER_PASS 1
     );
 
 
@@ -199,8 +199,8 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
     unsigned refc = ref_count_inc( de->ref_count );
 
-    direntry_trace("[direntry %p] post (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS refc);
+    direntry_trace("[direntry %p inode %lu] post (" CALLER_FORMAT ") ref %u\n",
+                   de, de->inode, CALLER_PASS refc);
 
 
     return de;
@@ -210,8 +210,8 @@ void direntry_delete (CALLER_DECL direntry_t *de)
 {
     unsigned refc = ref_count_dec( de->ref_count );
 
-    direntry_trace("[direntry %p] delete (" CALLER_FORMAT ") ref %u\n",
-                   de, CALLER_PASS refc);
+    direntry_trace("[direntry %p inode %lu] delete (" CALLER_FORMAT ") ref %u\n",
+                   de, de->inode, CALLER_PASS refc);
     direntry_trace_indent();
 
     if (!refc)

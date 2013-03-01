@@ -83,7 +83,7 @@ indexnode_t *indexnode_new(
 
         indexnode_trace(
             "[indexnode @%p id %s] new (" CALLER_FORMAT ") ref %u\n",
-            in, in->id, CALLER_PASS in->ref_count
+            in, in->id, CALLER_PASS 1
         );
     }
     else
@@ -124,7 +124,7 @@ indexnode_t *indexnode_from_proto(
 
         indexnode_trace(
             "[indexnode @%p id %s] new (" CALLER_FORMAT ") ref %u\n",
-            in, in->id, CALLER_PASS in->ref_count
+            in, in->id, CALLER_PASS 1
         );
     }
     else
