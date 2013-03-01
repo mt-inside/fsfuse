@@ -18,12 +18,15 @@
 
 #include "tests.h"
 
+#include "utils.h"
+
 
 int main (int argc, char **argv)
 {
     NOT_USED(argc);
     NOT_USED(argv);
 
+    utils_init( );
     trace_init( );
 
     //hash_table_test();
@@ -35,6 +38,7 @@ int main (int argc, char **argv)
     //utils_test();
 
     trace_finalise( );
+    utils_finalise( );
 
     printf( "OK.\n" );
 
