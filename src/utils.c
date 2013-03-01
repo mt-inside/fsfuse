@@ -25,6 +25,8 @@ static unsigned next_thread_index = 1;
 static void thread_index_destroy (void *i);
 
 
+/* This has to happen in the same thread as finalise. And that has to be the
+ * main thread. Horrid. Use RAII instead */
 int utils_init (void)
 {
     int rc;
@@ -38,10 +40,13 @@ int utils_init (void)
 
 void utils_finalise (void)
 {
+    /* Have to clean up /this/ thread's specific data, because we have to delete
+     * the key here which means the destructor won't be called. Obviously this
+     * is horrid */
     unsigned *i = (unsigned *)pthread_getspecific(thread_index_key);
     thread_index_destroy((void *)i);
 
-    pthread_key_delete(thread_index_key);
+    assert(!pthread_key_delete(thread_index_key));
 }
 
 
