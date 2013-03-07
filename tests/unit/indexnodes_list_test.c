@@ -17,7 +17,7 @@
 
 #include "tests.h"
 
-#include "indexnodes_list_internal.h"
+#include "indexnodes/indexnodes_list_internal.h"
 
 
 /* TODO: move to check.h */

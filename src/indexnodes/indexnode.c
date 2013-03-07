@@ -95,42 +95,29 @@ indexnode_t *indexnode_new(
 
 }
 
-/* TODO: when in inherits pin, these ctors can be combined, e.g only
- * check_version in base ctor */
 indexnode_t *indexnode_from_proto(
     CALLER_DECL
     const proto_indexnode_t * const pin,
-    const char * const version )
+    const char * const version,
+    const char * const id
+)
 {
-    indexnode_t *in = NULL;
+    indexnode_t *in;
+    const char *host = proto_indexnode_host( pin );
+    const char *port = proto_indexnode_port( pin );
 
 
-    assert(pin);
-    assert(version); assert(*version);
+    in = indexnode_new(
+        CALLER_PASS
+        host,
+        port,
+        version,
+        id
+    );
 
-    if( check_version( version ) )
-    {
-        in = calloc( sizeof(indexnode_t), 1 );
 
-        in->ref_count = ref_count_new( );
-
-        BASE_CLASS(in)->host = proto_indexnode_host( pin );
-        BASE_CLASS(in)->port = proto_indexnode_port( pin );
-        in->version = strdup( version );
-
-        indexnode_seen( in );
-
-        indexnode_trace(
-            "[indexnode @%p id %s] new (" CALLER_FORMAT ") ref %u\n",
-            in, in->id, CALLER_PASS 1
-        );
-    }
-    else
-    {
-        trace_warn( "Ignoring indexnode of version %s, only versions %s <= x <= %s are supported\n",
-                    version, PROTO_MINIMUM, PROTO_MAXIMUM );
-    }
-
+    free_const( host );
+    free_const( port );
     proto_indexnode_delete( pin );
 
 
@@ -166,10 +153,9 @@ void indexnode_delete( CALLER_DECL indexnode_t * const in )
 
         ref_count_delete( in->ref_count );
 
-        free_const( BASE_CLASS(in)->host );
-        free_const( BASE_CLASS(in)->port );
+        proto_indexnode_teardown( BASE_CLASS(in) );
         free_const( in->version );
-        if( in->id ) free_const( in->id );
+        free_const( in->id );
 
         free( in );
     }

@@ -50,10 +50,11 @@ void indexnode_can_be_created_from_proto( void )
     const char *host_in = "fs2.example.org";
     const char *port_in = "1337";
     const char *version_in = "0.13";
+    const char *id_in = "d34db33f";
     const proto_indexnode_t *pin = proto_indexnode_new( host_in, port_in );
 
     /* Action */
-    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, version_in );
+    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, version_in, id_in );
 
     /* Assert */
     test_not_null( in );

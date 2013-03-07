@@ -24,5 +24,6 @@ extern void proto_indexnode_init(
     const char * const host,
     const char * const port
 );
+extern void proto_indexnode_teardown( const proto_indexnode_t * const pin );
 
 #endif /* _INCLUDED_PROTO_INDEXNODE_INTERNAL_H */

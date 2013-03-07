@@ -50,10 +50,15 @@ void proto_indexnode_init(
 
 void proto_indexnode_delete( const proto_indexnode_t * const pin )
 {
-    free_const( pin->host );
-    free_const( pin->port );
+    proto_indexnode_teardown( pin );
 
     free_const( pin );
+}
+
+void proto_indexnode_teardown( const proto_indexnode_t * const pin )
+{
+    free_const( pin->host );
+    free_const( pin->port );
 }
 
 const char *proto_indexnode_host( const proto_indexnode_t * const pin )

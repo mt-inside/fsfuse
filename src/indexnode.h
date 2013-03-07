@@ -30,7 +30,8 @@ extern indexnode_t *indexnode_new(
 extern indexnode_t *indexnode_from_proto(
     CALLER_DECL
     const proto_indexnode_t * const pin,
-    const char * const version
+    const char * const version,
+    const char * const id
 );
 
 extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in);

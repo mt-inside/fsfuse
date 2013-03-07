@@ -72,6 +72,8 @@ int indexnodes_init (void)
     /* Instantiate statically configured indexnodes */
     int i = 0;
     const char *host, *port, *version;
+    string_buffer_t *id_buffer;
+
     while ((host = config_indexnode_hosts[i]) &&
            (port = config_indexnode_ports[i]))
     {
@@ -81,22 +83,28 @@ int indexnodes_init (void)
          * as possible and that we can get on with other stuff straight away.
          * The following logic would have to move to a callback. */
         version = fetcher_get_indexnode_version(pin, &version_cb); /* blocks */
+        id_buffer = string_buffer_new();
+        string_buffer_printf(id_buffer, "static-indexnode-%d", i);
 
-        indexnode_t *in = indexnode_from_proto(CALLER_INFO pin, version);
+        indexnode_t *in = indexnode_from_proto(CALLER_INFO pin, version, string_buffer_peek(id_buffer));
         if (in)
         {
             /* Currently no way to get the id of a static indexnode (if you
              * can't see its broadcasts, so we just add them and assume there
              * are no duplicates */
+            /* TODO: really, is it not in an indexnode header? if no, add it :)
+             */
             indexnodes_list_add(s_indexnodes, in);
 
             trace_info(
-                "Static index node configured at %s:%s - version %s\n",
+                "Static index node configured at %s:%s, version %s, id %s\n",
                 indexnode_host(in),
                 indexnode_port(in),
-                indexnode_version(in));
+                indexnode_version(in),
+                indexnode_id(in));
         }
 
+        string_buffer_delete(id_buffer);
         i++;
     }
 
