@@ -32,6 +32,7 @@ int main (int argc, char **argv)
     //hash_table_test();
     //http_test();
     test_indexnode( );
+    test_indexnodes_list( );
     test_proto_indexnode( );
     test_ref_count( );
     //string_buffer_test();
