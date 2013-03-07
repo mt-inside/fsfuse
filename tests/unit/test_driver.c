@@ -33,6 +33,7 @@ int main (int argc, char **argv)
     //http_test();
     test_indexnode( );
     test_proto_indexnode( );
+    test_ref_count( );
     //string_buffer_test();
     //uri_test();
     //utils_test();

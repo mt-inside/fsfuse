@@ -12,6 +12,7 @@ TEST_OBJS := hash_table_test.o      \
              http_test.o            \
              indexnode_test.o       \
              proto_indexnode_test.o \
+             ref_count_test.o       \
              string_buffer_test.o   \
              uri_test.o             \
              utils_test.o
