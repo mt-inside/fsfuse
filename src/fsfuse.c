@@ -49,7 +49,7 @@
 #include "string_buffer.h"
 #include "utils.h"
 
-#include "fuse_methods/fuse_methods.h"
+#include "fuse_methods.h"
 
 
 typedef enum
