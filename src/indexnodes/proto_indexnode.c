@@ -28,17 +28,24 @@ const proto_indexnode_t *proto_indexnode_new( const char * const host, const cha
     proto_indexnode_t *pin;
 
 
-    assert(host); assert(*host);
-    assert(port); assert(*port);
-
-
     pin = calloc( sizeof(proto_indexnode_t), 1 );
-
-    pin->host = strdup( host );
-    pin->port = strdup( port );
+    proto_indexnode_init( pin, host, port );
 
 
     return pin;
+}
+
+void proto_indexnode_init(
+    proto_indexnode_t * const pin,
+    const char * const host,
+    const char * const port
+)
+{
+    assert(host); assert(*host);
+    assert(port); assert(*port);
+
+    pin->host = strdup( host );
+    pin->port = strdup( port );
 }
 
 void proto_indexnode_delete( const proto_indexnode_t * const pin )

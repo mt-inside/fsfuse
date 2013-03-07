@@ -63,8 +63,6 @@ indexnode_t *indexnode_new(
     indexnode_t *in = NULL;
 
 
-    assert(host);    assert(*host);
-    assert(port);    assert(*port);
     assert(version); assert(*version);
     assert(id);      assert(*id);
 
@@ -72,10 +70,10 @@ indexnode_t *indexnode_new(
     {
         in = calloc( sizeof(indexnode_t), 1 );
 
+        proto_indexnode_init( BASE_CLASS(in), host, port );
+
         in->ref_count = ref_count_new( );
 
-        BASE_CLASS(in)->host = strdup( host );
-        BASE_CLASS(in)->port = strdup( port );
         in->version          = strdup( version );
         in->id               = strdup( id );
 
