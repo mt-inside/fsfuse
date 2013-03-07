@@ -89,7 +89,7 @@ endif
 # == Sources ==
 
 include $(SRC_ROOT)/frag.mk
-include $(SRC_ROOT)/fsfuse_ops/frag.mk
+include $(SRC_ROOT)/fuse_methods/frag.mk
 
 
 # == Dependencies ==

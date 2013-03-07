@@ -49,7 +49,7 @@
 #include "string_buffer.h"
 #include "utils.h"
 
-#include "fsfuse_ops/fsfuse_ops.h"
+#include "fuse_methods/fuse_methods.h"
 
 
 typedef enum
@@ -222,7 +222,7 @@ static int my_fuse_main (void)
     /* Hand over to fuse */
     if ((ch = fuse_mount(mountpoint.real, &fuse_args)))
     {
-        if ((se = fuse_lowlevel_new(&fuse_args, &fsfuse_ops, sizeof(fsfuse_ops), NULL)))
+        if ((se = fuse_lowlevel_new(&fuse_args, &fuse_methods, sizeof(fuse_methods), NULL)))
         {
             /* Setup */
             fuse_set_signal_handlers(se);
