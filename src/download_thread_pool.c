@@ -34,7 +34,6 @@
 #include "download_thread_pool.h"
 #include "download_thread.h"
 #include "fetcher.h"
-#include "indexnode.h"
 #include "queue.h"
 #if FEATURE_PROGRESS_METER
 #include "progress.h"

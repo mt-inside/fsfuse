@@ -10,7 +10,7 @@
 #include <curl/curl.h>
 
 #include "common.h"
-#include "indexnode.h"
+#include "proto_indexnode.h"
 #include "listing.h"
 
 

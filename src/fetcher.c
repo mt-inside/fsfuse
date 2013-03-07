@@ -26,6 +26,7 @@
 #include "fetcher.h"
 #include "parser.h"
 #include "indexnodes.h"
+#include "indexnodes_list.h"
 #include "indexnodes_iterator.h"
 #include "peerstats.h"
 #include "string_buffer.h"

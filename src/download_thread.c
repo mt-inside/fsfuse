@@ -34,7 +34,6 @@
 #include "direntry.h"
 #include "download_thread.h"
 #include "fetcher.h"
-#include "indexnode.h"
 #include "queue.h"
 #include "string_buffer.h"
 #if FEATURE_PROGRESS_METER

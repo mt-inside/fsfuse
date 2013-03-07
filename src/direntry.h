@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 
 #include "trace.h"
-#include "indexnode.h"
 #include "listing.h"
 
 

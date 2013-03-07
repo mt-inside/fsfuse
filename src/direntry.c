@@ -23,7 +23,6 @@
 
 #include "config.h"
 #include "fetcher.h"
-#include "indexnodes.h"
 #include "inode_map.h"
 #include "parser.h"
 #include "ref_count.h"
