@@ -1,4 +1,4 @@
-factor refcounting out into methods
+Have a public headers dir, or otherwise make public headers visible. Then put "modules" in dirs along with their internal headers, so that only stuff in that dir can see them.
 move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
 
 where are indexnodes free()d?
