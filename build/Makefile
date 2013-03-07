@@ -90,6 +90,7 @@ endif
 
 include $(SRC_ROOT)/frag.mk
 include $(SRC_ROOT)/fuse_methods/frag.mk
+include $(SRC_ROOT)/indexnodes/frag.mk
 
 
 # == Dependencies ==
