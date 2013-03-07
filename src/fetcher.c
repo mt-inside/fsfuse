@@ -12,6 +12,8 @@
  * (e.g. for read()).
  */
 
+#include "common.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -19,12 +21,12 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "common.h"
 #include "config.h"
 #include "curl_utils.h"
 #include "fetcher.h"
 #include "parser.h"
 #include "indexnodes.h"
+#include "indexnodes_iterator.h"
 #include "peerstats.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -118,19 +120,27 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     int rc;
     const char *url;
     indexnodes_list_t *ins;
-    indexnodes_list_item_t *item;
+    indexnodes_iterator_t *iter;
+    indexnode_t *in;
 
 
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
     ins = indexnodes_get();
-    TAILQ_FOREACH(item, &ins->list, next)
+    for (iter = indexnodes_iterator_begin(ins);
+         !indexnodes_iterator_end(iter);
+         iter = indexnodes_iterator_next(iter))
     {
-        url = indexnode_make_url(item->in, "stats", "");
+        in = indexnodes_iterator_current(iter);
+        url = indexnode_make_url(in, "stats", "");
+
         rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
+
+        indexnode_delete(CALLER_INFO in);
         free_const(url);
     }
+    indexnodes_iterator_delete(iter);
     indexnodes_list_delete(ins);
 
     fetcher_trace_dedent();

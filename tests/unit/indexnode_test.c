@@ -7,7 +7,7 @@
  * (at your option) any later version.
  *
  *
- * Proto-indexnode class unit tests
+ * Indexnode class unit tests.
  */
 
 #include "common.h"

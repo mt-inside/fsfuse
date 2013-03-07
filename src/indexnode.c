@@ -201,6 +201,7 @@ const char *indexnode_id( const indexnode_t * const in )
 
 /* API to make URLs ========================================================= */
 
+/* TODO: move me! */
 const char *indexnode_make_url(
     const indexnode_t * const in,
     const char * const path_prefix,

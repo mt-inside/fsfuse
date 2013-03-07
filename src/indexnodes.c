@@ -40,6 +40,7 @@
 #include "common.h"
 #include "config.h"
 #include "indexnodes.h"
+#include "indexnodes_list_internal.h"
 #include "fetcher.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -147,6 +148,11 @@ indexnodes_list_t *indexnodes_get (void)
     pthread_mutex_lock(&s_indexnodes_lock);
     /* currently only happens lazily, here. Might be worth putting on a bg
      * thread, if only for debugging */
+    /* TODO: i.e. this can go when there's a thread manning a state machine for
+     * the things. They may not get removed, so may just filter for expired here
+     * Expiring is a good idea because if they're expired they'll not get given
+     * out any more and simply die when their last ref goes. Also means they can
+     * be resurrected from the dead if a ping comes back. */
     s_indexnodes = indexnodes_list_remove_expired(s_indexnodes);
     ins = indexnodes_list_copy(s_indexnodes);
     pthread_mutex_unlock(&s_indexnodes_lock);

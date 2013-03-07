@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ * Copyright (C) 2008-2013 Matthew Turner. Distributed under the GPL v3.
  *
- * The collection of known indexnodes.
+ * Class to manage the collection of known indexnodes.
  */
 
 #ifndef _INCLUDED_INDEXNODES_H
 #define _INCLUDED_INDEXNODES_H
 
-#include "indexnodes_list.h"
+#include "indexnodes_iterator.h"
 
 
 extern int indexnodes_init (void);

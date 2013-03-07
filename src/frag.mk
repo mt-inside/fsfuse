@@ -25,6 +25,7 @@ OUR_OBJS :=                         \
             http.o                  \
             indexnode.o             \
             indexnodes.o            \
+            indexnodes_iterator.o   \
             indexnodes_list.o       \
             inode_map.o             \
             listing.o               \
