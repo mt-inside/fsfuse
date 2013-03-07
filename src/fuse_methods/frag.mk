@@ -4,12 +4,12 @@
 # Directory makefile fragment.
 #
 
-HERE := $(SRC_ROOT)/fuse_methods
+METHODS_HERE := $(SRC_ROOT)/fuse_methods
 
-vpath %.c $(HERE)
+vpath %.c $(METHODS_HERE)
 
 # Should list these explicitly, really
-METHODS_SOURCES = $(wildcard $(HERE)/*.c)
+METHODS_SOURCES = $(wildcard $(METHODS_HERE)/*.c)
 METHODS_OBJECTS = $(patsubst %.c,%.o,$(notdir $(METHODS_SOURCES)))
 
 OBJECTS += $(METHODS_OBJECTS)
