@@ -5,6 +5,16 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * TODO: split this into indexnodes_set which is the google structure and
+ * internal to the indexnodes module. AND indexnodes_list which is what's
+ * produced and returned to consumers. This really can be a generic_list<> (as
+ * it will have no methods other than those to support enumeration), or a
+ * typedef of a LINKED_LIST (no need for TAILQ)
+ * TODO: internally this needs to be a google-interview data structure :)
+ * - Array with hash over it (maybe pull some logic out of hash like a hasher
+ *   class)
+ * - O(1) add, delete, find-by-uid
  */
 
 #include "common.h"

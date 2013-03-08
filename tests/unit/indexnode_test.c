@@ -20,6 +20,7 @@
 
 
 /* TODO: move to check.h */
+/* TODO: pull these goddam test object ctors out */
 static void test_string_equal( const char *a, const char *b )
 {
     assert(!strcmp(a,b));

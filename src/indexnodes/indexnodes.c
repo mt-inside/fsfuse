@@ -89,11 +89,8 @@ int indexnodes_init (void)
         indexnode_t *in = indexnode_from_proto(CALLER_INFO pin, version, string_buffer_peek(id_buffer));
         if (in)
         {
-            /* Currently no way to get the id of a static indexnode (if you
-             * can't see its broadcasts, so we just add them and assume there
-             * are no duplicates */
-            /* TODO: really, is it not in an indexnode header? if no, add it :)
-             */
+            /* TODO: can now get the uid of an indexnode from an HTTP header -
+             * do this. For now it's just added assuming there isn't a duplicate */
             indexnodes_list_add(s_indexnodes, in);
 
             trace_info(
@@ -154,10 +151,8 @@ indexnodes_list_t *indexnodes_get (void)
 
 
     pthread_mutex_lock(&s_indexnodes_lock);
-    /* currently only happens lazily, here. Might be worth putting on a bg
-     * thread, if only for debugging */
-    /* TODO: i.e. this can go when there's a thread manning a state machine for
-     * the things. They may not get removed, so may just filter for expired here
+    /* TODO: when listening is on a background thread and there is a state
+     * machine, they shoudn't be removed, ever. Just filter for expired here
      * Expiring is a good idea because if they're expired they'll not get given
      * out any more and simply die when their last ref goes. Also means they can
      * be resurrected from the dead if a ping comes back. */
@@ -467,6 +462,18 @@ static void *indexnodes_listen_main(void *args)
             if (in)
             {
                 pthread_mutex_lock(&s_indexnodes_lock);
+                /* TODO: omfg this class shouldn't lock the list because the
+                 * list needs to be able to take copies when it knows it's not
+                 * being updated.
+                 * TODO: omfg the de-dup shouldn't be here - the list should do
+                 * it. Is this true? Should it acutally be here because it's a
+                 * fuinction of the management of indexnodes, not of a list of
+                 * them. Yes. Also getting a new packet for the same indexnode
+                 * uid should "Ping" the indexnode. I.e. find it in the list by
+                 * UID, indexnode_seen() if it exists, add if not. No. For
+                 * sanity now keep it as a class that does fuck all, except
+                 * maybe having an itterate-non-expired method.
+                 */
                 if (!indexnodes_list_find(s_indexnodes, indexnode_id(in)))
                 {
                     /* If it's not been seen before, add it */

@@ -1,5 +1,11 @@
-Have a public headers dir, or otherwise make public headers visible. Then put "modules" in dirs along with their internal headers, so that only stuff in that dir can see them.
 move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
+move config into its own dir
+indexnode state machine and filtering in _get.
+pull indexnodes.c apart into listener (that fires event on a packet), manager (that maintins a list and updates state in response to packets and timer events (has to be proactive on a timer, not lazy on return, becuase many lists have pointer to one refc'd in which needs to be seen to expire to all of them) and maybe others
+indexnode objects to live forever and just sit in expired causing ENOENT or soemthing when interacted with. expired indexnodes are not put into output list.
+write unit test with mock listener
+write test frontend that just fires up the indexnode stuff and prints the list of indexnodes and their states every sec
+write integration test that fires up indexnodes?
 
 where are indexnodes free()d?
 get to the point where each lib (libxml, curl) is refd and understood by only 1 file.

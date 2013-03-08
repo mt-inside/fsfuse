@@ -57,6 +57,7 @@ static direntry_t *direntries_from_listing_list (listing_list_t *lis, direntry_t
 
 /* direntry module external interface ======================================= */
 
+/* TODO: wtf. At startup just call get_root_direntry or somethign */
 int direntry_init (void)
 {
     direntry_trace("direntry_init()\n");
@@ -185,7 +186,8 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
      * indexnode. We could work it out every time, but that would be tedious.
      * It turns out to be vitally important that this is non-0 if samba is going
      * to share the filesystem */
-    //TODO: calculate me in the future
+    //TODO: calculate me in the future, or get best guess (i.e. the cache might
+    //know, else 1)
     listing_attribute_add(li, "fs2-linkcount", "1");
 
     de->li = li;
