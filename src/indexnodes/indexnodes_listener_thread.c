@@ -32,7 +32,7 @@
 static void print_network_interfaces (void);
 static int get_ipv6_socket (void);
 static int get_ipv4_socket (void);
-static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t packet_received_cb);
+static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb);
 
 
 /* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
@@ -62,10 +62,10 @@ void *indexnodes_listen_main(void *args)
 
     s4 = get_ipv4_socket();
     s6 = get_ipv6_socket();
-    listener_thread_event_loop(s4, s6, info->packet_received_cb);
+
+    listener_thread_event_loop(s4, s6, info->control_fd, info->packet_received_cb);
 
 
-    /* TODO: these almost certainly shouldn't be here */
     if (s4 != -1) close(s4);
     if (s6 != -1) close(s6);
 
@@ -302,27 +302,23 @@ static void receive_advert(
     string_buffer_delete(buffer);
 }
 
-static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t packet_received_cb)
+static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb)
 {
     fd_set r_fds;
     int select_rc;
+    int exiting = 0;
 
 
     FD_ZERO(&r_fds);
     if (s4 != -1) FD_SET(s4, &r_fds);
     if (s6 != -1) FD_SET(s6, &r_fds);
+    assert(control_fd != -1); FD_SET(control_fd, &r_fds);
 
 
-    /* TODO: select() needs a timeout (or a pipe to signal exit), otherwise if
-     * there are no indexnode packets then this thread will never exit. */
-    /* TODO: on shutdown with no indexnodes running, I seem to get stuck in
-     * recvfrom() for ip4. No idea how that socket became live if recvfrom()
-     * will block. */
-    /* FIXME: yeah, shutdown and shit */
-    while (1)
+    while (!exiting)
     {
         errno = 0;
-        select_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
+        select_rc = select(MAX(s4, MAX(s6, control_fd)) + 1, &r_fds, NULL, NULL, NULL);
 
         switch (select_rc)
         {
@@ -343,6 +339,12 @@ static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t pac
                     struct sockaddr_in6 sa;
                     receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb);
                 }
+                else if (FD_ISSET(control_fd, &r_fds))
+                {
+                    /* For now, only one command, STOP_LISTENING, represented by
+                     * the unit-typed message */
+                    exiting = 1;
+                }
                 else
                 {
                     assert(0);
@@ -350,6 +352,5 @@ static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t pac
 
                 break;
         }
-
     }
 }

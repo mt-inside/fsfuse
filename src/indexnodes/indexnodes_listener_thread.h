@@ -21,6 +21,7 @@ typedef void (*packet_received_cb_t) (
 typedef struct
 {
     packet_received_cb_t packet_received_cb;
+    int control_fd;
 } indexnodes_listener_thread_info_t;
 
 
