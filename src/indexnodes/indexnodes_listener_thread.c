@@ -122,71 +122,24 @@ static void print_network_interfaces (void)
     freeifaddrs(ifaddr);
 }
 
-static int get_ipv6_socket (void)
+static int get_socket (struct sockaddr *sa, int domain, socklen_t socklen_in)
 {
     int s;
-    struct sockaddr_in6 sa;
     const int one = 1;
     int bind_rc, rc_ok = 0;
 
 
-    memset(&sa, 0, sizeof(sa));
-    sa.sin6_family = AF_INET6;
-    sa.sin6_port   = htons(config_indexnode_advert_port);
-    sa.sin6_addr   = in6addr_any;
-
     errno = 0;
-    s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    s = socket(domain, SOCK_DGRAM, IPPROTO_UDP);
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
     if (s != -1)
     {
         errno = 0;
-        bind_rc = bind(s, (struct sockaddr *)&sa, sizeof(sa));
+        bind_rc = bind(s, sa, socklen_in);
         if (!bind_rc)
         {
             rc_ok = 1;
-            trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa.sin6_port));
-        }
-        else
-        {
-            trace_warn("Cannot bind to udp6 indexnode listener socket: %s\n", strerror(errno));
-        }
-    }
-    else
-    {
-        trace_warn("Cannot create udp6 indexnode listener socket: %s\n", strerror(errno));
-    }
-
-
-    return rc_ok ? s : -1;
-}
-
-static int get_ipv4_socket (void)
-{
-    int s;
-    struct sockaddr_in sa;
-    const int one = 1;
-    int bind_rc, rc_ok = 0;
-
-
-    memset(&sa, 0, sizeof(sa));
-    sa.sin_family      = AF_INET;
-    sa.sin_port        = htons(config_indexnode_advert_port);
-    sa.sin_addr.s_addr = INADDR_ANY;
-
-    errno = 0;
-    s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-    if (s != -1)
-    {
-        errno = 0;
-        bind_rc = bind(s, (struct sockaddr *)&sa, sizeof(sa));
-        if (!bind_rc)
-        {
-            rc_ok = 1;
-            trace_info("Listening for index node on udp4 port %d...\n", ntohs(sa.sin_port));
         }
         else
         {
@@ -200,6 +153,48 @@ static int get_ipv4_socket (void)
 
 
     return rc_ok ? s : -1;
+}
+
+static int get_ipv4_socket (void)
+{
+    int s;
+    struct sockaddr_in sa;
+    const socklen_t socklen = sizeof(sa);
+    const int domain = AF_INET;
+
+
+    memset(&sa, 0, socklen);
+
+    sa.sin_family      = domain;
+    sa.sin_port        = htons(config_indexnode_advert_port);
+    sa.sin_addr.s_addr = INADDR_ANY;
+
+    s = get_socket((struct sockaddr *)&sa, socklen, domain);
+    trace_info("Listening for index node on udp4 port %d...\n", ntohs(sa.sin_port));
+
+
+    return s;
+}
+
+static int get_ipv6_socket (void)
+{
+    int s;
+    struct sockaddr_in6 sa;
+    const socklen_t socklen = sizeof(sa);
+    const int domain = AF_INET6;
+
+
+    memset(&sa, 0, socklen);
+
+    sa.sin6_family      = domain;
+    sa.sin6_port        = htons(config_indexnode_advert_port);
+    sa.sin6_addr        = in6addr_any;
+
+    s = get_socket((struct sockaddr *)&sa, socklen, domain);
+    trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa.sin6_port));
+
+
+    return s;
 }
 
 static int parse_fs2protocol_version (const char *buf, char **version)
