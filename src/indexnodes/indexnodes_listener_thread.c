@@ -25,6 +25,7 @@
 
 #include "indexnodes_listener_thread.h"
 
+#include "config.h"
 #include "string_buffer.h"
 
 
@@ -131,7 +132,7 @@ static int get_ipv6_socket (void)
 
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET6;
-    sa.sin6_port   = htons(42444); /* TODO: config option */
+    sa.sin6_port   = htons(config_indexnode_advert_port);
     sa.sin6_addr   = in6addr_any;
 
     errno = 0;
@@ -171,7 +172,7 @@ static int get_ipv4_socket (void)
 
     memset(&sa, 0, sizeof(sa));
     sa.sin_family      = AF_INET;
-    sa.sin_port        = htons(42444); /* TODO: config option */
+    sa.sin_port        = htons(config_indexnode_advert_port);
     sa.sin_addr.s_addr = INADDR_ANY;
 
     errno = 0;

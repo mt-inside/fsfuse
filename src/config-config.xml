@@ -26,10 +26,16 @@
         <xpath>/config/timeouts/cache/text()</xpath>
     </item>
     <item>
-        <symbol>indexnode_autodetect</symbol>
+        <symbol>indexnode_autodetect_listen</symbol>
         <type>integer</type>
         <default>1</default>
-        <xpath>/config/indexnode/autodetect/text()</xpath>
+        <xpath>/config/indexnode/autodetect/listen/text()</xpath>
+    </item>
+    <item>
+        <symbol>indexnode_advert_port</symbol>
+        <type>integer</type>
+        <default>42444</default>
+        <xpath>/config/indexnode/autodetect/advert_port/text()</xpath>
     </item>
     <item>
         <symbol>indexnode_timeout</symbol>
