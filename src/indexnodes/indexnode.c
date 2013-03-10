@@ -128,6 +128,8 @@ indexnode_t * indexnode_post( CALLER_DECL indexnode_t * const in )
 {
     unsigned refc = ref_count_inc( in->ref_count );
 
+
+    NOT_USED(refc);
     indexnode_trace("[indexnode @%p id %s] post (" CALLER_FORMAT ") ref %u\n",
                    in, in->id, CALLER_PASS refc);
 

@@ -39,7 +39,7 @@ indexnodes_listener_t *indexnodes_listener_new (packet_received_cb_t packet_rece
 
     listener->thread_args->packet_received_cb   = packet_received_cb;
     listener->thread_args->packet_received_ctxt = packet_received_ctxt;
-    pipe(pipe_fds);
+    assert(!pipe(pipe_fds));
     listener->thread_args->control_fd = pipe_fds[0]; /* read end */
     listener->control_fd = pipe_fds[1]; /* write end */
 
@@ -62,7 +62,7 @@ void indexnodes_listener_delete (indexnodes_listener_t *listener)
     listener_control_codes_t msg = listener_control_codes_STOP;
 
 
-    write(listener->control_fd, &msg, sizeof(msg));
+    assert(write(listener->control_fd, &msg, sizeof(msg)) == sizeof(msg));
 
     pthread_join(listener->pthread_id, NULL);
 

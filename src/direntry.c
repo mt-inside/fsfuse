@@ -200,6 +200,8 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
     unsigned refc = ref_count_inc( de->ref_count );
 
+
+    NOT_USED(refc);
     direntry_trace("[direntry %p inode %lu] post (" CALLER_FORMAT ") ref %u\n",
                    de, de->inode, CALLER_PASS refc);
 

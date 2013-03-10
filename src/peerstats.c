@@ -52,8 +52,8 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
     listing_t *ret;
 #if DEBUG
     listing_t *li;
-#endif
     unsigned i;
+#endif
 
 
     assert(alts);

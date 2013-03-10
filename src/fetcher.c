@@ -119,7 +119,7 @@ int fetcher_fetch_stats (indexnodes_t        *ins,
                          curl_write_callback  cb,
                          void                *cb_data)
 {
-    int rc;
+    int rc = 1;
     const char *url;
     indexnodes_list_t *list;
     indexnodes_iterator_t *iter;

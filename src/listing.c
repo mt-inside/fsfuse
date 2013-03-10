@@ -94,6 +94,8 @@ listing_t *listing_post (CALLER_DECL listing_t *li)
 {
     unsigned refc = ref_count_inc( li->ref_count );
 
+
+    NOT_USED(refc);
     listing_trace("[listing %p] post (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS refc);
 
