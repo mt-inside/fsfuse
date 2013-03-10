@@ -13,11 +13,11 @@
 
 #include "common.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include <stddef.h>
 #include <assert.h>
+#include <errno.h>
 #include <getopt.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <fuse/fuse_lowlevel.h>
@@ -30,22 +30,22 @@
 #include <curses.h>
 #endif
 
+#include "alarms.h"
 #include "buildnumber.h"
 #include "config.h"
-#include "alarms.h"
-#include "fetcher.h"
-#include "parser.h"
-#include "download_thread_pool.h"
 #include "direntry.h"
 #if FEATURE_DIRENTRY_CACHE
 #include "direntry_cache.h"
 #endif
+#include "download_thread_pool.h"
+#include "fetcher.h"
+#include "indexnodes.h"
+#include "localei.h"
+#include "parser.h"
+#include "peerstats.h"
 #if FEATURE_PROGRESS_METER
 #include "progress.h"
 #endif
-#include "peerstats.h"
-#include "indexnodes.h"
-#include "localei.h"
 #include "string_buffer.h"
 #include "utils.h"
 
