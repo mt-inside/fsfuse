@@ -32,7 +32,7 @@
 static void print_network_interfaces (void);
 static int get_ipv6_socket (void);
 static int get_ipv4_socket (void);
-static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb);
+static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb, void *packet_received_ctxt);
 
 
 /* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
@@ -63,7 +63,7 @@ void *indexnodes_listen_main(void *args)
     s4 = get_ipv4_socket();
     s6 = get_ipv6_socket();
 
-    listener_thread_event_loop(s4, s6, info->control_fd, info->packet_received_cb);
+    listener_thread_event_loop(s4, s6, info->control_fd, info->packet_received_cb, info->packet_received_ctxt);
 
 
     if (s4 != -1) close(s4);
@@ -197,21 +197,6 @@ static int get_ipv6_socket (void)
     return s;
 }
 
-static int parse_fs2protocol_version (const char *buf, char **version)
-{
-    int rc = 1;
-    char *v = malloc(strlen(buf) * sizeof(char));
-
-    if (v &&
-        sscanf(buf, "fs2protocol-%s", v) == 1)
-    {
-        *version = v;
-        rc = 0;
-    }
-
-    return rc;
-}
-
 static char *get_next_field (const char **buf)
 {
     char *loc, *s = NULL;
@@ -229,19 +214,21 @@ static char *get_next_field (const char **buf)
     return s;
 }
 
-static int parse_advert_packet (const char *buf, char **port, char **version, char **id)
+static int parse_advert_packet (const char *buf, char **port, char **fs2protocol, char **id)
 {
     char *version_field, *port_or_auto_field, *weight_field, *id_field;
 
 
     version_field = get_next_field(&buf);
     if (!version_field) return 1;
-    if (parse_fs2protocol_version(version_field, version)) return 1;
+    *fs2protocol = version_field;
 
     port_or_auto_field = get_next_field(&buf);
     if (!port_or_auto_field) return 1;
     if (!strcmp(port_or_auto_field, "autoindexnode"))
     {
+        free(port_or_auto_field);
+
         /* TODO we don't support autoindex nodes yet. What's their port? */
         return 1;
 
@@ -268,12 +255,13 @@ static void receive_advert(
     const socklen_t socklen_in,
     void * const addr_src,
     const size_t host_len,
-    packet_received_cb_t packet_received_cb
+    packet_received_cb_t packet_received_cb,
+    void *packet_received_ctxt
 )
 {
     char host[host_len];
     char buf[1024];
-    char **port = NULL, **version = NULL, **id = NULL;
+    char **port = NULL, **fs2protocol = NULL, **id = NULL;
     string_buffer_t *buffer = string_buffer_new();
     int recv_rc;
     socklen_t socklen = socklen_in;
@@ -292,17 +280,17 @@ static void receive_advert(
     if (recv_rc == 0 &&
         socklen == socklen_in)
     {
-        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
+        if (!parse_advert_packet(string_buffer_peek(buffer), port, fs2protocol, id) &&
             inet_ntop(AF_INET, addr_src, host, sizeof(host) - 1))
         {
-            packet_received_cb(host, *port, *version, *id);
+            packet_received_cb(packet_received_ctxt, host, *port, *fs2protocol, *id);
         }
     }
 
     string_buffer_delete(buffer);
 }
 
-static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb)
+static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb, void *packet_received_ctxt)
 {
     fd_set r_fds;
     int select_rc;
@@ -332,12 +320,12 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
                 if (FD_ISSET(s4, &r_fds))
                 {
                     struct sockaddr_in sa;
-                    receive_advert(s4, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin_addr), INET_ADDRSTRLEN, packet_received_cb);
+                    receive_advert(s4, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin_addr), INET_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
                 }
                 else if (FD_ISSET(s6, &r_fds))
                 {
                     struct sockaddr_in6 sa;
-                    receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb);
+                    receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
                 }
                 else if (FD_ISSET(control_fd, &r_fds))
                 {

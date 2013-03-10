@@ -25,7 +25,9 @@
 
 void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
 {
-    NOT_USED(userdata);
+    fsfuse_ctxt_t *ctxt = (fsfuse_ctxt_t *)userdata;
+
+
     NOT_USED(conn);
 
     method_trace("fsfuse_init()\n");
@@ -41,7 +43,7 @@ void fsfuse_init (void *userdata, struct fuse_conn_info *conn)
         conn->max_readahead
     );
 
-    indexnodes_start_listening();
+    ctxt->indexnodes = indexnodes_new();
 
     method_trace_dedent();
 

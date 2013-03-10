@@ -21,12 +21,13 @@
 
 void fsfuse_destroy (void *userdata)
 {
-    NOT_USED(userdata);
+    fsfuse_ctxt_t *ctxt = (fsfuse_ctxt_t *)userdata;
+
 
     method_trace("fsfuse_destroy()\n");
     method_trace_indent();
 
-    indexnodes_stop_listening();
+    indexnodes_delete(ctxt->indexnodes);
 
     method_trace_dedent();
 

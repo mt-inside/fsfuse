@@ -11,6 +11,7 @@
 
 #include <fuse/fuse_lowlevel.h>
 
+#include "indexnodes.h"
 #include "trace.h"
 
 
@@ -23,6 +24,12 @@ TRACE_DECLARE(read)
 #define read_trace(...) TRACE(read,__VA_ARGS__)
 #define read_trace_indent() TRACE_INDENT(read)
 #define read_trace_dedent() TRACE_DEDENT(read)
+
+
+typedef struct _fsfuse_ctxt_t
+{
+    indexnodes_t *indexnodes;
+} fsfuse_ctxt_t;
 
 
 /* fsfuse fuse methods vtable */

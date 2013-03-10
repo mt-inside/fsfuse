@@ -20,8 +20,10 @@
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 
-#include "fetcher.h"
 #include "fuse_methods.h"
+
+#include "fetcher.h"
+#include "indexnodes.h"
 #include "parser.h"
 
 
@@ -33,6 +35,7 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
     xmlParserCtxtPtr  parser;
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr         doc;
+    indexnodes_t *ins = ((fsfuse_ctxt_t *)fuse_req_userdata(req))->indexnodes;
     struct statvfs stvfs;
     int rc;
 
@@ -60,7 +63,8 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
      * should sit somwhere else. How about a ctor that gets a new "i eat stats
      * results and return a total" object? */
     /* TODO: the parser_consumer callback shouldn't be in another file */
-    rc = fetcher_fetch_stats((curl_write_callback)&parser_consumer,
+    rc = fetcher_fetch_stats(ins,
+                             (curl_write_callback)&parser_consumer,
                              (void *)parser);
 
     if (!rc)

@@ -9,13 +9,12 @@
 
 #include "indexnodes_iterator.h"
 
+typedef struct _indexnodes_t indexnodes_t;
 
-extern int indexnodes_init (void);
-extern void indexnodes_finalise (void);
 
-extern void indexnodes_start_listening (void);
-extern void indexnodes_stop_listening (void);
+extern indexnodes_t *indexnodes_new (void);
+extern void indexnodes_delete (indexnodes_t *ins);
 
-extern indexnodes_list_t *indexnodes_get (void);
+extern indexnodes_list_t *indexnodes_get (indexnodes_t *ins);
 
 #endif /* _INCLUDED_INDEXNODES_H */

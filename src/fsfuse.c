@@ -159,7 +159,6 @@ int main(int argc, char *argv[])
         utils_init()                ||
         locale_init()               ||
         alarms_init()               ||
-        indexnodes_init()           ||
         fetcher_init()              ||
         parser_init()               ||
         direntry_init()             ||
@@ -193,7 +192,6 @@ int main(int argc, char *argv[])
     parser_finalise();
     fetcher_finalise();
     alarms_finalise();
-    indexnodes_finalise();
     locale_finalise();
     utils_finalise();
     trace_finalise();
@@ -214,6 +212,7 @@ static int my_fuse_main (void)
     struct fuse_chan *ch;
     struct fuse_session *se;
     struct fuse_args fuse_args;
+    fsfuse_ctxt_t fsfuse_ctxt;
 
 
     fuse_args_set(&fuse_args);
@@ -222,7 +221,7 @@ static int my_fuse_main (void)
     /* Hand over to fuse */
     if ((ch = fuse_mount(mountpoint.real, &fuse_args)))
     {
-        if ((se = fuse_lowlevel_new(&fuse_args, &fuse_methods, sizeof(fuse_methods), NULL)))
+        if ((se = fuse_lowlevel_new(&fuse_args, &fuse_methods, sizeof(fuse_methods), &fsfuse_ctxt)))
         {
             /* Setup */
             fuse_set_signal_handlers(se);

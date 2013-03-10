@@ -115,12 +115,13 @@ int fetcher_fetch_file (listing_t           *li,
     return rc;
 }
 
-int fetcher_fetch_stats (curl_write_callback  cb,
+int fetcher_fetch_stats (indexnodes_t        *ins,
+                         curl_write_callback  cb,
                          void                *cb_data)
 {
     int rc;
     const char *url;
-    indexnodes_list_t *ins;
+    indexnodes_list_t *list;
     indexnodes_iterator_t *iter;
     indexnode_t *in;
 
@@ -128,8 +129,8 @@ int fetcher_fetch_stats (curl_write_callback  cb,
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    ins = indexnodes_get();
-    for (iter = indexnodes_iterator_begin(ins);
+    list = indexnodes_get(ins);
+    for (iter = indexnodes_iterator_begin(list);
          !indexnodes_iterator_end(iter);
          iter = indexnodes_iterator_next(iter))
     {
@@ -142,7 +143,7 @@ int fetcher_fetch_stats (curl_write_callback  cb,
         free_const(url);
     }
     indexnodes_iterator_delete(iter);
-    indexnodes_list_delete(ins);
+    indexnodes_list_delete(list);
 
     fetcher_trace_dedent();
 
