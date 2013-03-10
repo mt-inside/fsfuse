@@ -17,6 +17,8 @@ typedef void (*packet_received_cb_t) (
     const char * const id
 );
 
+typedef struct _indexnodes_listener_t indexnodes_listener_t;
+
 
 extern void indexnodes_start_listening (packet_received_cb_t packet_received_cb);
 extern void indexnodes_stop_listening (void);
