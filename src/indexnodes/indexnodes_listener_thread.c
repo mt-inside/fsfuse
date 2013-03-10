@@ -267,11 +267,50 @@ static int parse_advert_packet (const char *buf, char **port, char **version, ch
     return 0;
 }
 
+static void receive_advert(
+    const int socket,
+    struct sockaddr *sa,
+    const socklen_t socklen_in,
+    void * const addr_src,
+    const size_t host_len,
+    packet_received_cb_t packet_received_cb
+)
+{
+    char host[host_len];
+    char buf[1024];
+    char **port = NULL, **version = NULL, **id = NULL;
+    string_buffer_t *buffer = string_buffer_new();
+    int recv_rc;
+    socklen_t socklen = socklen_in;
+
+
+    do
+    {
+        recv_rc = recvfrom(socket, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa, &socklen);
+        if (recv_rc > 0)
+        {
+            buf[recv_rc] = '\0';
+            string_buffer_append(buffer, buf);
+        }
+    } while( recv_rc > 0 );
+
+    if (recv_rc == 0 &&
+        socklen == socklen_in)
+    {
+        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
+            inet_ntop(AF_INET, addr_src, host, sizeof(host) - 1))
+        {
+            packet_received_cb(host, *port, *version, *id);
+        }
+    }
+
+    string_buffer_delete(buffer);
+}
+
 static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t packet_received_cb)
 {
-    socklen_t socklen;
     fd_set r_fds;
-    int select_rc, recv_rc;
+    int select_rc;
 
 
     FD_ZERO(&r_fds);
@@ -288,12 +327,7 @@ static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t pac
     while (1)
     {
         errno = 0;
-        char buf[1024], host[NI_MAXHOST];
-        string_buffer_t *buffer = string_buffer_new();
-        char **port = NULL, **version = NULL, **id = NULL;
         select_rc = select(MAX(s4, s6) + 1, &r_fds, NULL, NULL, NULL);
-        struct sockaddr_in  sa4;
-        struct sockaddr_in6 sa6;
 
         switch (select_rc)
         {
@@ -304,52 +338,15 @@ static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t pac
                 trace_warn("Not found\n");
                 break;
             default:
-                /* ZOMG: dedupe */
                 if (FD_ISSET(s4, &r_fds))
                 {
-                    socklen = sizeof(sa4);
-                    do
-                    {
-                        recv_rc = recvfrom(s4, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa4, &socklen);
-                        if (recv_rc > 0)
-                        {
-                            buf[recv_rc] = '\0';
-                            string_buffer_append(buffer, buf);
-                        }
-                    } while( recv_rc > 0 );
-
-                    if (recv_rc == 0 &&
-                        socklen == sizeof(sa4))
-                    {
-                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
-                            inet_ntop(AF_INET, &(sa4.sin_addr), host, NI_MAXHOST))
-                        {
-                            packet_received_cb(host, *port, *version, *id);
-                        }
-                    }
+                    struct sockaddr_in sa;
+                    receive_advert(s4, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin_addr), INET_ADDRSTRLEN, packet_received_cb);
                 }
                 else if (FD_ISSET(s6, &r_fds))
                 {
-                    socklen = sizeof(sa6);
-                    do
-                    {
-                        recv_rc = recvfrom(s6, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa6, &socklen);
-                        if (recv_rc > 0)
-                        {
-                            buf[recv_rc] = '\0';
-                            string_buffer_append(buffer, buf);
-                        }
-                    } while( recv_rc > 0 );
-
-                    if (recv_rc == 0 &&
-                        socklen == sizeof(sa6))
-                    {
-                        if (!parse_advert_packet(string_buffer_peek(buffer), port, version, id) &&
-                            inet_ntop(AF_INET6, &(sa6.sin6_addr), host, NI_MAXHOST))
-                        {
-                            packet_received_cb(host, *port, *version, *id);
-                        }
-                    }
+                    struct sockaddr_in6 sa;
+                    receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb);
                 }
                 else
                 {
@@ -359,6 +356,5 @@ static void listener_thread_event_loop (int s4, int s6, packet_received_cb_t pac
                 break;
         }
 
-        string_buffer_delete(buffer);
     }
 }
