@@ -6,7 +6,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Class that listens for indexnodes and raises events when they are seen.
+ * Class to manage an indexnodes listener thread.
  */
 
 #include "common.h"
@@ -26,11 +26,9 @@ struct _indexnodes_listener_t
 
 
 /* TODO:
- * indexnode "class" to be an opaque handle that stores handle to the thread
- * (s_listener_thread_info) and stashes it away in the user data in fuse_init.
- * indexnodes.c do indexnode state machine et al (have internal-only
- * indexnode_seen (aka reset state) fn.
- * make a fake indexnode for the console printer and integration test
+ * This is implicitly a singleton because the listener thread depends on the
+ * ports and interfaces to listen on but just gets them from the global config
+ * system, it should be passed into here and passed on, really
  */
 indexnodes_listener_t *indexnodes_listener_new (packet_received_cb_t packet_received_cb)
 {
