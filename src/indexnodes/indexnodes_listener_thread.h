@@ -10,19 +10,19 @@
 
 #include "common.h"
 
+#include "indexnodes_listener.h"
 
-typedef void (*packet_received_cb_t) (
-    const char * const host,
-    const char * const port,
-    const char * const version,
-    const char * const id
-);
+
+typedef enum
+{
+    listener_control_codes_STOP
+} listener_control_codes_t;
 
 typedef struct
 {
     packet_received_cb_t packet_received_cb;
     int control_fd;
-} indexnodes_listener_thread_info_t;
+} listener_thread_args_t;
 
 
 extern void *indexnodes_listen_main(void *args);

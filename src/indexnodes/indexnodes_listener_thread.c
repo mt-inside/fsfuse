@@ -55,7 +55,7 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
 void *indexnodes_listen_main(void *args)
 {
     int s4, s6;
-    indexnodes_listener_thread_info_t *info = args;
+    listener_thread_args_t *info = args;
 
 
     print_network_interfaces();
