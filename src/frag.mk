@@ -22,7 +22,6 @@ SRC_OBJECTS :=                         \
                download_thread_pool.o  \
                fetcher.o               \
                hash_table.o            \
-               http.o                  \
                inode_map.o             \
                listing.o               \
                localei.o               \
@@ -32,7 +31,6 @@ SRC_OBJECTS :=                         \
                ref_count.o             \
                string_buffer.o         \
                trace.o                 \
-               uri.o                   \
                utils.o
 
 OBJECTS += $(SRC_OBJECTS)
