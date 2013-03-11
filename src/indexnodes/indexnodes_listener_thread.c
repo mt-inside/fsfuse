@@ -143,12 +143,12 @@ static int get_socket (struct sockaddr *sa, socklen_t socklen_in, int domain)
         }
         else
         {
-            trace_warn("Cannot bind to udp4 indexnode listener socket: %s\n", strerror(errno));
+            trace_warn("Cannot bind to indexnode listener socket: %s\n", strerror(errno));
         }
     }
     else
     {
-        trace_warn("Cannot create udp4 indexnode listener socket: %s\n", strerror(errno));
+        trace_warn("Cannot create indexnode listener socket: %s\n", strerror(errno));
     }
 
 
