@@ -66,6 +66,9 @@ void indexnodes_listener_delete (indexnodes_listener_t *listener)
 
     pthread_join(listener->pthread_id, NULL);
 
+    close(listener->thread_args->control_fd);
+    close(listener->control_fd);
+
     free(listener->thread_args);
     free(listener);
 }
