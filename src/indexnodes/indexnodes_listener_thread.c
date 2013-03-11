@@ -122,7 +122,7 @@ static void print_network_interfaces (void)
     freeifaddrs(ifaddr);
 }
 
-static int get_socket (struct sockaddr *sa, int domain, socklen_t socklen_in)
+static int get_socket (struct sockaddr *sa, socklen_t socklen_in, int domain)
 {
     int s;
     const int one = 1;
