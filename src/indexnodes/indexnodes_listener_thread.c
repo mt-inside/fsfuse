@@ -170,7 +170,10 @@ static int get_ipv4_socket (void)
     sa.sin_addr.s_addr = INADDR_ANY;
 
     s = get_socket((struct sockaddr *)&sa, socklen, domain);
-    trace_info("Listening for index node on udp4 port %d...\n", ntohs(sa.sin_port));
+    if (s != -1)
+    {
+        trace_info("Listening for index node on udp4 port %d...\n", ntohs(sa.sin_port));
+    }
 
 
     return s;
@@ -191,7 +194,10 @@ static int get_ipv6_socket (void)
     sa.sin6_addr        = in6addr_any;
 
     s = get_socket((struct sockaddr *)&sa, socklen, domain);
-    trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa.sin6_port));
+    if (s != -1)
+    {
+        trace_info("Listening for index node on udp6 port %d...\n", ntohs(sa.sin6_port));
+    }
 
 
     return s;
