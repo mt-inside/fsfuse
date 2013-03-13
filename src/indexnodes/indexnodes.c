@@ -225,7 +225,7 @@ static void packet_received_cb (
             }
             pthread_mutex_unlock(&(ins->lock));
 
-            trace_info("Found index node, version %s, at %s:%s (id: %s)\n", version, host, port, id);
+            trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
         }
 
         free_const(version);
