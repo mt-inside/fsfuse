@@ -41,4 +41,6 @@ Arguments should be taken as const and * const where possible.
 Everything always returns a copy.
 It is the caller's responsibility to free it.
 
+All locks should be "external". I.e. everything is single threaded and assumes it's used in e.g. an actor. If you want to use a class in a potentially multi-threaded way it is your responsibility to lock around it (e.g. by making yourself an actor)
+
 Utils and stuff should not be random static init & destroy. They should all be offred as objects which the clases that use them explicity depend on.

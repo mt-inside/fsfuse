@@ -1,7 +1,27 @@
+HIGHLEVEL:
+- finish indexnodes & testing
+- config should be a class not a static thing. Anything that needs config info
+  should take it as an explicit dep.
+- fix direntry & listing - getters without get, no setters, proper inheritance
+- factor everything that knows about CURL out into its own class
+- break fetcher into: metadata_fetcher (which calls nativefs) and block_fetcher
+  (singleton actor that can have 1 list per file and have a priq of blocks)
+- nativefs actor. metadata requests come to here and it serialises them (no good
+  reason really) and uses curl_wrapper and xml_wrapper to get stuff. Can optionally proxy through to a nativefs cache *actor*
+- think about logging. trace_info|warn etc should go to the log file too, not
+  the console - this is a daemon. the trace stuff should probably be used for operational (non-debugging) stuff. What does unconditional trace do? is it the same thing? Is there a trace_error? Is it the same as assert? (remember no assert on release builds)
+
+ * indexnodes.c do indexnode state machine et al (have internal-only
+ *   indexnode_seen (aka reset state) fn.
+ * make a fake indexnode (no, just use nc) for the console printer and integration test
+ * write a fake indexnode (using node or something) that just mirrors an XML doc
+ *   you give it
+ * unit test with a fate indexnodes_listener_thread
 move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
 move config into its own dir
 indexnode state machine and filtering in _get.
-pull indexnodes.c apart into listener (that fires event on a packet), manager (that maintins a list and updates state in response to packets and timer events (has to be proactive on a timer, not lazy on return, becuase many lists have pointer to one refc'd in which needs to be seen to expire to all of them) and maybe others
+pull indexnodes.c apart into listener (that fires event on a packet), manager (actor, hence no locking of the list or anything) (that maintins a list and updates state in response to packets and timer events (has to be proactive on a timer, not lazy on return, becuase many lists have pointer to one refc'd in which needs to be seen to expire to all of them) and maybe others
+tell, don't ask: why do indexnode and direntry have getters?
 indexnode objects to live forever and just sit in expired causing ENOENT or soemthing when interacted with. expired indexnodes are not put into output list.
 write unit test with mock listener
 write test frontend that just fires up the indexnode stuff and prints the list of indexnodes and their states every sec

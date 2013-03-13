@@ -15,6 +15,7 @@
  * - Array with hash over it (maybe pull some logic out of hash like a hasher
  *   class)
  * - O(1) add, delete, find-by-uid
+ * No. no need to delete or get-random, so can just be a hash table
  */
 
 #include "common.h"
