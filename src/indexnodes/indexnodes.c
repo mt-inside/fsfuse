@@ -197,7 +197,7 @@ static void packet_received_cb (
 
     if (!parse_fs2protocol_version(fs2protocol, &version))
     {
-        in = indexnode_new(CALLER_INFO host, port, id, version);
+        in = indexnode_new(CALLER_INFO host, port, version, id);
 
         if (in)
         {
