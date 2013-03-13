@@ -267,31 +267,42 @@ static void receive_advert(
 {
     char host[host_len];
     char buf[1024];
-    char **port = NULL, **fs2protocol = NULL, **id = NULL;
+    char *port, *fs2protocol, *id;
     string_buffer_t *buffer = string_buffer_new();
     int recv_rc;
-    socklen_t socklen = socklen_in;
+    socklen_t socklen;
 
 
-    do
+    /* For UDP it is specified that recv*() will return the whole packet in one
+     * go. It is not correct to keep calling recv*() to get more of the message;
+     * this isn't a stream. If the message is too big for the buffer it's simply
+     * truncated. Usually silently, but by passing in MSG_TRUNC one gets the
+     * real length of the message back, even if it has to be truncated. This
+     * allows us to assert that our buffer is big enough. We've had to take a
+     * guess because advert packets are variable length, but it's an assertion
+     * because 1024 really should be enough */
+
+    errno = 0;
+    recv_rc = recvfrom(socket, buf, sizeof(buf) - 1, MSG_TRUNC, sa, &socklen);
+    assert(recv_rc <= (int)sizeof(buf) - 1);
+
+    if (recv_rc >= 0)
     {
-        recv_rc = recvfrom(socket, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&sa, &socklen);
-        if (recv_rc > 0)
-        {
-            buf[recv_rc] = '\0';
-            string_buffer_append(buffer, buf);
-        }
-    } while( recv_rc > 0 );
+        assert(socklen == socklen_in);
+        buf[recv_rc] = '\0';
+        string_buffer_append(buffer, buf);
 
-    if (recv_rc == 0 &&
-        socklen == socklen_in)
-    {
-        if (!parse_advert_packet(string_buffer_peek(buffer), port, fs2protocol, id) &&
+        if (!parse_advert_packet(string_buffer_peek(buffer), &port, &fs2protocol, &id) &&
             inet_ntop(AF_INET, addr_src, host, sizeof(host) - 1))
         {
-            packet_received_cb(packet_received_ctxt, host, *port, *fs2protocol, *id);
+            packet_received_cb(packet_received_ctxt, host, port, fs2protocol, id);
         }
     }
+    else
+    {
+        trace_warn("failed to recvfrom() and indexnode advert packet: %s\n", strerror(errno));
+    }
+
 
     string_buffer_delete(buffer);
 }
