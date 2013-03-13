@@ -205,17 +205,17 @@ static int get_ipv6_socket (void)
 
 static char *get_next_field (const char **buf)
 {
-    char *loc, *s = NULL;
+    char *loc, *s;
     size_t off;
 
     loc = strchr(*buf, ':');
-    if (loc)
-    {
-        off = loc - *buf;
-        s = malloc(off + 1);
-        strncpy(s, *buf, off);
-        *buf = loc + 1;
-    }
+    if (!loc) loc = strchr(*buf, '\0');
+
+    off = loc - *buf;
+    s = malloc(off + 1);
+    strncpy(s, *buf, off);
+    s[off] = '\0';
+    *buf = loc + 1;
 
     return s;
 }
