@@ -157,7 +157,12 @@ indexnodes_list_t *indexnodes_get (indexnodes_t *ins)
      * machine, they shoudn't be removed, ever. Just filter for expired here
      * Expiring is a good idea because if they're expired they'll not get given
      * out any more and simply die when their last ref goes. Also means they can
-     * be resurrected from the dead if a ping comes back. */
+     * be resurrected from the dead if a ping comes back.
+     * Saying that, this list would still own them, so they should go from the
+     * list when they reach a certain state, e.g. dead. THIS SHOULDN@T HAPPEN
+     * HERE THOUGH. That means they really
+     * would die when the last ref "in the wild" goes. They can be resurrected
+     * up to that point, but after that a new one will be made, which is fine */
     ins->list = indexnodes_list_remove_expired(ins->list);
     list = indexnodes_list_copy(ins->list);
     pthread_mutex_unlock(&(ins->lock));

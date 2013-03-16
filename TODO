@@ -1,5 +1,7 @@
 HIGHLEVEL:
 - finish indexnodes & testing
+- make indexnode_thread and indexnodes into actors. indexnodes can pass the
+  thread some kind of private msg number or something so that the function to register packets isn't public. All processing of the packet that happens in indexnodes.c should happen on its thread though - i don't like the way that random threads come through indexnodes.c and there has to be locking (as there's shared state - the list). Note XML or fetcher functions don't need to be actors because all their state is in the instance.
 - config should be a class not a static thing. Anything that needs config info
   should take it as an explicit dep.
 - fix direntry & listing - getters without get, no setters, proper inheritance
