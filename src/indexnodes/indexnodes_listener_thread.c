@@ -315,13 +315,14 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
 
 
     FD_ZERO(&r_fds);
-    if (s4 != -1) FD_SET(s4, &r_fds);
-    if (s6 != -1) FD_SET(s6, &r_fds);
-    assert(control_fd != -1); FD_SET(control_fd, &r_fds);
-
+    assert(control_fd != -1);
 
     while (!exiting)
     {
+        if (s4 != -1) FD_SET(s4, &r_fds);
+        if (s6 != -1) FD_SET(s6, &r_fds);
+        FD_SET(control_fd, &r_fds);
+
         errno = 0;
         select_rc = select(MAX(s4, MAX(s6, control_fd)) + 1, &r_fds, NULL, NULL, NULL);
 
