@@ -220,14 +220,15 @@ static char *get_next_field (const char **buf)
     return s;
 }
 
+/* TODO: goto error labels to free the malloc'd fields before ret 1 */
 static int parse_advert_packet (const char *buf, char **port, char **fs2protocol, char **id)
 {
-    char *version_field, *port_or_auto_field, *weight_field, *id_field;
+    char *fs2protocol_field, *port_or_auto_field, *weight_field, *id_field;
 
 
-    version_field = get_next_field(&buf);
-    if (!version_field) return 1;
-    *fs2protocol = version_field;
+    fs2protocol_field = get_next_field(&buf);
+    if (!fs2protocol_field) return 1;
+    *fs2protocol = fs2protocol_field;
 
     port_or_auto_field = get_next_field(&buf);
     if (!port_or_auto_field) return 1;
