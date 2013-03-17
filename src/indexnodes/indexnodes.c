@@ -213,7 +213,8 @@ static void packet_received_cb (
 
         if ((found_in = indexnodes_list_find(CALLER_INFO ins->list, id)))
         {
-            /* TODO: reset timeout */
+            indexnode_seen(found_in);
+
             indexnode_delete(CALLER_INFO found_in);
         }
         else
