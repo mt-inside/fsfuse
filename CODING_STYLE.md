@@ -41,6 +41,9 @@ Arguments should be taken as const and * const where possible.
 Everything always returns a copy.
 It is the caller's responsibility to free it.
 
+GOAL: add()/set() and other "input" methods should usurp ownership of what they're passed. If the caller wants a copy too they should copy it. That is, ownership goes "in", but copies come "out".
+NOW: I think most things take copies on the way in, e.g. indexnode_list_add(), listing and direntry ctors() etc.
+
 All locks should be "external". I.e. everything is single threaded and assumes it's used in e.g. an actor. If you want to use a class in a potentially multi-threaded way it is your responsibility to lock around it (e.g. by making yourself an actor)
 
 Utils and stuff should not be random static init & destroy. They should all be offred as objects which the clases that use them explicity depend on.
