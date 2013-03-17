@@ -178,11 +178,14 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 static int parse_fs2protocol_version (const char *fs2protocol, const char **version)
 {
     int rc = 1;
-    char *v = malloc(strlen(fs2protocol) * sizeof(char));
+    const char *prefix = "fs2protocol-";
 
-    if (v &&
-        sscanf(fs2protocol, "fs2protocol-%s", v) == 1)
+    if (!strncmp(fs2protocol, prefix, strlen(prefix)))
     {
+        char *v = malloc(strlen(fs2protocol) * sizeof(char));
+
+        assert(sscanf(fs2protocol, "fs2protocol-%s", v) == 1);
+
         *version = v;
         rc = 0;
     }
@@ -246,7 +249,7 @@ static void packet_received_cb (
     }
     else
     {
-        free_const(version); free_const(host); free_const(port); free_const(id);
+        free_const(host); free_const(port); free_const(id);
     }
     free_const(fs2protocol);
 }
