@@ -179,10 +179,11 @@ static int parse_fs2protocol_version (const char *fs2protocol, const char **vers
 {
     int rc = 1;
     const char *prefix = "fs2protocol-";
+    const size_t prefix_len = strlen(prefix);
 
-    if (!strncmp(fs2protocol, prefix, strlen(prefix)))
+    if (!strncmp(fs2protocol, prefix, prefix_len))
     {
-        char *v = malloc(strlen(fs2protocol) * sizeof(char));
+        char *v = malloc(strlen(fs2protocol) - prefix_len * sizeof(char));
 
         assert(sscanf(fs2protocol, "fs2protocol-%s", v) == 1);
 
@@ -214,6 +215,8 @@ static void packet_received_cb (
 
         if (new_in)
         {
+            trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
+
             pthread_mutex_lock(&(ins->lock));
             /* TODO: omfg this class shouldn't lock the list because the
              * list needs to be able to take copies when it knows it's not
@@ -242,14 +245,11 @@ static void packet_received_cb (
             pthread_mutex_unlock(&(ins->lock));
 
             free_const(new_id);
-
-            trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
         }
-
-    }
-    else
-    {
-        free_const(host); free_const(port); free_const(id);
+        else
+        {
+            free_const(host); free_const(port); free_const(version); free_const(id);
+        }
     }
     free_const(fs2protocol);
 }
