@@ -203,55 +203,39 @@ static void packet_received_cb (
 )
 {
     indexnodes_t *ins = (indexnodes_t *)ctxt;
-    indexnode_t *found_in, *new_in;
-    const char *version, *new_id;
+    indexnode_t *found_in, *new_in = NULL;
+    const char *version;
 
 
     if (!parse_fs2protocol_version(fs2protocol, &version))
     {
-        /* TODO: It's IDs that identify indexnodes. find should take just an ID, not a
-         * whole indexnodes! */
-        new_in = indexnode_new(CALLER_INFO host, port, version, id);
+        trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
 
-        if (new_in)
+        if (!(found_in = indexnodes_list_find(CALLER_INFO ins->list, id)))
         {
-            trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
-
-            pthread_mutex_lock(&(ins->lock));
-            /* TODO: omfg this class shouldn't lock the list because the
-             * list needs to be able to take copies when it knows it's not
-             * being updated.
-             * TODO: omfg the de-dup shouldn't be here - the list should do
-             * it. Is this true? Should it acutally be here because it's a
-             * fuinction of the management of indexnodes, not of a list of
-             * them. Yes. Also getting a new packet for the same indexnode
-             * uid should "Ping" the indexnode. I.e. find it in the list by
-             * UID, indexnode_seen() if it exists, add if not. No. For
-             * sanity now keep it as a class that does fuck all, except
-             * maybe having an itterate-non-expired method.
-             */
-            new_id = indexnode_id(new_in);
-            if (!(found_in = indexnodes_list_find(CALLER_INFO ins->list, new_id)))
+            new_in = indexnode_new(CALLER_INFO host, port, version, id);
+            if (new_in)
             {
+                pthread_mutex_lock(&(ins->lock));
+
                 /* If it's not been seen before, add it */
                 indexnodes_list_add(ins->list, new_in);
-            }
-            else
-            {
-                /* TODO: reset timeout */
-                indexnode_delete(CALLER_INFO new_in);
-                indexnode_delete(CALLER_INFO found_in);
-            }
-            pthread_mutex_unlock(&(ins->lock));
 
-            free_const(new_id);
+                pthread_mutex_unlock(&(ins->lock));
+            }
         }
         else
         {
-            free_const(host); free_const(port); free_const(version); free_const(id);
+            /* TODO: reset timeout */
+            indexnode_delete(CALLER_INFO found_in);
         }
     }
+
     free_const(fs2protocol);
+    if (!new_in)
+    {
+        free_const(host); free_const(port); free_const(version); free_const(id);
+    }
 }
 
 static const char *parse_version_cb (const proto_indexnode_t *in, const char *fs2protocol)
