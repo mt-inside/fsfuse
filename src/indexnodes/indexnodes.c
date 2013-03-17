@@ -211,7 +211,12 @@ static void packet_received_cb (
     {
         trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
 
-        if (!(found_in = indexnodes_list_find(CALLER_INFO ins->list, id)))
+        if ((found_in = indexnodes_list_find(CALLER_INFO ins->list, id)))
+        {
+            /* TODO: reset timeout */
+            indexnode_delete(CALLER_INFO found_in);
+        }
+        else
         {
             new_in = indexnode_new(CALLER_INFO host, port, version, id);
             if (new_in)
@@ -223,11 +228,6 @@ static void packet_received_cb (
 
                 pthread_mutex_unlock(&(ins->lock));
             }
-        }
-        else
-        {
-            /* TODO: reset timeout */
-            indexnode_delete(CALLER_INFO found_in);
         }
     }
 
