@@ -44,8 +44,8 @@ void proto_indexnode_init(
     assert(host); assert(*host);
     assert(port); assert(*port);
 
-    pin->host = strdup( host );
-    pin->port = strdup( port );
+    pin->host = host;
+    pin->port = port;
 }
 
 void proto_indexnode_delete( const proto_indexnode_t * const pin )

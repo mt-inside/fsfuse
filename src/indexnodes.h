@@ -15,6 +15,6 @@ typedef struct _indexnodes_t indexnodes_t;
 extern indexnodes_t *indexnodes_new (void);
 extern void indexnodes_delete (indexnodes_t *ins);
 
-extern indexnodes_list_t *indexnodes_get (indexnodes_t *ins);
+extern indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins);
 
 #endif /* _INCLUDED_INDEXNODES_H */

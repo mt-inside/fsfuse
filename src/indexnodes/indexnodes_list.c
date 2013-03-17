@@ -46,7 +46,7 @@ void indexnodes_list_add (indexnodes_list_t *ins,
 
 
     item = (item_t *)malloc(sizeof(item_t));
-    item->in = indexnode_post(CALLER_INFO in);
+    item->in = in;
 
     TAILQ_INSERT_HEAD(&ins->list, item, next);
 }
@@ -76,7 +76,7 @@ indexnode_t *indexnodes_list_find (CALLER_DECL indexnodes_list_t *ins, const cha
     return in;
 }
 
-indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
+indexnodes_list_t *indexnodes_list_copy (CALLER_DECL indexnodes_list_t *orig)
 {
     indexnodes_list_t *ret = indexnodes_list_new();
     item_t *item;
@@ -84,7 +84,7 @@ indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 
     TAILQ_FOREACH(item, &orig->list, next)
     {
-        indexnodes_list_add(ret, item->in);
+        indexnodes_list_add(ret, indexnode_post(CALLER_PASS item->in));
     }
 
 
@@ -92,7 +92,7 @@ indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 }
 
 /* TODO: make remove_where(Predicate<indexnode>) */
-indexnodes_list_t *indexnodes_list_remove_expired (indexnodes_list_t *orig)
+indexnodes_list_t *indexnodes_list_remove_expired (CALLER_DECL indexnodes_list_t *orig)
 {
     indexnodes_list_t *ret = indexnodes_list_new();
     item_t *item;
@@ -102,7 +102,7 @@ indexnodes_list_t *indexnodes_list_remove_expired (indexnodes_list_t *orig)
     {
         if (indexnode_still_valid(item->in))
         {
-            indexnodes_list_add(ret, item->in);
+            indexnodes_list_add(ret, indexnode_post(CALLER_PASS item->in));
         }
         else
         {

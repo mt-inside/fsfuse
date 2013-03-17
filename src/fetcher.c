@@ -129,7 +129,7 @@ int fetcher_fetch_stats (indexnodes_t        *ins,
     fetcher_trace("fetcher_fetch_stats()\n");
     fetcher_trace_indent();
 
-    list = indexnodes_get(ins);
+    list = indexnodes_get(CALLER_INFO ins);
     for (iter = indexnodes_iterator_begin(list);
          !indexnodes_iterator_end(iter);
          iter = indexnodes_iterator_next(iter))

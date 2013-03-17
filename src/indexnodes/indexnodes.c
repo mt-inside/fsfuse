@@ -101,7 +101,9 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
     while ((host = config_indexnode_hosts[i]) &&
            (port = config_indexnode_ports[i]))
     {
-        const proto_indexnode_t *pin = proto_indexnode_new(host, port);
+        /* TODO: No need to strdup these when config is a real class with real
+         * getters that return copies */
+        const proto_indexnode_t *pin = proto_indexnode_new(strdup(host), strdup(port));
 
         /* TODO: should do this async, in parallel, so that it happens as fast
          * as possible and that we can get on with other stuff straight away.
@@ -124,6 +126,7 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
              * the get_version_and_id in parallel */
             indexnodes_list_add(list, in);
 
+            /* TODO: free these, yo */
             trace_info(
                 "Static index node configured at %s:%s, version %s, id %s\n",
                 indexnode_host(in),
@@ -147,7 +150,7 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
  * deferring to the right place. The ops should really only interact with them.
  * For now, still get the list of indexnodes for stat() at least.
  */
-indexnodes_list_t *indexnodes_get (indexnodes_t *ins)
+indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 {
     indexnodes_list_t *list;
 
@@ -163,8 +166,8 @@ indexnodes_list_t *indexnodes_get (indexnodes_t *ins)
      * HERE THOUGH. That means they really
      * would die when the last ref "in the wild" goes. They can be resurrected
      * up to that point, but after that a new one will be made, which is fine */
-    ins->list = indexnodes_list_remove_expired(ins->list);
-    list = indexnodes_list_copy(ins->list);
+    ins->list = indexnodes_list_remove_expired(CALLER_PASS ins->list);
+    list = indexnodes_list_copy(CALLER_PASS ins->list);
     pthread_mutex_unlock(&(ins->lock));
 
 
@@ -230,20 +233,22 @@ static void packet_received_cb (
             else
             {
                 /* TODO: reset timeout */
+                indexnode_delete(CALLER_INFO new_in);
                 indexnode_delete(CALLER_INFO found_in);
             }
             pthread_mutex_unlock(&(ins->lock));
 
             free_const(new_id);
-            /* Either the list took a copy or we didn't want it anyway */
-            indexnode_delete(CALLER_INFO new_in);
 
             trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
         }
 
-        free_const(version);
     }
-    free_const(host); free_const(port), free_const(fs2protocol), free_const(id);
+    else
+    {
+        free_const(version); free_const(host); free_const(port); free_const(id);
+    }
+    free_const(fs2protocol);
 }
 
 static const char *parse_version_cb (const proto_indexnode_t *in, const char *fs2protocol)

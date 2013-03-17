@@ -74,8 +74,8 @@ indexnode_t *indexnode_new(
 
         in->ref_count = ref_count_new( );
 
-        in->version          = strdup( version );
-        in->id               = strdup( id );
+        in->version          = version;
+        in->id               = id;
 
         indexnode_seen( in );
 
