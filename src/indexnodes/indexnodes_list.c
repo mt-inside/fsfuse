@@ -52,7 +52,7 @@ void indexnodes_list_add (indexnodes_list_t *ins,
 }
 
 /* TODO: take a bool (*indexnode_matcher)(in) instead of this id */
-indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, const char * const id)
+indexnode_t *indexnodes_list_find (CALLER_DECL indexnodes_list_t *ins, const char * const id)
 {
     item_t *item;
     indexnode_t *in = NULL;
@@ -65,7 +65,7 @@ indexnode_t *indexnodes_list_find (indexnodes_list_t *ins, const char * const id
         item_id = indexnode_id(item->in);
         if (item_id && !strcmp(item_id, id))
         {
-            in = item->in;
+            in = indexnode_post( CALLER_PASS item->in );
             found = 1;
         }
         free_const(item_id);
@@ -84,7 +84,7 @@ indexnodes_list_t *indexnodes_list_copy (indexnodes_list_t *orig)
 
     TAILQ_FOREACH(item, &orig->list, next)
     {
-        indexnodes_list_add(ret, indexnode_post(CALLER_INFO item->in));
+        indexnodes_list_add(ret, item->in);
     }
 
 
@@ -102,7 +102,7 @@ indexnodes_list_t *indexnodes_list_remove_expired (indexnodes_list_t *orig)
     {
         if (indexnode_still_valid(item->in))
         {
-            indexnodes_list_add(ret, indexnode_post(CALLER_INFO item->in));
+            indexnodes_list_add(ret, item->in);
         }
         else
         {

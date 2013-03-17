@@ -40,7 +40,7 @@ indexnodes_iterator_t *indexnodes_iterator_begin( indexnodes_list_t *ins )
 
 indexnode_t *indexnodes_iterator_current( indexnodes_iterator_t *iter )
 {
-    return iter->current->in;
+    return indexnode_post( CALLER_INFO iter->current->in );
 }
 
 indexnodes_iterator_t *indexnodes_iterator_next( indexnodes_iterator_t *iter_old )

@@ -295,7 +295,7 @@ static void receive_advert(
         if (!parse_advert_packet(string_buffer_peek(buffer), &port, &fs2protocol, &id) &&
             inet_ntop(AF_INET, addr_src, host, sizeof(host) - 1))
         {
-            packet_received_cb(packet_received_ctxt, host, port, fs2protocol, id);
+            packet_received_cb(packet_received_ctxt, strdup(host), port, fs2protocol, id);
         }
     }
     else

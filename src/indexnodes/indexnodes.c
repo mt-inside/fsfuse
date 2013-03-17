@@ -196,15 +196,17 @@ static void packet_received_cb (
 )
 {
     indexnodes_t *ins = (indexnodes_t *)ctxt;
-    indexnode_t *in;
-    const char *version;
+    indexnode_t *found_in, *new_in;
+    const char *version, *new_id;
 
 
     if (!parse_fs2protocol_version(fs2protocol, &version))
     {
-        in = indexnode_new(CALLER_INFO host, port, version, id);
+        /* TODO: It's IDs that identify indexnodes. find should take just an ID, not a
+         * whole indexnodes! */
+        new_in = indexnode_new(CALLER_INFO host, port, version, id);
 
-        if (in)
+        if (new_in)
         {
             pthread_mutex_lock(&(ins->lock));
             /* TODO: omfg this class shouldn't lock the list because the
@@ -219,22 +221,29 @@ static void packet_received_cb (
              * sanity now keep it as a class that does fuck all, except
              * maybe having an itterate-non-expired method.
              */
-            if (!indexnodes_list_find(ins->list, indexnode_id(in)))
+            new_id = indexnode_id(new_in);
+            if (!(found_in = indexnodes_list_find(CALLER_INFO ins->list, new_id)))
             {
                 /* If it's not been seen before, add it */
-                indexnodes_list_add(ins->list, in);
+                indexnodes_list_add(ins->list, new_in);
             }
             else
             {
                 /* TODO: reset timeout */
+                indexnode_delete(CALLER_INFO found_in);
             }
             pthread_mutex_unlock(&(ins->lock));
+
+            free_const(new_id);
+            /* Either the list took a copy or we didn't want it anyway */
+            indexnode_delete(CALLER_INFO new_in);
 
             trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
         }
 
         free_const(version);
     }
+    free_const(host); free_const(port), free_const(fs2protocol), free_const(id);
 }
 
 static const char *parse_version_cb (const proto_indexnode_t *in, const char *fs2protocol)
