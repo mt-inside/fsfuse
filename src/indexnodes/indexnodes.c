@@ -183,7 +183,7 @@ static int parse_fs2protocol_version (const char *fs2protocol, const char **vers
 
     if (!strncmp(fs2protocol, prefix, prefix_len))
     {
-        char *v = malloc((strlen(fs2protocol) - prefix_len) * sizeof(char));
+        char *v = malloc((strlen(fs2protocol) - prefix_len + 1) * sizeof(char));
 
         assert(sscanf(fs2protocol, "fs2protocol-%s", v) == 1);
 
