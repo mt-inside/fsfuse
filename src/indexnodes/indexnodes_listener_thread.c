@@ -220,40 +220,37 @@ static char *get_next_field (const char **buf)
     return s;
 }
 
-/* TODO: goto error labels to free the malloc'd fields before ret 1 */
 static int parse_advert_packet (const char *buf, char **port, char **fs2protocol, char **id)
 {
-    char *fs2protocol_field, *port_or_auto_field, *weight_field, *id_field;
+    char *fs2protocol_field, *port_or_auto_field, *id_field;
 
 
     fs2protocol_field = get_next_field(&buf);
-    if (!fs2protocol_field) return 1;
+    if (!fs2protocol_field) goto err_fs2proto;
     *fs2protocol = fs2protocol_field;
 
+    /* autoindexnode packets are the clients saying they /can/ become indexnodes
+     * if needed. There is also a weight field - an indication of how powerful
+     * the machine is - that is used to vote on the client that becomes
+     * indexnode. All irrelevant to us. */
     port_or_auto_field = get_next_field(&buf);
-    if (!port_or_auto_field) return 1;
-    if (!strcmp(port_or_auto_field, "autoindexnode"))
-    {
-        free(port_or_auto_field);
-
-        /* TODO we don't support autoindex nodes yet. What's their port? */
-        return 1;
-
-        weight_field = get_next_field(&buf);
-        if (!weight_field) return 1;
-        /* *weight = weight_field; */
-    }
-    else
-    {
-        *port = port_or_auto_field;
-    }
+    if (!port_or_auto_field) goto err_port_auto;
+    if (!strcmp(port_or_auto_field, "autoindexnode")) goto err_id;
+    *port = port_or_auto_field;
 
     id_field = get_next_field(&buf);
-    if (!id_field) return 1;
+    if (!id_field) goto err_id;
     *id = id_field;
 
 
     return 0;
+
+err_id:
+    free(port_or_auto_field);
+err_port_auto:
+    free(fs2protocol_field);
+err_fs2proto:
+    return 1;
 }
 
 static void receive_advert(
