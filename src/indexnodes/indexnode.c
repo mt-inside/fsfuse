@@ -124,7 +124,7 @@ indexnode_t *indexnode_from_proto(
     return in;
 }
 
-indexnode_t * indexnode_post( CALLER_DECL indexnode_t * const in )
+indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in )
 {
     unsigned refc = ref_count_inc( in->ref_count );
 
