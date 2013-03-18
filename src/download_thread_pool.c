@@ -35,9 +35,6 @@
 #include "download_thread.h"
 #include "fetcher.h"
 #include "queue.h"
-#if FEATURE_PROGRESS_METER
-#include "progress.h"
-#endif
 
 
 TRACE_DEFINE(dtp)

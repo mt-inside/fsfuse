@@ -36,9 +36,6 @@
 #include "fetcher.h"
 #include "queue.h"
 #include "string_buffer.h"
-#if FEATURE_PROGRESS_METER
-#include "progress.h"
-#endif
 
 
 TRACE_DEFINE(dl_thr)
@@ -422,9 +419,6 @@ static void *downloader_thread_main (void *arg)
 
 
     /* Delete the data structures */
-#if FEATURE_PROGRESS_METER
-    progress_delete(direntry_get_name(thread->de));
-#endif
     thread_delete(thread); /* Is this safe here? */
 
     dl_thr_trace("download_thread_main() returning\n");
@@ -500,12 +494,6 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
             chunk->start += copy_len;
             chunk->buf   += copy_len;
             dl_thr_trace("chunk->start now == %#x\n", buf->start);
-
-#if FEATURE_PROGRESS_METER
-            progress_update(direntry_get_name(thread->de),
-                            direntry_get_size(thread->de),
-                            buf->end );
-#endif
 
 
             if (buf->start == buf->end && chunk->start == chunk->end)

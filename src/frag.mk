@@ -13,7 +13,6 @@ vpath %.xsl $(SRC_HERE)
 # Explicitly listed as not everything in this directory is built all the time
 # fsfuse.o isn't listed because it isn't always wanted.
 SRC_OBJECTS :=                         \
-               alarms.o                \
                config.o                \
                config_define.o         \
                curl_utils.o            \

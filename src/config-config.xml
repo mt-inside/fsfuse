@@ -122,12 +122,6 @@
         <xpath>/config/options/cache_negative/text()</xpath>
     </item>
     <item>
-        <symbol>option_progress</symbol>
-        <type>integer</type>
-        <default>0</default>
-        <xpath>/config/options/progress/text()</xpath>
-    </item>
-    <item>
         <symbol>peers_favourites</symbol>
         <type>string_collection</type>
         <default>{ NULL }</default>

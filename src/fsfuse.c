@@ -26,11 +26,7 @@
 #include <sys/utsname.h>
 #include <curl/curl.h>
 #include <libxml/xmlversion.h>
-#if FEATURE_PROGRESS_METER
-#include <curses.h>
-#endif
 
-#include "alarms.h"
 #include "buildnumber.h"
 #include "config.h"
 #include "direntry.h"
@@ -43,9 +39,6 @@
 #include "localei.h"
 #include "parser.h"
 #include "peerstats.h"
-#if FEATURE_PROGRESS_METER
-#include "progress.h"
-#endif
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -158,15 +151,11 @@ int main(int argc, char *argv[])
     if (trace_init()                ||
         utils_init()                ||
         locale_init()               ||
-        alarms_init()               ||
         fetcher_init()              ||
         parser_init()               ||
         direntry_init()             ||
 #if FEATURE_DIRENTRY_CACHE
         direntry_cache_init()       ||
-#endif
-#if FEATURE_PROGRESS_METER
-        progress_init()             ||
 #endif
         peerstats_init()            ||
         download_thread_pool_init()    )
@@ -182,16 +171,12 @@ int main(int argc, char *argv[])
     /* finalisations */
     download_thread_pool_finalise();
     peerstats_finalise();
-#if FEATURE_PROGRESS_METER
-    progress_finalise();
-#endif
 #if FEATURE_DIRENTRY_CACHE
     direntry_cache_finalise();
 #endif
     direntry_finalise();
     parser_finalise();
     fetcher_finalise();
-    alarms_finalise();
     locale_finalise();
     utils_finalise();
     trace_finalise();
@@ -296,7 +281,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
         {"debug",          no_argument,       NULL, 'd'},
         {"foreground",     no_argument,       NULL, 'f'},
         {"singlethreaded", no_argument,       NULL, 's'},
-        {"progress",       no_argument,       NULL, 'p'},
         {"trace",          required_argument, NULL, 't'},
         {"help",           no_argument,       NULL, 'h'},
         {"version",        no_argument,       NULL, 'v'},
@@ -333,11 +317,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
                 config_proc_singlethread = 1;
                 break;
 
-            case 'p':
-                /* progress meter */
-                config_option_progress = 1;
-                break;
-
             case 't':
                 /* trace */
 #if DEBUG
@@ -350,7 +329,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 #define TRACE_ARG(aREA)
 #endif
 
-                TRACE_ARG(alarms)
                 TRACE_ARG(direntry)
 #if FEATURE_DIRENTRY_CACHE
                 TRACE_ARG(direntry_cache)
@@ -360,9 +338,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
                 TRACE_ARG(method)
                 TRACE_ARG(parser)
                 TRACE_ARG(peerstats)
-#if FEATURE_PROGRESS_METER
-                TRACE_ARG(progress)
-#endif
                 TRACE_ARG(read)
                 TRACE_ARG(locale)
 
@@ -496,12 +471,6 @@ static void fsfuse_versions (void)
                curl_version(),
                LIBXML_DOTTED_VERSION /* This is the version of the headers on this machine, but xmlParserVersion is ugly */
               );
-
-#if FEATURE_PROGRESS_METER
-        printf("Using %s\n",
-               curses_version()
-              );
-#endif
 
         printf("\n");
     }

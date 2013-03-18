@@ -13,7 +13,6 @@ CC := gcc
 #CC := clang
 
 DIRENTRY_CACHE ?= 0
-PROGRESS_METER ?= 0
 DEBUG ?= 1
 
 MAIN_OBJECT ?= fsfuse.o
@@ -77,12 +76,6 @@ OBJECTS += $(MAIN_OBJECT)
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o
     FEATURES += -DFEATURE_DIRENTRY_CACHE=1
-endif
-ifeq ($(PROGRESS_METER),1)
-    OBJECTS += progress.o
-    FEATURES += -DFEATURE_PROGRESS_METER=1
-    CFLAGS += `ncurses5-config --cflags`
-    LDFLAGS += `ncurses5-config --libs`
 endif
 
 
