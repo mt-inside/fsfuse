@@ -51,7 +51,6 @@ static int check_version( const char * const version )
             compare_dotted_version(version, PROTO_MAXIMUM) < 0 );
 }
 
-/* TODO: state machine for active, missed 1 ping, etc */
 indexnode_t *indexnode_new(
     CALLER_DECL
     const char * const host,
