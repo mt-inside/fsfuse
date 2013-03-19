@@ -330,7 +330,8 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
                 trace_warn("Error waiting for indexnode broadcast: %s\n", strerror(errno));
                 break;
             case 0:
-                trace_warn("Not found\n");
+                /* No fds active == timeout */
+                assert(0);
                 break;
             default:
                 if (FD_ISSET(s4, &r_fds))
