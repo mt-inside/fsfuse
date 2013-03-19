@@ -10,6 +10,10 @@
  * The collection of known indexnodes.
  * This module spanws a thread that listens for indexnode broadcats and
  * maintains a list.
+ * There is also a periodic alarm that causes dead indexnodes to be removed
+ * from the list, causing the list to give up its ownership of them (rather than
+ * doing it lazily on list fectch which would use more memory if the list was
+ * never fecthed but lots of indexnodes were seen).
  */
 
 #include "common.h"
@@ -22,6 +26,7 @@
 #include "indexnodes_list_internal.h"
 #include "indexnodes_listener.h"
 
+#include "alarm_simple.h"
 #include "config.h"
 #include "fetcher.h"
 #include "queue.h"
@@ -33,7 +38,8 @@ struct _indexnodes_t
 {
     indexnodes_list_t *list;
     indexnodes_listener_t *listener;
-    pthread_mutex_t lock; /* TODO: rwlock. TODO: shouldn't need locking */
+    alarm_t *expire_alarm;
+    pthread_mutex_t lock; /* TODO: rwlock. */
 };
 
 
@@ -46,6 +52,7 @@ static void packet_received_cb (
     const char * const version,
     const char * const id
 );
+static void expire_alarm (void *ctxt);
 
 
 indexnodes_t *indexnodes_new (void)
@@ -59,6 +66,7 @@ indexnodes_t *indexnodes_new (void)
     load_indexnodes_from_config(ins->list);
 
     ins->listener = indexnodes_listener_new(&packet_received_cb, ins);
+    ins->expire_alarm = alarm_new(1, &expire_alarm, ins);
 
 
     return ins;
@@ -66,6 +74,7 @@ indexnodes_t *indexnodes_new (void)
 
 void indexnodes_delete (indexnodes_t *ins)
 {
+    alarm_delete(ins->expire_alarm);
     /* TODO: assert the thread state == stopped */
     /* TODO: should we do this, or should the thread bump their statemachine to
      * dead, let them die, then just assert they're dead here? */
@@ -138,7 +147,6 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 
 
     pthread_mutex_lock(&(ins->lock));
-    ins->list = indexnodes_list_remove_expired(CALLER_PASS ins->list);
     list = indexnodes_list_copy(CALLER_PASS ins->list);
     pthread_mutex_unlock(&(ins->lock));
 
@@ -221,4 +229,16 @@ static const char *parse_version_cb (const proto_indexnode_t *in, const char *fs
     parse_fs2protocol_version(fs2protocol, &version);
 
     return version;
+}
+
+static void expire_alarm (void *ctxt)
+{
+    indexnodes_t *ins = (indexnodes_t *)ctxt;
+
+
+    pthread_mutex_lock(&(ins->lock));
+
+    ins->list = indexnodes_list_remove_expired(CALLER_INFO ins->list);
+
+    pthread_mutex_unlock(&(ins->lock));
 }
