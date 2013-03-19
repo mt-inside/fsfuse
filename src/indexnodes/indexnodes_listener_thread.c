@@ -339,20 +339,16 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
                     struct sockaddr_in sa;
                     receive_advert(s4, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin_addr), INET_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
                 }
-                else if (FD_ISSET(s6, &r_fds))
+                if (FD_ISSET(s6, &r_fds))
                 {
                     struct sockaddr_in6 sa;
                     receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
                 }
-                else if (FD_ISSET(control_fd, &r_fds))
+                if (FD_ISSET(control_fd, &r_fds))
                 {
                     /* For now, only one command, STOP_LISTENING, represented by
                      * the unit-typed message */
                     exiting = 1;
-                }
-                else
-                {
-                    assert(0);
                 }
 
                 break;
