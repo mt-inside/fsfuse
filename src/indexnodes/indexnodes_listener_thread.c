@@ -310,6 +310,7 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
     fd_set r_fds;
     int select_rc;
     int exiting = 0;
+    listener_control_codes_t msg = listener_control_codes_NOT_USED;
 
 
     FD_ZERO(&r_fds);
@@ -346,8 +347,9 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
                 }
                 if (FD_ISSET(control_fd, &r_fds))
                 {
-                    /* For now, only one command, STOP_LISTENING, represented by
-                     * the unit-typed message */
+                    assert(read(control_fd, &msg, sizeof(msg)) == sizeof(msg));
+                    assert(msg == listener_control_codes_STOP);
+
                     exiting = 1;
                 }
 

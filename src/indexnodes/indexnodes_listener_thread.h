@@ -15,6 +15,7 @@
 
 typedef enum
 {
+    listener_control_codes_NOT_USED,
     listener_control_codes_STOP
 } listener_control_codes_t;
 
