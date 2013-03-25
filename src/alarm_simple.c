@@ -17,6 +17,8 @@ struct _alarm_t
     alarm_cb_t cb;
     void *cb_data;
     pthread_t thread;
+    int pipe_in;
+    int pipe_out;
 };
 
 
@@ -29,12 +31,16 @@ alarm_t *alarm_new(
     void *cb_data
 )
 {
+    int pipe_fds[2];
     alarm_t *alarm = malloc( sizeof(*alarm) );
 
 
+    pipe( pipe_fds );
     alarm->interval = interval;
     alarm->cb = cb;
     alarm->cb_data = cb_data;
+    alarm->pipe_out = pipe_fds[ 0 ];
+    alarm->pipe_in = pipe_fds[ 1 ];
 
 
     assert(
@@ -54,7 +60,16 @@ void alarm_delete(
     alarm_t *alarm
 )
 {
+    alarm_control_codes_t msg = alarm_control_codes_STOP;
+
+
+    assert( write( alarm->pipe_in, &msg, sizeof(msg) ) == sizeof(msg) );
+
     pthread_join( alarm->thread, NULL );
+
+    close( alarm->pipe_in );
+    close( alarm->pipe_out );
+
 
     free( alarm );
 }
