@@ -1,25 +1,33 @@
 #include "common.h"
 
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <unistd.h>
 
 #include "alarm_simple.h"
 
 
 /* TODO:
  *   integration test: trivial front-end that makes a few of these and prints every they call back.
- *   make a control pipe, select on it too, switch on select return and either quit or call cb.
  */
+
+typedef enum
+{
+    alarm_control_codes_NOT_USED,
+    alarm_control_codes_STOP
+} alarm_control_codes_t;
+
 struct _alarm_t
 {
     unsigned interval;
     alarm_cb_t cb;
     void *cb_data;
     pthread_t thread;
-    int pipe_in;
-    int pipe_out;
+    int pipe_write;
+    int pipe_read;
 };
 
 
@@ -40,8 +48,8 @@ alarm_t *alarm_new(
     alarm->interval = interval;
     alarm->cb = cb;
     alarm->cb_data = cb_data;
-    alarm->pipe_out = pipe_fds[ 0 ];
-    alarm->pipe_in = pipe_fds[ 1 ];
+    alarm->pipe_read = pipe_fds[ 0 ];
+    alarm->pipe_write = pipe_fds[ 1 ];
 
 
     assert(
@@ -64,12 +72,12 @@ void alarm_delete(
     alarm_control_codes_t msg = alarm_control_codes_STOP;
 
 
-    assert( write( alarm->pipe_in, &msg, sizeof(msg) ) == sizeof(msg) );
+    assert( write( alarm->pipe_write, &msg, sizeof(msg) ) == sizeof(msg) );
 
     pthread_join( alarm->thread, NULL );
 
-    close( alarm->pipe_in );
-    close( alarm->pipe_out );
+    close( alarm->pipe_write );
+    close( alarm->pipe_read );
 
 
     free( alarm );
@@ -79,18 +87,52 @@ static void *alarm_thread_main( void *ctxt )
 {
     alarm_t *alarm = (alarm_t *)ctxt;
     struct timeval tv;
+    fd_set r_fds;
+    int exiting = 0;
+    int select_rc;
+    alarm_control_codes_t msg = alarm_control_codes_NOT_USED;
 
 
-    while( 1 )
+    FD_ZERO(&r_fds);
+
+
+    while( !exiting )
     {
+        FD_SET( alarm->pipe_read, &r_fds );
+
         /* man 2 select: "consider tv undefined after select returns */
-        bzero(&tv, sizeof(tv));
+        bzero( &tv, sizeof(tv) );
         tv.tv_sec = alarm->interval;
 
         /* TODO: pselect */
-        select(0, NULL, NULL, NULL, &tv);
+        errno = 0;
+        select_rc = select( alarm->pipe_read + 1, &r_fds, NULL, NULL, &tv );
 
-        alarm->cb( alarm->cb_data );
+        switch( select_rc )
+        {
+            case -1:
+                trace_warn("Error waiting for alarm timeout / control signal: %s\n", strerror(errno));
+                break;
+            case 0:
+                /* No fds active == timeout */
+                alarm->cb( alarm->cb_data );
+                break;
+            case 1:
+                if( FD_ISSET(alarm->pipe_read, &r_fds) )
+                {
+                    assert( read( alarm->pipe_read, &msg, sizeof(msg) ) == sizeof(msg) );
+                    assert( msg == alarm_control_codes_STOP );
+
+                    exiting = 1;
+                }
+                else
+                {
+                    assert( 0 );
+                }
+                break;
+            default:
+                assert( 0 );
+        }
     }
 
 
