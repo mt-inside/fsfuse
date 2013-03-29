@@ -7,7 +7,6 @@
 #include <check.h>
 
 
-extern Suite *hash_table_tests( void );
 extern Suite *indexnode_tests( void );
 extern Suite *indexnodes_list_tests( void );
 extern Suite *proto_indexnode_tests( void );

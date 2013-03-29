@@ -32,7 +32,7 @@ int main (int argc, char **argv)
     utils_init( );
     trace_init( );
 
-    SRunner *r = srunner_create( hash_table_tests( ) );
+    SRunner *r = srunner_create( NULL );
     srunner_add_suite( r, indexnode_tests( ) );
     srunner_add_suite( r, indexnodes_list_tests( ) );
     srunner_add_suite( r, proto_indexnode_tests( ) );

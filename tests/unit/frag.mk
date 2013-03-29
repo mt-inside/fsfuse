@@ -8,7 +8,7 @@ HERE := $(ROOT)/tests/unit
 
 vpath %.c $(HERE)
 
-TEST_OBJS := hash_table_test.o      \
+TEST_OBJS :=                        \
              indexnode_test.o       \
              indexnodes_list_test.o \
              proto_indexnode_test.o \
