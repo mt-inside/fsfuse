@@ -36,6 +36,7 @@ int main (int argc, char **argv)
     srunner_add_suite( r, indexnodes_list_tests( ) );
     srunner_add_suite( r, proto_indexnode_tests( ) );
     srunner_add_suite( r, ref_count_tests( ) );
+    srunner_add_suite( r, string_buffer_tests( ) );
 
     srunner_run_all( r, CK_NORMAL );
 
@@ -54,7 +55,6 @@ int main (int argc, char **argv)
 
     //hash_table_test();
     //http_test();
-    //string_buffer_test();
     //uri_test();
     //utils_test();
 }

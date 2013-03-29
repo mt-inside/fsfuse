@@ -10,78 +10,132 @@
  * String Buffer unit tests.
  */
 
+#include "common.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include <check.h>
 #include "tests.h"
+
 #include "string_buffer.h"
 
 
-void string_buffer_test (void)
+static string_buffer_t *sb;
+
+static void setup( void )
 {
-    string_buffer_t *sb;
+    sb = string_buffer_new( );
+}
+
+static void teardown( void )
+{
+    string_buffer_delete( sb );
+}
+
+
+START_TEST( can_set_and_get )
+{
     char *s;
 
-
-    sb = string_buffer_new();
     string_buffer_set(sb, "Hello");
 
     s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello"));
+    ck_assert_str_eq( s, "Hello" );
     free(s);
+}
+END_TEST
 
+START_TEST( can_set_append_and_get )
+{
+    char *s;
+
+    string_buffer_set(sb, "Hello");
     string_buffer_append(sb, ", World!");
 
     s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello, World!"));
+    ck_assert_str_eq( s, "Hello, World!" );
     free(s);
+}
+END_TEST
 
-    string_buffer_delete(sb);
-
-
-    sb = string_buffer_new();
+START_TEST( can_set_and_peek )
+{
     string_buffer_set(sb, "Hello");
 
-    assert(!strcmp(string_buffer_peek(sb), "Hello"));
+    ck_assert_str_eq( string_buffer_peek(sb), "Hello" );
+}
+END_TEST
 
+START_TEST( can_set_append_and_peek )
+{
+    string_buffer_set(sb, "Hello");
     string_buffer_append(sb, ", World!");
 
-    assert(!strcmp(string_buffer_peek(sb), "Hello, World!"));
+    ck_assert_str_eq( string_buffer_peek(sb), "Hello, World!" );
+}
+END_TEST
 
-    string_buffer_delete(sb);
+START_TEST( can_make_from_chars )
+{
+    string_buffer_t *sb1 = string_buffer_from_chars("Hello");
+    char *s;
 
-
-    sb = string_buffer_from_chars("Hello");
-
-    s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello"));
+    s = string_buffer_get(sb1);
+    ck_assert_str_eq( s, "Hello" );
     free(s);
 
+    string_buffer_delete( sb1 );
+}
+END_TEST
+
+START_TEST( can_append_to_sb_from_chars )
+{
+    string_buffer_t *sb1 = string_buffer_from_chars("Hello");
+    char *s;
+
+    string_buffer_append(sb1, ", World!");
+
+    s = string_buffer_get(sb1);
+    ck_assert_str_eq( s, "Hello, World!" );
+    free(s);
+
+    string_buffer_delete(sb1);
+}
+END_TEST
+
+START_TEST( can_append_multiple_times )
+{
+    char *s;
+
+    string_buffer_set(sb, "Hello");
     string_buffer_append(sb, ", World!");
-
-    s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello, World!"));
-    free(s);
-
-    string_buffer_delete(sb);
-
-
-    sb = string_buffer_from_chars("Hello");
-
-    s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello"));
-    free(s);
-
-    string_buffer_append(sb, ", World!");
     string_buffer_append(sb, " World!");
     string_buffer_append(sb, " World!");
     string_buffer_append(sb, " World!");
     string_buffer_append(sb, " World!");
 
     s = string_buffer_get(sb);
-    assert(!strcmp(s, "Hello, World! World! World! World! World!"));
+    ck_assert_str_eq( s, "Hello, World! World! World! World! World!" );
     free(s);
+}
+END_TEST
 
-    string_buffer_delete(sb);
+Suite *string_buffer_tests( void )
+{
+    Suite *s = suite_create( "string_buffer" );
+
+    TCase *tc_core = tcase_create( "core" );
+    tcase_add_checked_fixture( tc_core, setup, teardown );
+    tcase_add_test( tc_core, can_set_and_get );
+    tcase_add_test( tc_core, can_set_append_and_get );
+    tcase_add_test( tc_core, can_set_and_peek );
+    tcase_add_test( tc_core, can_set_append_and_peek );
+    tcase_add_test( tc_core, can_make_from_chars );
+    tcase_add_test( tc_core, can_append_to_sb_from_chars );
+    tcase_add_test( tc_core, can_append_multiple_times );
+
+    suite_add_tcase( s, tc_core );
+
+    return s;
 }
