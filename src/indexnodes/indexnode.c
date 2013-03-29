@@ -115,8 +115,6 @@ indexnode_t *indexnode_from_proto(
     );
 
 
-    free_const( host );
-    free_const( port );
     proto_indexnode_delete( pin );
 
 
