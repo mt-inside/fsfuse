@@ -281,8 +281,8 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-const char *fetcher_get_indexnode_version (const proto_indexnode_t *pin,
-                                     indexnode_version_cb_t cb)
+const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
+                                           indexnode_version_cb_t cb)
 {
     const char *url, *version;
     char *error_buffer;

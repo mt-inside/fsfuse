@@ -20,10 +20,10 @@ struct _proto_indexnode_t
 };
 
 extern void proto_indexnode_init(
-    proto_indexnode_t * const pin,
-    const char * const host,
-    const char * const port
+    proto_indexnode_t *pin,
+    const char *host,
+    const char *port
 );
-extern void proto_indexnode_teardown( const proto_indexnode_t * const pin );
+extern void proto_indexnode_teardown( proto_indexnode_t *pin );
 
 #endif /* _INCLUDED_PROTO_INDEXNODE_INTERNAL_H */

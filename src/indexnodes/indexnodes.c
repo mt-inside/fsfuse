@@ -44,7 +44,7 @@ struct _indexnodes_t
 
 
 static void load_indexnodes_from_config (indexnodes_list_t *list);
-static const char *parse_version_cb (const proto_indexnode_t *in, const char *buf);
+static const char *parse_version_cb (proto_indexnode_t *in, const char *buf);
 static void packet_received_cb (
     const void *ctxt,
     const char * const host,
@@ -100,7 +100,7 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
     {
         /* TODO: No need to strdup these when config is a real class with real
          * getters that return copies */
-        const proto_indexnode_t *pin = proto_indexnode_new(strdup(host), strdup(port));
+        proto_indexnode_t *pin = proto_indexnode_new(strdup(host), strdup(port));
 
         /* TODO: should do this async, in parallel, so that it happens as fast
          * as possible and that we can get on with other stuff straight away.
@@ -219,7 +219,7 @@ static void packet_received_cb (
     }
 }
 
-static const char *parse_version_cb (const proto_indexnode_t *in, const char *fs2protocol)
+static const char *parse_version_cb (proto_indexnode_t *in, const char *fs2protocol)
 {
     const char *version;
 

@@ -23,7 +23,7 @@ const char *indexnode_stub_port = "1337";
 const char *indexnode_stub_version = "0.13";
 const char *indexnode_stub_id = "d34db33f";
 
-const proto_indexnode_t *get_proto_indexnode_stub( void )
+proto_indexnode_t *get_proto_indexnode_stub( void )
 {
     return proto_indexnode_new(
         strdup( indexnode_stub_host ),
@@ -60,7 +60,7 @@ indexnode_t *get_indexnode_stub2( CALLER_DECL_ONLY )
 }
 
 
-int proto_indexnode_equals_stub( const proto_indexnode_t *pin )
+int proto_indexnode_equals_stub( proto_indexnode_t *pin )
 {
     const char *host_out, *port_out;
     int rc;

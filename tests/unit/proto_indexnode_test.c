@@ -25,7 +25,7 @@
 START_TEST( proto_indexnode_can_be_created_and_destroyed )
 {
     /* Action */
-    const proto_indexnode_t *pin = get_proto_indexnode_stub( );
+    proto_indexnode_t *pin = get_proto_indexnode_stub( );
 
     /* Assert */
     fail_unless( pin != NULL, "new proto_indexnode should be non-null" );
@@ -38,7 +38,7 @@ END_TEST
 START_TEST( proto_indexnode_is_sane_property_bag )
 {
     /* Action */
-    const proto_indexnode_t *pin = get_proto_indexnode_stub( );
+    proto_indexnode_t *pin = get_proto_indexnode_stub( );
 
     /* Assert */
     fail_unless( proto_indexnode_equals_stub( pin ), "proto_indexnode should equal stub" );

@@ -23,7 +23,7 @@
 #include "utils.h"
 
 
-const proto_indexnode_t *proto_indexnode_new( const char * const host, const char * const port )
+proto_indexnode_t *proto_indexnode_new( const char *host, const char *port )
 {
     proto_indexnode_t *pin;
 
@@ -36,9 +36,9 @@ const proto_indexnode_t *proto_indexnode_new( const char * const host, const cha
 }
 
 void proto_indexnode_init(
-    proto_indexnode_t * const pin,
-    const char * const host,
-    const char * const port
+    proto_indexnode_t *pin,
+    const char *host,
+    const char *port
 )
 {
     assert(host); assert(*host);
@@ -48,25 +48,25 @@ void proto_indexnode_init(
     pin->port = port;
 }
 
-void proto_indexnode_delete( const proto_indexnode_t * const pin )
+void proto_indexnode_delete( proto_indexnode_t *pin )
 {
     proto_indexnode_teardown( pin );
 
-    free_const( pin );
+    free( pin );
 }
 
-void proto_indexnode_teardown( const proto_indexnode_t * const pin )
+void proto_indexnode_teardown( proto_indexnode_t *pin )
 {
     free_const( pin->host );
     free_const( pin->port );
 }
 
-const char *proto_indexnode_host( const proto_indexnode_t * const pin )
+const char *proto_indexnode_host( proto_indexnode_t *pin )
 {
     return strdup( pin->host );
 }
 
-const char *proto_indexnode_port( const proto_indexnode_t * const pin )
+const char *proto_indexnode_port( proto_indexnode_t *pin )
 {
     return strdup( pin->port );
 }
@@ -77,9 +77,9 @@ const char *proto_indexnode_port( const proto_indexnode_t * const pin )
  * Shouldn't over-estimate string length and sprintf - should use string_buffer
  */
 const char *proto_indexnode_make_url (
-    const proto_indexnode_t * const pin,
-    const char * const path_prefix,
-    const char * const resource
+    proto_indexnode_t *pin,
+    const char *path_prefix,
+    const char *resource
 )
 {
     char *fmt;

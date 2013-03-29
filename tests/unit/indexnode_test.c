@@ -38,7 +38,7 @@ END_TEST
 START_TEST( indexnode_can_be_created_from_proto )
 {
     /* Setup */
-    const proto_indexnode_t *pin = get_proto_indexnode_stub( );
+    proto_indexnode_t *pin = get_proto_indexnode_stub( );
 
     /* Action */
     indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, strdup( indexnode_stub_version ), strdup( indexnode_stub_id ) );
