@@ -20,8 +20,10 @@ Header Order - Tests
 <sys.h>
 
 "tests.h"
+"other_test_headers.h" (e.g. stubs)
 
 "class_under_test.h"
+"other_production_classes.h" (few as possible)
 
 Modularisation
 ==============
