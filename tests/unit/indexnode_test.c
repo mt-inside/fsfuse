@@ -16,11 +16,12 @@
 #include <string.h>
 
 #include "tests.h"
+#include "indexnode_stubs.h"
+
 #include "indexnode.h"
 
 
 /* TODO: move to check.h */
-/* TODO: pull these goddam test object ctors out */
 static void test_string_equal( const char *a, const char *b )
 {
     assert(!strcmp(a,b));
@@ -30,13 +31,7 @@ static void test_string_equal( const char *a, const char *b )
 void indexnode_can_be_created_and_destroyed( void )
 {
     /* Setup */
-    const char *host_in = "fs2.example.org";
-    const char *port_in = "1337";
-    const char *version_in = "0.13";
-    const char *id_in = "d34db33f";
-
-    /* Action */
-    indexnode_t *in = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
+    indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
     test_not_null( in );
@@ -48,14 +43,10 @@ void indexnode_can_be_created_and_destroyed( void )
 void indexnode_can_be_created_from_proto( void )
 {
     /* Setup */
-    const char *host_in = "fs2.example.org";
-    const char *port_in = "1337";
-    const char *version_in = "0.13";
-    const char *id_in = "d34db33f";
-    const proto_indexnode_t *pin = proto_indexnode_new( host_in, port_in );
+    const proto_indexnode_t *pin = get_proto_indexnode_stub( );
 
     /* Action */
-    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, version_in, id_in );
+    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, strdup( indexnode_stub_version ), strdup( indexnode_stub_id ) );
 
     /* Assert */
     test_not_null( in );
@@ -67,14 +58,10 @@ void indexnode_can_be_created_from_proto( void )
 void indexnode_is_sane_property_bag( void )
 {
     /* Setup */
-    const char *host_in = "fs2.example.org";
-    const char *port_in = "1337";
-    const char *version_in = "0.13";
-    const char *id_in = "d34db33f";
     const char *host_out, *port_out, *version_out, *id_out;
 
     /* Action */
-    indexnode_t *in = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
+    indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
     host_out = indexnode_host( in );
@@ -82,10 +69,10 @@ void indexnode_is_sane_property_bag( void )
     version_out = indexnode_version( in );
     id_out = indexnode_id( in );
 
-    test_string_equal( host_out, host_in );
-    test_string_equal( port_out, port_in );
-    test_string_equal( version_out, version_in );
-    test_string_equal( id_out, id_in );
+    test_string_equal( host_out, indexnode_stub_host );
+    test_string_equal( port_out, indexnode_stub_port );
+    test_string_equal( version_out, indexnode_stub_version );
+    test_string_equal( id_out, indexnode_stub_id );
 
     free_const( host_out );
     free_const( port_out );
@@ -99,12 +86,8 @@ void indexnode_is_sane_property_bag( void )
 void indexnode_can_be_copied_and_copy_outlives_original( void )
 {
     /* Setup */
-    const char *host_in = "fs2.example.org";
-    const char *port_in = "1337";
-    const char *version_in = "0.13";
-    const char *id_in = "d34db33f";
     const char *host_out2;
-    indexnode_t *in1 = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
+    indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
     indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
@@ -113,7 +96,7 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
     /* Assert */
     host_out2 = indexnode_host( in2 );
 
-    test_string_equal( host_out2, host_in );
+    test_string_equal( host_out2, indexnode_stub_host );
 
     free_const( host_out2 );
 
@@ -124,12 +107,8 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
 void indexnode_can_be_copied_and_has_right_data( void )
 {
     /* Setup */
-    const char *host_in = "fs2.example.org";
-    const char *port_in = "1337";
-    const char *version_in = "0.13";
-    const char *id_in = "d34db33f";
     const char *host_out1, *host_out2;
-    indexnode_t *in1 = indexnode_new( CALLER_INFO host_in, port_in, version_in, id_in );
+    indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
     indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
@@ -139,7 +118,7 @@ void indexnode_can_be_copied_and_has_right_data( void )
     host_out2 = indexnode_host( in2 );
 
     test_string_equal( host_out2, host_out1 );
-    test_string_equal( host_out2, host_in );
+    test_string_equal( host_out2, indexnode_stub_host );
 
     free_const( host_out1 );
     free_const( host_out2 );

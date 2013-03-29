@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "tests.h"
+#include "indexnode_stubs.h"
 
 #include "indexnodes/indexnodes_list_internal.h"
 
@@ -46,16 +47,12 @@ void indexnodes_list_can_be_created_and_destroyed( void )
 void indexnodes_list_can_have_a_member( void )
 {
     /* Setup */
-    const char *host = "fs2.example.org";
-    const char *port = "1337";
-    const char *version= "0.13";
-    const char *id = "d34db33f";
-    indexnode_t *in = indexnode_new( CALLER_INFO host, port, version, id);
+    indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     indexnodes_list_t *ins = indexnodes_list_new( );
 
     /* Action */
-    indexnodes_list_add( ins, in );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in ) );
 
     /* Assert */
     test_not_null( ins );
@@ -68,23 +65,13 @@ void indexnodes_list_can_have_a_member( void )
 void indexnodes_list_can_have_several_members( void )
 {
     /* Setup */
-    const char *host1 = "fs2.example.org";
-    const char *port1 = "1337";
-    const char *version1 = "0.13";
-    const char *id1 = "d34db33f";
-    indexnode_t *in1 = indexnode_new( CALLER_INFO host1, port1, version1, id1 );
-
-    const char *host2 = "second.indexnode.com";
-    const char *port2 = "1337";
-    const char *version2 = "0.14";
-    const char *id2 = "80081355";
-    indexnode_t *in2 = indexnode_new( CALLER_INFO host2, port2, version2, id2 );
-
+    indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
+    indexnode_t *in2 = get_indexnode_stub2( CALLER_INFO_ONLY );
     indexnodes_list_t *ins = indexnodes_list_new( );
 
     /* Action */
-    indexnodes_list_add( ins, in1 );
-    indexnodes_list_add( ins, in2 );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in1 ) );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in2 ) );
 
     /* Assert */
     test_not_null( ins );
@@ -98,23 +85,13 @@ void indexnodes_list_can_have_several_members( void )
 void indexnodes_list_holds_right_number_of_items( void )
 {
     /* Setup */
-    const char *host_in1 = "fs2.example.org";
-    const char *port_in1 = "1337";
-    const char *version_in1 = "0.13";
-    const char *id_in1 = "d34db33f";
-    indexnode_t *in_in1 = indexnode_new( CALLER_INFO host_in1, port_in1, version_in1, id_in1 );
-
-    const char *host_in2 = "second.indexnode.com";
-    const char *port_in2 = "1337";
-    const char *version_in2 = "0.14";
-    const char *id_in2 = "80081355";
-    indexnode_t *in_in2 = indexnode_new( CALLER_INFO host_in2, port_in2, version_in2, id_in2 );
-
+    indexnode_t *in_in1 = get_indexnode_stub( CALLER_INFO_ONLY );
+    indexnode_t *in_in2 = get_indexnode_stub2( CALLER_INFO_ONLY );
     indexnode_t *in_out;
 
     indexnodes_list_t *ins = indexnodes_list_new( );
-    indexnodes_list_add( ins, in_in1 );
-    indexnodes_list_add( ins, in_in2 );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in1 ) );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in2 ) );
 
     indexnodes_iterator_t *iter;
     unsigned count = 0;
@@ -137,30 +114,22 @@ void indexnodes_list_holds_right_number_of_items( void )
 
     /* Teardown */
     indexnodes_list_delete( ins );
+    indexnode_delete( CALLER_INFO in_in1 );
+    indexnode_delete( CALLER_INFO in_in2 );
 }
 
-/* TODO: yeah so factor dis shit out */
+/* TODO: decouple me from iterator order */
 void indexnodes_list_returns_what_is_put_in( void )
 {
     /* Setup */
-    const char *host_in1 = "fs2.example.org";
-    const char *port_in1 = "1337";
-    const char *version_in1 = "0.13";
-    const char *id_in1 = "d34db33f";
-    indexnode_t *in_in1 = indexnode_new( CALLER_INFO host_in1, port_in1, version_in1, id_in1 );
-
-    const char *host_in2 = "second.indexnode.com";
-    const char *port_in2 = "1337";
-    const char *version_in2 = "0.14";
-    const char *id_in2 = "80081355";
-    indexnode_t *in_in2 = indexnode_new( CALLER_INFO host_in2, port_in2, version_in2, id_in2 );
-
+    indexnode_t *in_in1 = get_indexnode_stub( CALLER_INFO_ONLY );
+    indexnode_t *in_in2 = get_indexnode_stub2( CALLER_INFO_ONLY );
     indexnode_t *in_out;
     const char *host_out, *port_out, *version_out, *id_out;
 
     indexnodes_list_t *ins = indexnodes_list_new( );
-    indexnodes_list_add( ins, in_in1 );
-    indexnodes_list_add( ins, in_in2 );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in1 ) );
+    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in2 ) );
 
     indexnodes_iterator_t *iter;
 
@@ -174,10 +143,10 @@ void indexnodes_list_returns_what_is_put_in( void )
     version_out = indexnode_version( in_out );
     id_out = indexnode_id( in_out );
 
-    test_string_equal( host_out, host_in2 );
-    test_string_equal( port_out, port_in2 );
-    test_string_equal( version_out, version_in2 );
-    test_string_equal( id_out, id_in2 );
+    test_string_equal( host_out, indexnode_stub_host2 );
+    test_string_equal( port_out, indexnode_stub_port2 );
+    test_string_equal( version_out, indexnode_stub_version2 );
+    test_string_equal( id_out, indexnode_stub_id2 );
 
     free_const( host_out );
     free_const( port_out );
@@ -196,10 +165,10 @@ void indexnodes_list_returns_what_is_put_in( void )
     version_out = indexnode_version( in_out );
     id_out = indexnode_id( in_out );
 
-    test_string_equal( host_out, host_in1 );
-    test_string_equal( port_out, port_in1 );
-    test_string_equal( version_out, version_in1 );
-    test_string_equal( id_out, id_in1 );
+    test_string_equal( host_out, indexnode_stub_host );
+    test_string_equal( port_out, indexnode_stub_port );
+    test_string_equal( version_out, indexnode_stub_version );
+    test_string_equal( id_out, indexnode_stub_id );
 
     free_const( host_out );
     free_const( port_out );

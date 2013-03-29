@@ -16,4 +16,6 @@ TEST_OBJS := hash_table_test.o      \
              string_buffer_test.o   \
              utils_test.o
 
+TEST_OBJS += indexnode_stubs.o
+
 OBJECTS += $(TEST_OBJS)
