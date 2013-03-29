@@ -51,7 +51,6 @@ void indexnodes_list_add (indexnodes_list_t *ins,
     TAILQ_INSERT_HEAD(&ins->list, item, next);
 }
 
-/* TODO: take a bool (*indexnode_matcher)(in) instead of this id */
 indexnode_t *indexnodes_list_find (CALLER_DECL indexnodes_list_t *ins, const char * const id)
 {
     item_t *item;
@@ -91,7 +90,6 @@ indexnodes_list_t *indexnodes_list_copy (CALLER_DECL indexnodes_list_t *orig)
     return ret;
 }
 
-/* TODO: make remove_where(Predicate<indexnode>) */
 indexnodes_list_t *indexnodes_list_remove_expired (CALLER_DECL indexnodes_list_t *orig)
 {
     indexnodes_list_t *ret = indexnodes_list_new();
