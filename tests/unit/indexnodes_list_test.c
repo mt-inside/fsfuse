@@ -184,13 +184,19 @@ void indexnodes_list_returns_what_is_put_in( void )
     /* Teardown */
     indexnodes_iterator_delete( iter );
     indexnodes_list_delete( ins );
+    indexnode_delete( CALLER_INFO in_in1 );
+    indexnode_delete( CALLER_INFO in_in2 );
 }
 
 void test_indexnodes_list( void )
 {
+    indexnode_trace_on( );
+
     indexnodes_list_can_be_created_and_destroyed( );
     indexnodes_list_can_have_a_member( );
     indexnodes_list_can_have_several_members( );
     indexnodes_list_holds_right_number_of_items( );
     indexnodes_list_returns_what_is_put_in( );
+
+    indexnode_trace_off( );
 }
