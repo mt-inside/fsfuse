@@ -288,7 +288,7 @@ static void receive_advert(
     {
         assert(socklen == socklen_in);
         buf[recv_rc] = '\0';
-        string_buffer_append(buffer, buf);
+        string_buffer_append(buffer, strdup(buf));
 
         if (!parse_advert_packet(string_buffer_peek(buffer), &port, &fs2protocol, &id) &&
             inet_ntop(AF_INET, addr_src, host, sizeof(host) - 1))
