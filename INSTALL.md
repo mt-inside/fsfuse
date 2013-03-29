@@ -14,6 +14,7 @@ A C Compiler (works with gcc and clang)
 xsltproc
 
 Building should be as simple switching to the directory for the flavour of build you want (e.g. build/debug or build/release) and issusing
+    
     make
 
 Running
@@ -21,11 +22,14 @@ Running
 When a filesystem driver is built into the kernel and needs no extra help to be mounted, the only thing in userspace needed to mount it is /bin/mount
 Some filesystems have "mount helpers" - userspace programmes that do some extra work. fsfuse acts like a mount helper, ultimately using the FUSE driver in the kernel to actually present a filesystem.
 mount(8) specifies the argument format for "mount helpers" as
+    
     /sbin/mount.<suffix> spec dir [-sfnv] [-o options] [-t type.subtype]
+
 "spec" is usually the device to be mounted, but because fs2 is a network filesystem there is no device. fsfuse will ignore the device argument, but convention says you should specify "none".
 
 Typically, only one fsfuse process (one fsfuse "mount") is needed, as one fsfuse process can handle multiple indexnodes.
 An fsfuse filesystem can be mounted simply by running the executable, e.g.
+    
     ./fsfuse none /mount/fsfuse
 
 Installation
@@ -33,6 +37,9 @@ Installation
 There is currently no "install" Makefile target, however manual installation is pretty easy.
 mount(8) says that mount helpers are found at /sbin/mount.* (though the authour's gentoo box has some in /usr/sbin)
 Copying or linking fsfuse to /sbin/mount.fsfuse allows mount(8) to find it. fsfuse volumes can then be mounted with
+    
     mount -t fsfuse none /path/to/mountpoint
+
 or with an /etc/fstab entry like
+
     none    /mount/fsfuse    fsfuse    defaults    0 0
