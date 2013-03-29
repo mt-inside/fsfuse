@@ -162,6 +162,7 @@ void indexnode_delete( CALLER_DECL indexnode_t * const in )
     indexnode_trace_dedent();
 }
 
+/* TODO: The tell, don't ask dream is that these can go. Why can't they? */
 const char *indexnode_host( const indexnode_t * const in )
 {
     return proto_indexnode_host( BASE_CLASS(in) );
@@ -184,7 +185,8 @@ const char *indexnode_id( const indexnode_t * const in )
 
 /* API to make URLs ========================================================= */
 
-/* TODO: move me! */
+/* TODO: move me! Really? Tell, don't ask. Obviously these should call off to
+ * other places and not be concerned with escaping or URI formats themselves. */
 const char *indexnode_make_url(
     const indexnode_t * const in,
     const char * const path_prefix,

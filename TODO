@@ -1,10 +1,35 @@
-do todos in alarm_simple
-make internal_seen and _still_valid internal
-ur doin it wrong. Indexnodes should time themselves - (re)set an alamr when they're seen and then they tell the list when they're expired. The list registers an on-expired hook which the indexnode calls, causing that indexnode to be removed from the list.
-- assert hook not set atm so that if we need >1 we can write something more complex a la c# events
-- in to cache is valid
-- other stuff like DEs might want to register for that hook and expire
-  themselves, remove themselves from something, but probably not as there'll be millions of the fuckers in the cache.
+TODO:
+               config.o                \
+               config_define.o         \
+               curl_utils.o            \
+               direntry.o              \
+               download_thread.o       \
+               download_thread_pool.o  \
+               fetcher.o               \
+               inode_map.o             \
+               listing.o               \
+               localei.o               \
+               locks.o                 \
+               parser.o                \
+               peerstats.o             \
+DONE               ref_count.o             \
+DONE               string_buffer.o         \
+               trace.o                 \
+               utils.o
+DO FIRST to drive API of everything else               fsfuse_methods/*
+- you can stash de's etc away in some functions and get them in others. There's
+  a lot of fuse API semantics to take advantage of
+IN PROGRESS               indexnodes/*
+
+finishe indexnodes
+- make internal_seen and _still_valid internal
+- do all the other TODOs in the indexnodes code
+- move over to the (nearly) google data structure
+- make indexnode_thread and indexnodes into actors. indexnodes can pass the
+  thread some kind of private msg number or something so that the function to register packets isn't public. All processing of the packet that happens in indexnodes.c should happen on its thread though - i don't like the way that random threads come through indexnodes.c and there has to be locking (as there's shared state - the list). Note XML or fetcher functions don't need to be actors because all their state is in the instance.
+ * write a fake indexnode (using node or something) that just mirrors an XML doc
+ *   you give it
+ * unit test with a fate indexnodes_listener_thread
 
   de's
  * with DEAD indexnodes are dead themselves - when they discover that they
@@ -13,19 +38,18 @@ ur doin it wrong. Indexnodes should time themselves - (re)set an alamr when they
  * indexnode it should check if it's expired and return E??? which should
  * propagate
 HIGHLEVEL:
-- retire CALLER_* because there is valgrind now
-- finish alarms class (based on alarm_simple) to keep thread usage down.
+- move to autotools? inc autotest?
 - write an actor template and then enactor things like indexnodes
 - hide pthread. Make a mutex_class (which rwlock can own or inherit). Make
   thread class (which takes a name for the thread which is used by the trace instead of the numberspace collapser)
 - hide / defer config. Shouldn't know about xml reading. Shouldn't know where
   the file(s) are. Have something that gets a config object by searching / combining all the usual paths.
-- finish indexnodes & testing
-- make indexnode_thread and indexnodes into actors. indexnodes can pass the
-  thread some kind of private msg number or something so that the function to register packets isn't public. All processing of the packet that happens in indexnodes.c should happen on its thread though - i don't like the way that random threads come through indexnodes.c and there has to be locking (as there's shared state - the list). Note XML or fetcher functions don't need to be actors because all their state is in the instance.
 - config should be a class not a static thing. Anything that needs config info
   should take it as an explicit dep.
-- fix direntry & listing - getters without get, no setters, proper inheritance
+  - move config into its own dir
+  - copy config file into ~, look for one in /etc
+- fix fetching, url making etc (hide curl)
+- fix direntry & listing - getters without get, indeed no getters at all, no setters, proper inheritance
 - factor everything that knows about CURL out into its own class
 - break fetcher into: metadata_fetcher (which calls nativefs) and block_fetcher
   (singleton actor that can have 1 list per file and have a priq of blocks)
@@ -33,39 +57,17 @@ HIGHLEVEL:
   reason really) and uses curl_wrapper and xml_wrapper to get stuff. Can optionally proxy through to a nativefs cache *actor*
 - think about logging. trace_info|warn etc should go to the log file too, not
   the console - this is a daemon. the trace stuff should probably be used for operational (non-debugging) stuff. What does unconditional trace do? is it the same thing? Is there a trace_error? Is it the same as assert? (remember no assert on release builds)
-
- * indexnodes.c do indexnode state machine et al (have internal-only
- *   indexnode_seen (aka reset state) fn.
- * make a fake indexnode (no, just use nc) for the console printer and integration test
- * write a fake indexnode (using node or something) that just mirrors an XML doc
- *   you give it
- * unit test with a fate indexnodes_listener_thread
-move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
-move config into its own dir
-indexnode state machine and filtering in _get.
-pull indexnodes.c apart into listener (that fires event on a packet), manager (actor, hence no locking of the list or anything) (that maintins a list and updates state in response to packets and timer events (has to be proactive on a timer, not lazy on return, becuase many lists have pointer to one refc'd in which needs to be seen to expire to all of them) and maybe others
-tell, don't ask: why do indexnode and direntry have getters?
-indexnode objects to live forever and just sit in expired causing ENOENT or soemthing when interacted with. expired indexnodes are not put into output list.
-write unit test with mock listener
-write test frontend that just fires up the indexnode stuff and prints the list of indexnodes and their states every sec
-write integration test that fires up indexnodes?
-
-where are indexnodes free()d?
-get to the point where each lib (libxml, curl) is refd and understood by only 1 file.
-things like indexnodes should be represented as a singleton object so that one delete call can shut down the thread and free everything. Alternately, init and finalise should do that stuff. I don't like the temporal coupling of methods
+  - split trace into functional trace (doing somthing, changing state) and
+    lifecycle trace (refc class should take a string saying what it's refcing (e.g. "indexnode @%p") and print the lifecycle trace
+    - that way, refc can print intertesting stuff like attempted double-frees
+  - move logging to methods - each module gets itself a static logger. wtf did we use macros? that way it can't be partially initialised. You know, switchable log file names, etc
+- zero copy
+  - instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
+- read and understand http://www.ibm.com/developerworks/linux/library/l-async/ and test every case
 
 getters to just be given unmodified names (e.g. user_name), setters to be called set_user_name to mark them out as an exception and code smell
 no mutable state yo
-jesus, just go throgh this shit and make it better.
-Start at the indexnodes thread and indexnode class. Add a listener for all the broadcasts for a particular indexnode after a class has been instantiated for it. Add a state machine for missed pings, active, dead etc
-Then start at the front - readdir(). Fetchers should be instantiated over URLs rather than a static thing. de, li to have clear separation, work properly, proper inheritance, etc
-Then go for read()
 
-copy config file into ~, look for one in /etc
-
-instead of hand-rolling an http impl, use libevent, which claims to have http support and zero-copy
-
-read and understand http://www.ibm.com/developerworks/linux/library/l-async/ and test every case
 
 Refactoring to improve quality :)
 =======
@@ -131,10 +133,6 @@ Refactoring to improve quality :)
   in alpha order. Minimal header sets always.
 
 
-**WARNING** THIS IS NOT UNDER VERSION CONTROL.
-- resurect the wiki :)
-
-Switch to low-level interface
 make use of dprintf
 
 Test inode behaviour wiht early branch or small test high-level fs. (use ls -i / df -i). See what allocation scheme is, how numbers tiw with lookup / forget / etc.

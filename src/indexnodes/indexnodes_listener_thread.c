@@ -323,6 +323,8 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
         FD_SET(control_fd, &r_fds);
 
         errno = 0;
+        /* TODO: use pselect to block all signals to this thread so select
+         * doesn't wake randomly. Assert no EAGAIN (shouldn't see it). */
         select_rc = select(MAX(s4, MAX(s6, control_fd)) + 1, &r_fds, NULL, NULL, NULL);
 
         switch (select_rc)
