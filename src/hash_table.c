@@ -48,23 +48,26 @@ struct _hash_table_iterator_t
 typedef uint32_t hash_t;
 
 
+static const unsigned c_initial_size = 16;
+
+
 static hash_t (*hash) (const char *str);
 
+static unsigned hash_table_get_size (hash_table_t *tbl);
+static unsigned hash_table_get_count (hash_table_t *tbl);
+static double hash_table_get_load_factor (hash_table_t *tbl);
 static void hash_table_resize (hash_table_t *tbl, unsigned new_size);
 static void hash_table_iterator_find_first (hash_table_iterator_t *iter);
 
 
 /* hash table - public functions */
 
-/* Make a new hash table, initially of size size */
-hash_table_t *hash_table_new (unsigned size, double max_load, double min_load)
+hash_table_t *hash_table_new (double max_load, double min_load)
 {
     hash_table_t *tbl = (hash_table_t *)calloc(sizeof(hash_table_t), 1);
 
 
-    trce("hash_table_new(%u)\n", size);
-
-    tbl->size = size;
+    tbl->size = c_initial_size;
     tbl->max_load = max_load;
     tbl->min_load = min_load;
     tbl->entries = (hash_table_entry_t **)calloc(sizeof(hash_table_entry_t *) * tbl->size, 1);
@@ -75,6 +78,7 @@ hash_table_t *hash_table_new (unsigned size, double max_load, double min_load)
 
 void hash_table_delete (hash_table_t *tbl)
 {
+    /* TODO: should I be a warning message instead? */
     assert(!tbl->count);
     free(tbl->entries);
     free(tbl);
@@ -194,17 +198,17 @@ int hash_table_del (hash_table_t *tbl, const char *key)
     return rc;
 }
 
-unsigned hash_table_get_size (hash_table_t *tbl)
+static unsigned hash_table_get_size (hash_table_t *tbl)
 {
     return tbl->size;
 }
 
-unsigned hash_table_get_count (hash_table_t *tbl)
+static unsigned hash_table_get_count (hash_table_t *tbl)
 {
     return tbl->count;
 }
 
-double hash_table_get_load_factor (hash_table_t *tbl)
+static double hash_table_get_load_factor (hash_table_t *tbl)
 {
     return (double)tbl->count / (double)tbl->size;
 }
