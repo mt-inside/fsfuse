@@ -70,6 +70,8 @@ void string_buffer_set (string_buffer_t *sb, const char *string)
 
     strcpy((**sb).s, string);
     (**sb).length = len;
+
+    free_const(string);
 }
 
 void string_buffer_append (string_buffer_t *sb, const char *string)
@@ -79,6 +81,8 @@ void string_buffer_append (string_buffer_t *sb, const char *string)
 
     strcpy((**sb).s + (**sb).length, string);
     (**sb).length += len;
+
+    free_const(string);
 }
 
 /* This looks a lot like make_message in the linux vsnprintf() man page */
@@ -108,15 +112,6 @@ void string_buffer_printf (string_buffer_t *sb, const char *format, ...)
     (**sb).length = output_size;
 }
 
-char *string_buffer_get (string_buffer_t *sb)
-{
-    char *s = malloc((**sb).length + 1);
-
-    memcpy(s, (**sb).s, (**sb).length + 1);
-
-    return s;
-}
-
 const char *string_buffer_peek (string_buffer_t *sb)
 {
     return (**sb).s;
@@ -126,12 +121,11 @@ char *string_buffer_commit (string_buffer_t *sb)
 {
     /* Can't just return (**sb).s because it points to half-way through a block
      * and can't be freed */
-    /* sb_get() does a copy, but the other option would be to memmove() the
-     * string to the front then realloc() - just as expensive */
 
-    char *s = string_buffer_get(sb);
+    char *s = malloc((**sb).length + 1);
+    memcpy(s, (**sb).s, (**sb).length + 1);
 
-    free(sb);
+    string_buffer_delete(sb);
 
     return s;
 }

@@ -30,10 +30,14 @@ extern void string_buffer_delete (string_buffer_t *sb);
 
 extern void string_buffer_set (string_buffer_t *sb, const char *string);
 extern void string_buffer_append (string_buffer_t *sb, const char *string);
+/* printf doesn't take ownership of the arguments */
 extern void string_buffer_printf (string_buffer_t *sb, const char *format, ...);
 
-extern char *string_buffer_get (string_buffer_t *sb);
+/* You should probably commit() if you have the choice, but peek() is useful for
+ * passing args to libraries that take a copy of things you pass them. */
 extern const char *string_buffer_peek (string_buffer_t *sb);
+/* Commit deletes the string_buffer for convenience. sb is NOT valid upon return
+ */
 extern char *string_buffer_commit (string_buffer_t *sb);
 
 #endif /* _INCLUDED_STRING_BUFFER_H */
