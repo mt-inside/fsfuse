@@ -1,4 +1,25 @@
+do todos in alarm_simple
+make internal_seen and _still_valid internal
+ur doin it wrong. Indexnodes should time themselves - (re)set an alamr when they're seen and then they tell the list when they're expired. The list registers an on-expired hook which the indexnode calls, causing that indexnode to be removed from the list.
+- assert hook not set atm so that if we need >1 we can write something more complex a la c# events
+- in to cache is valid
+- other stuff like DEs might want to register for that hook and expire
+  themselves, remove themselves from something, but probably not as there'll be millions of the fuckers in the cache.
+
+  de's
+ * with DEAD indexnodes are dead themselves - when they discover that they
+ * should act like they did a fetch and got a 404. In fact they shouldn't
+ * disocver - they should tell, not ask. E.g. when they try to touch their
+ * indexnode it should check if it's expired and return E??? which should
+ * propagate
 HIGHLEVEL:
+- retire CALLER_* because there is valgrind now
+- finish alarms class (based on alarm_simple) to keep thread usage down.
+- write an actor template and then enactor things like indexnodes
+- hide pthread. Make a mutex_class (which rwlock can own or inherit). Make
+  thread class (which takes a name for the thread which is used by the trace instead of the numberspace collapser)
+- hide / defer config. Shouldn't know about xml reading. Shouldn't know where
+  the file(s) are. Have something that gets a config object by searching / combining all the usual paths.
 - finish indexnodes & testing
 - make indexnode_thread and indexnodes into actors. indexnodes can pass the
   thread some kind of private msg number or something so that the function to register packets isn't public. All processing of the packet that happens in indexnodes.c should happen on its thread though - i don't like the way that random threads come through indexnodes.c and there has to be locking (as there's shared state - the list). Note XML or fetcher functions don't need to be actors because all their state is in the instance.
