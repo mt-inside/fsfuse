@@ -12,6 +12,7 @@
 
 #include "common.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "indexnode_stubs.h"
@@ -56,4 +57,51 @@ indexnode_t *get_indexnode_stub2( CALLER_DECL_ONLY )
         strdup( indexnode_stub_version2 ),
         strdup( indexnode_stub_id2 )
     );
+}
+
+
+int test_equals_stub( indexnode_t *in )
+{
+    const char *host_out, *port_out, *version_out, *id_out;
+    int rc;
+
+    host_out = indexnode_host( in );
+    port_out = indexnode_port( in );
+    version_out = indexnode_version( in );
+    id_out = indexnode_id( in );
+
+    rc = !strcmp( host_out, indexnode_stub_host ) &&
+         !strcmp( port_out, indexnode_stub_port ) &&
+         !strcmp( version_out, indexnode_stub_version ) &&
+         !strcmp( id_out, indexnode_stub_id );
+
+    free_const( host_out );
+    free_const( port_out );
+    free_const( version_out );
+    free_const( id_out );
+
+    return rc;
+}
+
+int test_equals_stub2( indexnode_t *in )
+{
+    const char *host_out, *port_out, *version_out, *id_out;
+    int rc;
+
+    host_out = indexnode_host( in );
+    port_out = indexnode_port( in );
+    version_out = indexnode_version( in );
+    id_out = indexnode_id( in );
+
+    rc = !strcmp( host_out, indexnode_stub_host2 ) &&
+         !strcmp( port_out, indexnode_stub_port2 ) &&
+         !strcmp( version_out, indexnode_stub_version2 ) &&
+         !strcmp( id_out, indexnode_stub_id2 );
+
+    free_const( host_out );
+    free_const( port_out );
+    free_const( version_out );
+    free_const( id_out );
+
+    return rc;
 }

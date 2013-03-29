@@ -21,11 +21,6 @@
 #include "indexnode.h"
 
 
-/* TODO: move to check.h */
-static void test_string_equal( const char *a, const char *b )
-{
-    assert(!strcmp(a,b));
-}
 #define test_not_null(a) (assert(a != NULL))
 
 void indexnode_can_be_created_and_destroyed( void )
@@ -50,6 +45,7 @@ void indexnode_can_be_created_from_proto( void )
 
     /* Assert */
     test_not_null( in );
+    assert( test_equals_stub( in ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
@@ -57,27 +53,11 @@ void indexnode_can_be_created_from_proto( void )
 
 void indexnode_is_sane_property_bag( void )
 {
-    /* Setup */
-    const char *host_out, *port_out, *version_out, *id_out;
-
     /* Action */
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
-    host_out = indexnode_host( in );
-    port_out = indexnode_port( in );
-    version_out = indexnode_version( in );
-    id_out = indexnode_id( in );
-
-    test_string_equal( host_out, indexnode_stub_host );
-    test_string_equal( port_out, indexnode_stub_port );
-    test_string_equal( version_out, indexnode_stub_version );
-    test_string_equal( id_out, indexnode_stub_id );
-
-    free_const( host_out );
-    free_const( port_out );
-    free_const( version_out );
-    free_const( id_out );
+    assert( test_equals_stub( in ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
@@ -86,7 +66,6 @@ void indexnode_is_sane_property_bag( void )
 void indexnode_can_be_copied_and_copy_outlives_original( void )
 {
     /* Setup */
-    const char *host_out2;
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
@@ -94,11 +73,7 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
     indexnode_delete( CALLER_INFO in1 );
 
     /* Assert */
-    host_out2 = indexnode_host( in2 );
-
-    test_string_equal( host_out2, indexnode_stub_host );
-
-    free_const( host_out2 );
+    assert( test_equals_stub( in2 ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in2 );
@@ -107,21 +82,14 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
 void indexnode_can_be_copied_and_has_right_data( void )
 {
     /* Setup */
-    const char *host_out1, *host_out2;
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
     indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
 
     /* Assert */
-    host_out1 = indexnode_host( in1 );
-    host_out2 = indexnode_host( in2 );
-
-    test_string_equal( host_out2, host_out1 );
-    test_string_equal( host_out2, indexnode_stub_host );
-
-    free_const( host_out1 );
-    free_const( host_out2 );
+    assert( test_equals_stub( in1 ) );
+    assert( test_equals_stub( in2 ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in1 );
