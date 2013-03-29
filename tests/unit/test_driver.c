@@ -32,7 +32,8 @@ int main (int argc, char **argv)
     utils_init( );
     trace_init( );
 
-    SRunner *r = srunner_create( indexnode_tests( ) );
+    SRunner *r = srunner_create( hash_table_tests( ) );
+    srunner_add_suite( r, indexnode_tests( ) );
     srunner_add_suite( r, indexnodes_list_tests( ) );
     srunner_add_suite( r, proto_indexnode_tests( ) );
     srunner_add_suite( r, ref_count_tests( ) );
@@ -53,7 +54,6 @@ int main (int argc, char **argv)
 
     return (num_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 
-    //hash_table_test();
     //http_test();
     //uri_test();
     //utils_test();

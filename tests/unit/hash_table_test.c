@@ -17,45 +17,114 @@
 #include "hash_table.h"
 
 
-void hash_table_test (void)
+static const char *key1 = "key one",
+                  *key2 = "key two",
+                  *key3 = "key three";
+
+static const char *value1 = "value one",
+                  *value2 = "value two",
+                  *value3 = "value three";
+
+
+static hash_table_t *tbl;
+
+static void setup( void )
 {
-    char *ak = "one",
-         *bk = "two",
-         *ck = "three";
+    tbl = hash_table_new( 0.5f, 1.0f );
+}
 
-    char *ad = "one data",
-         *bd = "two datums",
-         *cd = "three datas";
-
-
-    hash_table_t *tbl = hash_table_new(16, 0.5f, 1.0f);
-
-    hash_table_add(tbl, ak, (void *)ad);
-    hash_table_add(tbl, bk, (void *)bd);
-    hash_table_add(tbl, ck, (void *)cd);
-
-    assert(!strcmp((char *)hash_table_find(tbl, ak), ad));
-    assert(!strcmp((char *)hash_table_find(tbl, bk), bd));
-    assert(!strcmp((char *)hash_table_find(tbl, ck), cd));
-
-    assert(hash_table_del(tbl, ak) == 1);
-
-    assert(hash_table_find(tbl, ak) == NULL);
-    assert(!strcmp((char *)hash_table_find(tbl, bk), bd));
-    assert(!strcmp((char *)hash_table_find(tbl, ck), cd));
-
-    assert(hash_table_del(tbl, ak) == 0);
-    assert(hash_table_del(tbl, bk) == 1);
-    assert(hash_table_del(tbl, ck) == 1);
-
-    assert(hash_table_find(tbl, ak) == NULL);
-    assert(hash_table_find(tbl, bk) == NULL);
-    assert(hash_table_find(tbl, ck) == NULL);
-
-    hash_table_add(tbl, ak, (void *)ad);
-    hash_table_add(tbl, bk, (void *)bd);
-    hash_table_add(tbl, ck, (void *)cd);
+static void teardown( void )
+{
+    hash_table_delete( tbl );
+}
 
 
+START_TEST( empty_table )
+{
+    fail_unless( tbl != NULL, "new hash table should be non-null" );
+}
+END_TEST
+
+START_TEST( can_add_and_find_entries )
+{
+    hash_table_add(tbl, key1, (void *)value1);
+    hash_table_add(tbl, key2, (void *)value2);
+    hash_table_add(tbl, key3, (void *)value3);
+
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key1), value1 );
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key2), value2 );
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key3), value3 );
+
+    hash_table_del(tbl, key1);
+    hash_table_del(tbl, key2);
+    hash_table_del(tbl, key3);
+}
+END_TEST
+
+START_TEST( can_remove_entries )
+{
+    hash_table_add(tbl, key1, (void *)value1);
+    hash_table_add(tbl, key2, (void *)value2);
+    hash_table_add(tbl, key3, (void *)value3);
+
+    fail_unless(hash_table_del(tbl, key1) == 1, "should be able to find this entry to delete");
+
+    fail_unless(hash_table_find(tbl, key1) == NULL, "shouldn't be able to find deleted entry");
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key2), value2 );
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key3), value3 );
+
+    fail_unless(hash_table_del(tbl, key1) == 0, "shouldn't be able to delete already deleted entry");
+    fail_unless(hash_table_del(tbl, key2) == 1, "should still be able to delete this entry");
+    fail_unless(hash_table_del(tbl, key3) == 1, "should still be able to delete this entry");
+
+    fail_unless(hash_table_find(tbl, key1) == NULL, "all entries should be gone by now");
+    fail_unless(hash_table_find(tbl, key2) == NULL, "all entries should be gone by now");
+    fail_unless(hash_table_find(tbl, key3) == NULL, "all entries should be gone by now");
+}
+END_TEST
+
+START_TEST( can_remove_and_readd_entries )
+{
+    hash_table_add(tbl, key1, (void *)value1);
+    hash_table_add(tbl, key2, (void *)value2);
+    hash_table_add(tbl, key3, (void *)value3);
+
+    fail_unless(hash_table_del(tbl, key1) == 1, "should be able to delete this entry");
+    fail_unless(hash_table_del(tbl, key2) == 1, "should be able to delete this entry");
+    fail_unless(hash_table_del(tbl, key3) == 1, "should be able to delete this entry");
+
+    fail_unless(hash_table_find(tbl, key1) == NULL, "all entries should be gone by now");
+    fail_unless(hash_table_find(tbl, key2) == NULL, "all entries should be gone by now");
+    fail_unless(hash_table_find(tbl, key3) == NULL, "all entries should be gone by now");
+
+    hash_table_add(tbl, key1, (void *)value1);
+    hash_table_add(tbl, key2, (void *)value2);
+    hash_table_add(tbl, key3, (void *)value3);
+
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key1), value1 );
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key2), value2 );
+    ck_assert_str_eq( (char *)hash_table_find(tbl, key3), value3 );
+
+    hash_table_del(tbl, key1);
+    hash_table_del(tbl, key2);
+    hash_table_del(tbl, key3);
+}
+END_TEST
+
+Suite *hash_table_tests( void )
+{
+    Suite *s = suite_create( "hash_table" );
+
+    TCase *tc_core = tcase_create( "core" );
+    tcase_add_checked_fixture( tc_core, setup, teardown );
+
+    tcase_add_test( tc_core, empty_table );
+    tcase_add_test( tc_core, can_add_and_find_entries );
+    tcase_add_test( tc_core, can_remove_entries );
+    tcase_add_test( tc_core, can_remove_and_readd_entries );
     /* TODO: iterator tests */
+
+    suite_add_tcase( s, tc_core );
+
+    return s;
 }
