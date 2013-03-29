@@ -23,6 +23,14 @@ const char *indexnode_stub_port = "1337";
 const char *indexnode_stub_version = "0.13";
 const char *indexnode_stub_id = "d34db33f";
 
+const proto_indexnode_t *get_proto_indexnode_stub( void )
+{
+    return proto_indexnode_new(
+        strdup( indexnode_stub_host ),
+        strdup( indexnode_stub_port )
+    );
+}
+
 indexnode_t *get_indexnode_stub( CALLER_DECL_ONLY )
 {
     return indexnode_new(
@@ -31,14 +39,6 @@ indexnode_t *get_indexnode_stub( CALLER_DECL_ONLY )
         strdup( indexnode_stub_port ),
         strdup( indexnode_stub_version ),
         strdup( indexnode_stub_id )
-    );
-}
-
-const proto_indexnode_t *get_proto_indexnode_stub( void )
-{
-    return proto_indexnode_new(
-        strdup( indexnode_stub_host ),
-        strdup( indexnode_stub_port )
     );
 }
 
@@ -59,6 +59,23 @@ indexnode_t *get_indexnode_stub2( CALLER_DECL_ONLY )
     );
 }
 
+
+int proto_indexnode_equals_stub( const proto_indexnode_t *pin )
+{
+    const char *host_out, *port_out;
+    int rc;
+
+    host_out = proto_indexnode_host( pin );
+    port_out = proto_indexnode_port( pin );
+
+    rc = !strcmp( host_out, indexnode_stub_host ) &&
+         !strcmp( port_out, indexnode_stub_port );
+
+    free_const( host_out );
+    free_const( port_out );
+
+    return rc;
+}
 
 int test_equals_stub( indexnode_t *in )
 {

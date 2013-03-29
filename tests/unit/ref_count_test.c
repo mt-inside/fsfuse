@@ -19,10 +19,7 @@
 #include "ref_count.h"
 
 
-/* TODO: move to check.h */
-#define test_not_null(a) (assert(a != NULL))
-
-void ref_count_can_be_created_and_destroyed( void )
+START_TEST( ref_count_can_be_created_and_destroyed )
 {
     /* Setup */
 
@@ -30,14 +27,15 @@ void ref_count_can_be_created_and_destroyed( void )
     ref_count_t *refc = ref_count_new( );
 
     /* Assert */
-    test_not_null( refc );
+    fail_unless( refc != NULL, "new ref counter should be non-null" );
 
     /* Teardown */
     ref_count_dec( refc );
     ref_count_delete( refc );
 }
+END_TEST
 
-void ref_count_can_be_inc_and_dec( void )
+START_TEST( ref_count_can_be_inc_and_dec )
 {
     /* Setup */
 
@@ -45,21 +43,28 @@ void ref_count_can_be_inc_and_dec( void )
     ref_count_t *refc = ref_count_new( );
 
     /* Assert */
-    test_not_null( refc );
-    assert( ref_count_inc( refc ) == 2 );
-    assert( ref_count_inc( refc ) == 3 );
-    assert( ref_count_inc( refc ) == 4 );
-    assert( ref_count_dec( refc ) == 3 );
-    assert( ref_count_dec( refc ) == 2 );
-    assert( ref_count_dec( refc ) == 1 );
-    assert( ref_count_dec( refc ) == 0 );
+    fail_unless( ref_count_inc( refc ) == 2, "ref count should be correct" );
+    fail_unless( ref_count_inc( refc ) == 3, "ref count should be correct");
+    fail_unless( ref_count_inc( refc ) == 4, "ref count should be correct" );
+    fail_unless( ref_count_dec( refc ) == 3, "ref count should be correct" );
+    fail_unless( ref_count_dec( refc ) == 2, "ref count should be correct" );
+    fail_unless( ref_count_dec( refc ) == 1, "ref count should be correct" );
+    fail_unless( ref_count_dec( refc ) == 0, "ref count should be correct" );
 
     /* Teardown */
     ref_count_delete( refc );
 }
+END_TEST
 
-void test_ref_count( void )
+Suite *ref_count_tests( void )
 {
-    ref_count_can_be_created_and_destroyed( );
-    ref_count_can_be_inc_and_dec( );
+    Suite *s = suite_create( "ref_count" );
+
+    TCase *tc_core = tcase_create( "core" );
+    tcase_add_test( tc_core, ref_count_can_be_created_and_destroyed );
+    tcase_add_test( tc_core, ref_count_can_be_inc_and_dec );
+
+    suite_add_tcase( s, tc_core );
+
+    return s;
 }

@@ -15,15 +15,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <check.h>
 #include "tests.h"
 #include "indexnode_stubs.h"
 
 #include "indexnodes/indexnodes_list_internal.h"
 
 
-#define test_not_null(a) (assert(a != NULL))
-
-void indexnodes_list_can_be_created_and_destroyed( void )
+START_TEST( indexnodes_list_can_be_created_and_destroyed )
 {
     /* Setup */
 
@@ -31,15 +30,16 @@ void indexnodes_list_can_be_created_and_destroyed( void )
     indexnodes_list_t *ins = indexnodes_list_new( );
 
     /* Assert */
-    test_not_null( ins );
+    fail_unless( ins != NULL, "list should be non-null" );
 
     /* Teardown */
     indexnodes_list_delete( ins );
 }
+END_TEST
 
 /* TODO: really need mocks here, because I need to verify that the indexnode is
  * retained and deleted right */
-void indexnodes_list_can_have_a_member( void )
+START_TEST( indexnodes_list_can_have_a_member )
 {
     /* Setup */
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -50,14 +50,15 @@ void indexnodes_list_can_have_a_member( void )
     indexnodes_list_add( ins, indexnode_post( CALLER_INFO in ) );
 
     /* Assert */
-    test_not_null( ins );
+    fail_unless( ins != NULL, "list should be non-null" );
 
     /* Teardown */
     indexnodes_list_delete( ins );
     indexnode_delete( CALLER_INFO in );
 }
+END_TEST
 
-void indexnodes_list_can_have_several_members( void )
+START_TEST( indexnodes_list_can_have_several_members )
 {
     /* Setup */
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -69,15 +70,16 @@ void indexnodes_list_can_have_several_members( void )
     indexnodes_list_add( ins, indexnode_post( CALLER_INFO in2 ) );
 
     /* Assert */
-    test_not_null( ins );
+    fail_unless( ins != NULL, "list should be non-null" );
 
     /* Teardown */
     indexnodes_list_delete( ins );
     indexnode_delete( CALLER_INFO in1 );
     indexnode_delete( CALLER_INFO in2 );
 }
+END_TEST
 
-void indexnodes_list_holds_right_number_of_items( void )
+START_TEST( indexnodes_list_holds_right_number_of_items )
 {
     /* Setup */
     indexnode_t *in_in1 = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -98,22 +100,23 @@ void indexnodes_list_holds_right_number_of_items( void )
     {
         in_out = indexnodes_iterator_current( iter );
 
-        test_not_null( in_out );
+        fail_unless( in_out != NULL, "iterator should return non-null indexnode" );
         count++;
 
         indexnode_delete( CALLER_INFO in_out );
     }
     indexnodes_iterator_delete( iter );
 
-    assert( count == 2 );
+    fail_unless( count == 2, "should get 2 indexnodes from list" );
 
     /* Teardown */
     indexnodes_list_delete( ins );
     indexnode_delete( CALLER_INFO in_in1 );
     indexnode_delete( CALLER_INFO in_in2 );
 }
+END_TEST
 
-void indexnodes_list_returns_what_is_put_in( void )
+START_TEST( indexnodes_list_returns_what_is_put_in )
 {
     /* Setup */
     indexnode_t *in_in1 = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -129,26 +132,28 @@ void indexnodes_list_returns_what_is_put_in( void )
     /* Action & Assert */
     iter = indexnodes_iterator_begin( ins );
     in_out = indexnodes_iterator_current( iter );
-    test_not_null( in_out );
+    fail_unless( in_out != NULL, "iterator should give non-null indexnode" );
 
-    assert( test_equals_stub(  in_out ) ||
-            test_equals_stub2( in_out ) );
+    fail_unless( test_equals_stub(  in_out ) ||
+                 test_equals_stub2( in_out ),
+                 "indexnode should be one stub or the other" );
 
     indexnode_delete( CALLER_INFO in_out );
 
 
     iter = indexnodes_iterator_next( iter );
     in_out = indexnodes_iterator_current( iter );
-    test_not_null( in_out );
+    fail_unless( in_out != NULL, "iterator should give non-null indexnode" );
 
-    assert( test_equals_stub(  in_out ) ||
-            test_equals_stub2( in_out ) );
+    fail_unless( test_equals_stub(  in_out ) ||
+                 test_equals_stub2( in_out ),
+                 "indexnode should be one stub or the other" );
 
     indexnode_delete( CALLER_INFO in_out );
 
 
     iter = indexnodes_iterator_next( iter );
-    assert( indexnodes_iterator_end( iter ) );
+    fail_unless( indexnodes_iterator_end( iter ) != 0, "iterator should be at end" );
 
     /* Teardown */
     indexnodes_iterator_delete( iter );
@@ -156,16 +161,24 @@ void indexnodes_list_returns_what_is_put_in( void )
     indexnode_delete( CALLER_INFO in_in1 );
     indexnode_delete( CALLER_INFO in_in2 );
 }
+END_TEST
 
-void test_indexnodes_list( void )
+Suite *indexnodes_list_tests( void )
 {
-    indexnode_trace_on( );
+    Suite *s = suite_create( "indexnodes_list" );
 
-    indexnodes_list_can_be_created_and_destroyed( );
-    indexnodes_list_can_have_a_member( );
-    indexnodes_list_can_have_several_members( );
-    indexnodes_list_holds_right_number_of_items( );
-    indexnodes_list_returns_what_is_put_in( );
 
-    indexnode_trace_off( );
+    TCase *tc_lifecycle = tcase_create( "lifecycle" );
+    tcase_add_test( tc_lifecycle, indexnodes_list_can_be_created_and_destroyed );
+    suite_add_tcase( s, tc_lifecycle );
+
+    TCase *tc_items = tcase_create( "items" );
+    tcase_add_test( tc_items, indexnodes_list_can_have_a_member );
+    tcase_add_test( tc_items, indexnodes_list_can_have_several_members );
+    tcase_add_test( tc_items, indexnodes_list_holds_right_number_of_items );
+    tcase_add_test( tc_items, indexnodes_list_returns_what_is_put_in );
+    suite_add_tcase( s, tc_items );
+
+
+    return s;
 }

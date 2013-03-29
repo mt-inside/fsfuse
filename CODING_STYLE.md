@@ -19,6 +19,7 @@ Header Order - Tests
 
 <sys.h>
 
+<check.h>
 "tests.h"
 "other_test_headers.h" (e.g. stubs)
 
@@ -31,7 +32,21 @@ Public headers go in /src. Module's private headers go in the module dir. These 
 
 Testing
 =======
+
+Valgrind
+--------
 valgrind --track-fds=yes --tool=memcheck --leak-check=full --show-possibly-lost=yes --show-reachable=yes --undef-value-errors=yes --track-origins=yes ./fsfuse
+
+Unit tests
+----------
+We use check (http://check.sourceforge.com)
+Tests should use: fail_unless( expr_that_should_be_true, "explanation of what should happen" );
+    e.g. fail_unless( in != NULL, "indexnode should be non-null" );
+Don't check lifecycle stuff explicity, it's a bit passe. Just do _new() and _delete() in checked fixtures
+Don't check property getters and setters - that should all be hidden - tell, don't ask
+
+Integration tests
+-----------------
 
 Random Notes on Code
 ====================

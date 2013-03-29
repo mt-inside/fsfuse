@@ -23,30 +23,38 @@
 
 int main (int argc, char **argv)
 {
+    int num_failed;
+
+
     NOT_USED(argc);
     NOT_USED(argv);
 
     utils_init( );
     trace_init( );
 
-    //hash_table_test();
-    //http_test();
-    test_indexnode( );
-    test_indexnodes_list( );
-    test_proto_indexnode( );
-    test_ref_count( );
-    //string_buffer_test();
-    //uri_test();
-    //utils_test();
+    SRunner *r = srunner_create( indexnode_tests( ) );
+    srunner_add_suite( r, indexnodes_list_tests( ) );
+    srunner_add_suite( r, proto_indexnode_tests( ) );
+    srunner_add_suite( r, ref_count_tests( ) );
+
+    srunner_run_all( r, CK_NORMAL );
+
+    num_failed = srunner_ntests_failed( r );
+
+    srunner_free( r );
 
     trace_finalise( );
     utils_finalise( );
 
-    printf( "OK.\n" );
-
-
     close( 0 );
     close( 1 );
     close( 2 );
-    exit( EXIT_SUCCESS );
+
+    return (num_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    //hash_table_test();
+    //http_test();
+    //string_buffer_test();
+    //uri_test();
+    //utils_test();
 }

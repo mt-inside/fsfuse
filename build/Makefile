@@ -53,7 +53,7 @@ else
     CFLAGS += $(CFLAGS_OPTIM)
 endif
 
-LDFLAGS = `curl-config --libs` `xml2-config --libs`
+LDFLAGS = `curl-config --libs` `xml2-config --libs` -lcheck
 ifeq ($(OS),Darwin)
     LDFLAGS += `pkg-config --libs fuse`
 else

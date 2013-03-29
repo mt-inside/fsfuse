@@ -15,27 +15,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <check.h>
 #include "tests.h"
 #include "indexnode_stubs.h"
 
 #include "indexnode.h"
 
 
-#define test_not_null(a) (assert(a != NULL))
-
-void indexnode_can_be_created_and_destroyed( void )
+START_TEST( indexnode_can_be_created_and_destroyed )
 {
     /* Setup */
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
-    test_not_null( in );
+    fail_unless( in != NULL, "indexnode should be non-null" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
 }
+END_TEST
 
-void indexnode_can_be_created_from_proto( void )
+START_TEST( indexnode_can_be_created_from_proto )
 {
     /* Setup */
     const proto_indexnode_t *pin = get_proto_indexnode_stub( );
@@ -44,14 +44,15 @@ void indexnode_can_be_created_from_proto( void )
     indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, strdup( indexnode_stub_version ), strdup( indexnode_stub_id ) );
 
     /* Assert */
-    test_not_null( in );
-    assert( test_equals_stub( in ) );
+    fail_unless( in != NULL, "indexnode should be non-null" );
+    fail_unless( test_equals_stub( in ), "indexnode data should match stub" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
 }
+END_TEST
 
-void indexnode_is_sane_property_bag( void )
+START_TEST( indexnode_is_sane_property_bag )
 {
     /* Action */
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -62,8 +63,9 @@ void indexnode_is_sane_property_bag( void )
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
 }
+END_TEST
 
-void indexnode_can_be_copied_and_copy_outlives_original( void )
+START_TEST( indexnode_can_be_copied_and_copy_outlives_original )
 {
     /* Setup */
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -78,8 +80,9 @@ void indexnode_can_be_copied_and_copy_outlives_original( void )
     /* Teardown */
     indexnode_delete( CALLER_INFO in2 );
 }
+END_TEST
 
-void indexnode_can_be_copied_and_has_right_data( void )
+START_TEST( indexnode_can_be_copied_and_has_right_data )
 {
     /* Setup */
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
@@ -95,20 +98,23 @@ void indexnode_can_be_copied_and_has_right_data( void )
     indexnode_delete( CALLER_INFO in1 );
     indexnode_delete( CALLER_INFO in2 );
 }
+END_TEST
 
 /* TODO: test seen and still valid. Don't make the unit tests sleep...
  * Don't test make_url as it shouldn't be here.
  * Move make_url */
-
-void test_indexnode( void )
+Suite *indexnode_tests( void )
 {
-    indexnode_trace_on( );
+    Suite *s = suite_create( "indexnode" );
 
-    indexnode_can_be_created_and_destroyed( );
-    indexnode_can_be_created_from_proto( );
-    indexnode_is_sane_property_bag( );
-    indexnode_can_be_copied_and_copy_outlives_original( );
-    indexnode_can_be_copied_and_has_right_data( );
+    TCase *tc_lifecycle = tcase_create( "lifecycle" );
+    tcase_add_test( tc_lifecycle, indexnode_can_be_created_and_destroyed );
+    tcase_add_test( tc_lifecycle, indexnode_can_be_created_from_proto );
+    tcase_add_test( tc_lifecycle, indexnode_is_sane_property_bag );
+    tcase_add_test( tc_lifecycle, indexnode_can_be_copied_and_copy_outlives_original );
+    tcase_add_test( tc_lifecycle, indexnode_can_be_copied_and_has_right_data );
 
-    indexnode_trace_off( );
+    suite_add_tcase( s, tc_lifecycle );
+
+    return s;
 }
