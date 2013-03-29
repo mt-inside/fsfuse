@@ -77,7 +77,7 @@ int proto_indexnode_equals_stub( const proto_indexnode_t *pin )
     return rc;
 }
 
-int test_equals_stub( indexnode_t *in )
+int indexnode_equals_stub( indexnode_t *in )
 {
     const char *host_out, *port_out, *version_out, *id_out;
     int rc;
@@ -100,7 +100,7 @@ int test_equals_stub( indexnode_t *in )
     return rc;
 }
 
-int test_equals_stub2( indexnode_t *in )
+int indexnode_equals_stub2( indexnode_t *in )
 {
     const char *host_out, *port_out, *version_out, *id_out;
     int rc;

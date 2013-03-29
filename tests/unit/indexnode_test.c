@@ -45,7 +45,7 @@ START_TEST( indexnode_can_be_created_from_proto )
 
     /* Assert */
     fail_unless( in != NULL, "indexnode should be non-null" );
-    fail_unless( test_equals_stub( in ), "indexnode data should match stub" );
+    fail_unless( indexnode_equals_stub( in ), "indexnode data should match stub" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
@@ -58,7 +58,7 @@ START_TEST( indexnode_is_sane_property_bag )
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
-    assert( test_equals_stub( in ) );
+    assert( indexnode_equals_stub( in ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
@@ -75,7 +75,7 @@ START_TEST( indexnode_can_be_copied_and_copy_outlives_original )
     indexnode_delete( CALLER_INFO in1 );
 
     /* Assert */
-    assert( test_equals_stub( in2 ) );
+    assert( indexnode_equals_stub( in2 ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in2 );
@@ -91,8 +91,8 @@ START_TEST( indexnode_can_be_copied_and_has_right_data )
     indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
 
     /* Assert */
-    assert( test_equals_stub( in1 ) );
-    assert( test_equals_stub( in2 ) );
+    assert( indexnode_equals_stub( in1 ) );
+    assert( indexnode_equals_stub( in2 ) );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in1 );

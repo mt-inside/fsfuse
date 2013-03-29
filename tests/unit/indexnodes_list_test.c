@@ -134,8 +134,8 @@ START_TEST( indexnodes_list_returns_what_is_put_in )
     in_out = indexnodes_iterator_current( iter );
     fail_unless( in_out != NULL, "iterator should give non-null indexnode" );
 
-    fail_unless( test_equals_stub(  in_out ) ||
-                 test_equals_stub2( in_out ),
+    fail_unless( indexnode_equals_stub(  in_out ) ||
+                 indexnode_equals_stub2( in_out ),
                  "indexnode should be one stub or the other" );
 
     indexnode_delete( CALLER_INFO in_out );
@@ -145,8 +145,8 @@ START_TEST( indexnodes_list_returns_what_is_put_in )
     in_out = indexnodes_iterator_current( iter );
     fail_unless( in_out != NULL, "iterator should give non-null indexnode" );
 
-    fail_unless( test_equals_stub(  in_out ) ||
-                 test_equals_stub2( in_out ),
+    fail_unless( indexnode_equals_stub(  in_out ) ||
+                 indexnode_equals_stub2( in_out ),
                  "indexnode should be one stub or the other" );
 
     indexnode_delete( CALLER_INFO in_out );

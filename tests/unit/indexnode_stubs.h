@@ -25,7 +25,7 @@ extern const char *indexnode_stub_id2;
 extern indexnode_t *get_indexnode_stub2( CALLER_DECL_ONLY );
 
 extern int proto_indexnode_equals_stub( const proto_indexnode_t *pin );
-extern int test_equals_stub(  indexnode_t *in );
-extern int test_equals_stub2( indexnode_t *in );
+extern int indexnode_equals_stub(  indexnode_t *in );
+extern int indexnode_equals_stub2( indexnode_t *in );
 
 #endif /* _INCLUDED_INDEXNODE_STUBS_H */
