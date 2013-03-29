@@ -58,7 +58,7 @@ START_TEST( indexnode_is_sane_property_bag )
     indexnode_t *in = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Assert */
-    assert( indexnode_equals_stub( in ) );
+    fail_unless( indexnode_equals_stub( in ), "indexnode should equal stub" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in );
@@ -75,7 +75,7 @@ START_TEST( indexnode_can_be_copied_and_copy_outlives_original )
     indexnode_delete( CALLER_INFO in1 );
 
     /* Assert */
-    assert( indexnode_equals_stub( in2 ) );
+    fail_unless( indexnode_equals_stub( in2 ), "indexnode copy should equal (deleted) original" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in2 );
@@ -91,8 +91,8 @@ START_TEST( indexnode_can_be_copied_and_has_right_data )
     indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
 
     /* Assert */
-    assert( indexnode_equals_stub( in1 ) );
-    assert( indexnode_equals_stub( in2 ) );
+    fail_unless( indexnode_equals_stub( in1 ), "original indexnode should be sane" );
+    fail_unless( indexnode_equals_stub( in2 ), "copied indexnode should be same as original" );
 
     /* Teardown */
     indexnode_delete( CALLER_INFO in1 );
