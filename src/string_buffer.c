@@ -37,41 +37,28 @@ static void string_buffer_ensure_capacity (string_buffer_t *sb, size_t cap);
 
 string_buffer_t *string_buffer_new (void)
 {
-    string_buffer_t *ptr = malloc(sizeof(string_buffer_t));
-
-    *ptr = malloc(sizeof(struct _string_buffer_t) + 1);
-    (**ptr).capacity = 1;
-    (**ptr).length   = 0;
-    (**ptr).s[0] = '\0';
-
-    return ptr;
+    return string_buffer_from_chars( strdup( "" ) );
 }
 
 string_buffer_t *string_buffer_from_chars (const char *string)
 {
-    string_buffer_t *sb = string_buffer_new();
+    string_buffer_t *ptr = malloc(sizeof(string_buffer_t));
+    size_t len = strlen(string);
 
-    string_buffer_set(sb, string);
+    *ptr = malloc(sizeof(struct _string_buffer_t) + len + 1);
+    (**ptr).capacity = len + 1;
+    (**ptr).length   = len;
+    strcpy((**ptr).s, string);
 
-    return sb;
+    free_const(string);
+
+    return ptr;
 }
 
 void string_buffer_delete (string_buffer_t *sb)
 {
     free(*sb);
     free(sb);
-}
-
-
-void string_buffer_set (string_buffer_t *sb, const char *string)
-{
-    size_t len = strlen(string);
-    string_buffer_ensure_capacity(sb, len);
-
-    strcpy((**sb).s, string);
-    (**sb).length = len;
-
-    free_const(string);
 }
 
 void string_buffer_append (string_buffer_t *sb, const char *string)

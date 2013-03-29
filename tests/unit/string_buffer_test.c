@@ -21,23 +21,25 @@
 #include "string_buffer.h"
 
 
-static string_buffer_t *sb;
-
-static void setup( void )
-{
-    sb = string_buffer_new( );
-}
-
-static void teardown( void )
-{
-}
-
-
-START_TEST( can_set_and_commit )
+START_TEST( can_new_empty_and_commit )
 {
     char *s;
 
-    string_buffer_set(sb, strdup( "Hello" ));
+    string_buffer_t *sb = string_buffer_new( );
+
+    s = string_buffer_commit(sb);
+    ck_assert_str_eq( s, "" );
+    free(s);
+}
+END_TEST
+
+
+START_TEST( can_new_empty_append_and_commit )
+{
+    char *s;
+
+    string_buffer_t *sb = string_buffer_new( );
+    string_buffer_append( sb, strdup( "Hello" ) );
 
     s = string_buffer_commit(sb);
     ck_assert_str_eq( s, "Hello" );
@@ -45,11 +47,23 @@ START_TEST( can_set_and_commit )
 }
 END_TEST
 
-START_TEST( can_set_append_and_commit )
+START_TEST( can_new_and_commit )
 {
     char *s;
 
-    string_buffer_set(sb, strdup( "Hello" ));
+    string_buffer_t *sb = string_buffer_from_chars( strdup( "Hello" ) );
+
+    s = string_buffer_commit(sb);
+    ck_assert_str_eq( s, "Hello" );
+    free(s);
+}
+END_TEST
+
+START_TEST( can_new_append_and_commit )
+{
+    char *s;
+
+    string_buffer_t *sb = string_buffer_from_chars( strdup( "Hello" ) );
     string_buffer_append(sb, strdup( ", World!" ));
 
     s = string_buffer_commit(sb);
@@ -58,9 +72,9 @@ START_TEST( can_set_append_and_commit )
 }
 END_TEST
 
-START_TEST( can_set_and_peek )
+START_TEST( can_new_and_peek )
 {
-    string_buffer_set(sb, strdup( "Hello" ));
+    string_buffer_t *sb = string_buffer_from_chars( strdup( "Hello" ) );
 
     ck_assert_str_eq( string_buffer_peek(sb), "Hello" );
 
@@ -68,9 +82,9 @@ START_TEST( can_set_and_peek )
 }
 END_TEST
 
-START_TEST( can_set_append_and_peek )
+START_TEST( can_new_append_and_peek )
 {
-    string_buffer_set(sb, strdup( "Hello" ));
+    string_buffer_t *sb = string_buffer_from_chars( strdup( "Hello" ) );
     string_buffer_append(sb, strdup( ", World!" ));
 
     ck_assert_str_eq( string_buffer_peek(sb), "Hello, World!" );
@@ -79,35 +93,11 @@ START_TEST( can_set_append_and_peek )
 }
 END_TEST
 
-START_TEST( can_make_from_chars )
-{
-    string_buffer_t *sb1 = string_buffer_from_chars(strdup( "Hello" ));
-    char *s;
-
-    s = string_buffer_commit(sb1);
-    ck_assert_str_eq( s, "Hello" );
-    free(s);
-}
-END_TEST
-
-START_TEST( can_append_to_sb_from_chars )
-{
-    string_buffer_t *sb1 = string_buffer_from_chars(strdup( "Hello" ));
-    char *s;
-
-    string_buffer_append(sb1, strdup( ", World!" ));
-
-    s = string_buffer_commit(sb1);
-    ck_assert_str_eq( s, "Hello, World!" );
-    free(s);
-}
-END_TEST
-
 START_TEST( can_append_multiple_times )
 {
     char *s;
 
-    string_buffer_set(sb, strdup( "Hello" ));
+    string_buffer_t *sb = string_buffer_from_chars( strdup( "Hello" ) );
     string_buffer_append(sb, strdup( ", World!" ));
     string_buffer_append(sb, strdup( " World!" ));
     string_buffer_append(sb, strdup( " World!" ));
@@ -125,13 +115,12 @@ Suite *string_buffer_tests( void )
     Suite *s = suite_create( "string_buffer" );
 
     TCase *tc_core = tcase_create( "core" );
-    tcase_add_checked_fixture( tc_core, setup, teardown );
-    tcase_add_test( tc_core, can_set_and_commit );
-    tcase_add_test( tc_core, can_set_append_and_commit );
-    tcase_add_test( tc_core, can_set_and_peek );
-    tcase_add_test( tc_core, can_set_append_and_peek );
-    tcase_add_test( tc_core, can_make_from_chars );
-    tcase_add_test( tc_core, can_append_to_sb_from_chars );
+    tcase_add_test( tc_core, can_new_empty_and_commit );
+    tcase_add_test( tc_core, can_new_empty_append_and_commit );
+    tcase_add_test( tc_core, can_new_and_commit );
+    tcase_add_test( tc_core, can_new_append_and_commit );
+    tcase_add_test( tc_core, can_new_and_peek );
+    tcase_add_test( tc_core, can_new_append_and_peek );
     tcase_add_test( tc_core, can_append_multiple_times );
 
     suite_add_tcase( s, tc_core );

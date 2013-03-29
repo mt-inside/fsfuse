@@ -28,7 +28,6 @@ extern string_buffer_t *string_buffer_new (void);
 extern string_buffer_t *string_buffer_from_chars (const char *string);
 extern void string_buffer_delete (string_buffer_t *sb);
 
-extern void string_buffer_set (string_buffer_t *sb, const char *string);
 extern void string_buffer_append (string_buffer_t *sb, const char *string);
 /* printf doesn't take ownership of the arguments */
 extern void string_buffer_printf (string_buffer_t *sb, const char *format, ...);
