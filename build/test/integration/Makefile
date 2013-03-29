@@ -8,6 +8,7 @@ ROOT := ../../..
 
 include $(ROOT)/tests/integration/frag.mk
 
+DEBUG := 1
 MAIN_OBJECT := test_driver.o
 
 include ../../Makefile

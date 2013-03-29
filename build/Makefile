@@ -4,7 +4,6 @@
 # Main makefile for fsfuse.
 #
 
-ROOT ?= ..
 SRC_ROOT := $(ROOT)/src
 
 # == Option Defaults ==
