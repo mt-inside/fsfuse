@@ -163,24 +163,9 @@ void indexnode_delete( CALLER_DECL indexnode_t *in )
     indexnode_trace_dedent();
 }
 
-const char *indexnode_host( const indexnode_t *in )
+int indexnode_equals( indexnode_t *in, const char *id )
 {
-    return proto_indexnode_host( BASE_CLASS(in) );
-}
-
-const char *indexnode_port( const indexnode_t *in )
-{
-    return proto_indexnode_port( BASE_CLASS(in) );
-}
-
-const char *indexnode_version( const indexnode_t *in )
-{
-    return strdup( in->version );
-}
-
-const char *indexnode_id( const indexnode_t *in )
-{
-    return strdup( in->id );
+    return !strcmp( in->id, id );
 }
 
 /* API to make URLs ========================================================= */

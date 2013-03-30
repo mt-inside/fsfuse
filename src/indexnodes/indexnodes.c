@@ -121,13 +121,13 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
              * the get_version_and_id in parallel */
             indexnodes_list_add(list, in);
 
-            /* TODO: free these, yo */
             trace_info(
                 "Static index node configured at %s:%s, version %s, id %s\n",
-                indexnode_host(in),
-                indexnode_port(in),
-                indexnode_version(in),
-                indexnode_id(in));
+                host,
+                port,
+                version,
+                string_buffer_peek(id_buffer)
+            );
         }
 
         string_buffer_delete(id_buffer);

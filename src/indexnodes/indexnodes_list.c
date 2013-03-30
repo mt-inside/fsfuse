@@ -56,19 +56,16 @@ indexnode_t *indexnodes_list_find (CALLER_DECL indexnodes_list_t *ins, const cha
 {
     item_t *item;
     indexnode_t *in = NULL;
-    const char *item_id;
     int found = 0;
 
 
     TAILQ_FOREACH(item, &ins->list, next)
     {
-        item_id = indexnode_id(item->in);
-        if (item_id && !strcmp(item_id, id))
+        if (indexnode_equals(item->in, id))
         {
             in = indexnode_post( CALLER_PASS item->in );
             found = 1;
         }
-        free_const(item_id);
         if (found) break;
     }
 

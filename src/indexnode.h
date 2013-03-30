@@ -37,12 +37,7 @@ extern indexnode_t *indexnode_from_proto(
 extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in);
 extern void indexnode_delete( CALLER_DECL indexnode_t *in );
 
-/* TODO: The tell, don't ask dream is that these can go. Why can't they? */
-extern const char *indexnode_host   ( const indexnode_t *in );
-extern const char *indexnode_port   ( const indexnode_t *in );
-extern const char *indexnode_version( const indexnode_t *in );
-/* NULL if we can't get an ID, e.g. it's statically configured */
-extern const char *indexnode_id     ( const indexnode_t *in );
+extern int indexnode_equals( indexnode_t *in, const char *id );
 
 /* TODO: shouldn't be here (see proto_indexnode) */
 extern const char *indexnode_make_url(

@@ -79,46 +79,24 @@ int proto_indexnode_equals_stub( proto_indexnode_t *pin )
 
 int indexnode_equals_stub( indexnode_t *in )
 {
-    const char *host_out, *port_out, *version_out, *id_out;
+    const char *test_uri;
     int rc;
 
-    host_out = indexnode_host( in );
-    port_out = indexnode_port( in );
-    version_out = indexnode_version( in );
-    id_out = indexnode_id( in );
-
-    rc = !strcmp( host_out, indexnode_stub_host ) &&
-         !strcmp( port_out, indexnode_stub_port ) &&
-         !strcmp( version_out, indexnode_stub_version ) &&
-         !strcmp( id_out, indexnode_stub_id );
-
-    free_const( host_out );
-    free_const( port_out );
-    free_const( version_out );
-    free_const( id_out );
+    test_uri = indexnode_make_url( in, "foo", "bar" );
+    rc = !strcmp( test_uri, "http://fs2.example.org:1337/foo/bar" );
+    free_const( test_uri );
 
     return rc;
 }
 
 int indexnode_equals_stub2( indexnode_t *in )
 {
-    const char *host_out, *port_out, *version_out, *id_out;
+    const char *test_uri;
     int rc;
 
-    host_out = indexnode_host( in );
-    port_out = indexnode_port( in );
-    version_out = indexnode_version( in );
-    id_out = indexnode_id( in );
-
-    rc = !strcmp( host_out, indexnode_stub_host2 ) &&
-         !strcmp( port_out, indexnode_stub_port2 ) &&
-         !strcmp( version_out, indexnode_stub_version2 ) &&
-         !strcmp( id_out, indexnode_stub_id2 );
-
-    free_const( host_out );
-    free_const( port_out );
-    free_const( version_out );
-    free_const( id_out );
+    test_uri = indexnode_make_url( in, "foo", "bar" );
+    rc = !strcmp( test_uri, "http://second.indexnode.com:1337/foo/bar" );
+    free_const( test_uri );
 
     return rc;
 }
