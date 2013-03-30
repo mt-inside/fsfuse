@@ -39,6 +39,8 @@ extern void indexnode_delete( CALLER_DECL indexnode_t *in );
 
 extern int indexnode_equals( indexnode_t *in, const char *id );
 
+extern char *indexnode_tostring( indexnode_t *in );
+
 /* TODO: shouldn't be here (see proto_indexnode) */
 extern const char *indexnode_make_url(
     const indexnode_t *in,

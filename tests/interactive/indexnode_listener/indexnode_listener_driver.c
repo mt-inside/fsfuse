@@ -33,27 +33,13 @@ static void sigint_handler( int signum )
     s_exiting = 1;
 }
 
-static void print_indexnode( indexnode_t *in )
-{
-    const char *host = indexnode_host(in),
-               *port = indexnode_port(in),
-               *id = indexnode_version(in),
-               *version = indexnode_version(in);
-
-    printf( "[indexnode %p] %s @ %s:%s (version %s)\n", (void *)in, id, host, port, version );
-
-    free_const( host );
-    free_const( port );
-    free_const( id );
-    free_const( version );
-}
-
 int main( int argc, char **argv )
 {
     indexnodes_t *ins;
     indexnodes_list_t *list;
     indexnodes_iterator_t *iter;
     indexnode_t *in;
+    const char *in_render;
 
 
     utils_init( );
@@ -78,7 +64,9 @@ int main( int argc, char **argv )
         {
             in = indexnodes_iterator_current( iter );
 
-            print_indexnode( in );
+            in_render = indexnode_tostring( in );
+            printf( "%s\n", in_render );
+            free_const( in_render );
 
             indexnode_delete( CALLER_INFO in );
         }

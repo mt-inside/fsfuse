@@ -25,6 +25,7 @@
 #include "ref_count.h"
 #include "config.h"
 #include "fetcher.h"
+#include "string_buffer.h"
 #include "utils.h"
 
 
@@ -166,6 +167,25 @@ void indexnode_delete( CALLER_DECL indexnode_t *in )
 int indexnode_equals( indexnode_t *in, const char *id )
 {
     return !strcmp( in->id, id );
+}
+
+char *indexnode_tostring( indexnode_t *in )
+{
+    string_buffer_t *sb = string_buffer_new( );
+
+
+    string_buffer_printf(
+        sb,
+        "[indexnode %p] %s @ %s:%s (version %s)",
+        (void *)in,
+        in->id,
+        BASE_CLASS(in)->host,
+        BASE_CLASS(in)->port,
+        in->version
+    );
+
+
+    return string_buffer_commit( sb );
 }
 
 /* API to make URLs ========================================================= */
