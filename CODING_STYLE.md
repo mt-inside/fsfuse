@@ -50,17 +50,41 @@ Integration tests
 
 Random Notes on Code
 ====================
-Const should be used whereever possible.
-Some types are genuinely const, i.e. none of their members are ever altered after construction. HOWEVER, these do not need to be marked const when returned. We use opaque types to ensure that no-one outside of the class can mutate objects (and the class tries not to).
-Objects should never be returned as "const" or "* const".
-Arguments should be taken as const and * const where possible.
 
-Everything always returns a copy.
-It is the caller's responsibility to free it.
+Const-correctness
+-----------------
+We use opaque data types wherever possible (i.e. other modules only see typedef struct _foo *foo).
+This means that such types don't need to be passed round const all the time, as only the files that have access to the struct definition can meaningfully change them.
+Complex types are returned non-const from ctors and hence don't need storing as const by the client.
 
-GOAL: add()/set() and other "input" methods should usurp ownership of what they're passed. If the caller wants a copy too they should copy it. That is, ownership goes "in", but copies come "out".
-NOW: I think most things take copies on the way in, e.g. indexnode_list_add(), listing and direntry ctors() etc.
+Nothing should be returned const because fsfuse's convention is that everything returns a copy, thus the caller can do whatever it wants with the value it gets given.
+This applies to pointer const-ness too.
+Obvious exceptions are things like string_buffer_peek().
 
+Getters and other methods that just read the data should take their first argument ("this") as const to indicate that they don't update the state of the object.
+This is like "void Class::Method() const" in C++.
+Methods that change the state of the object (discouraged) obviously take the object non-const.
+
+Headers shouldn't declare arguments 2+ const because the convention is that you are giving up ownership of anything you pass in, so the method can do whatever it wants.
+Headers shouldn't declare functions as taking const pointers either because it's pointless - the pointer is passed by value so any change made to it by the method won't be reflected in the calling code.
+Implementation function signatures can specify const data or pointers if they wish to keep themselves honest (this is valid C). This point it that these are implementation details and the implementation should be free to change without affecting the contract (which is that the code /could/ modify anything it likes).
+
+Ownership
+---------
+Everything always returns a copy. Non-refc'd objects (inc char* strings) are physically coped, refc'd classes are posted.
+It is the caller's responsibility to free()/delete() them.
+
+Functions take ownership of any arguments passed into them.
+Thus if the caller wishes to retain a copy for itself it must strdup()/post()/etc before calling the function.
+To maintain this convention, if a method does not retain the object it's been given it should free() it.
+
+This has the nice effect that a lot of functions, those that just get objects from one place and pass them onto another, don't need to do any copying or deleting.
+
+Alas I think currently that most things take copies on the way in, e.g. indexnode_list_add(), listing and direntry ctors() etc.
+
+Other
+-----
 All locks should be "external". I.e. everything is single threaded and assumes it's used in e.g. an actor. If you want to use a class in a potentially multi-threaded way it is your responsibility to lock around it (e.g. by making yourself an actor)
 
-Utils and stuff should not be random static init & destroy. They should all be offred as objects which the clases that use them explicity depend on.
+Utils and stuff should not be random static init & destroy. They should all be offered as objects which the classes that use them explicitly depend on.
+Indeed, "utils" is a code smell. A collection of static functions that I can't name the function of.
