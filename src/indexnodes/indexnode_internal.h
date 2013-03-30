@@ -10,7 +10,7 @@
 #include "indexnode.h"
 
 
-extern void indexnode_seen( indexnode_t * const in );
-extern int indexnode_still_valid( const indexnode_t * const in );
+extern void indexnode_seen( indexnode_t *in );
+extern int indexnode_still_valid( const indexnode_t *in );
 
 #endif /* _INCLUDED_INDEXNODE_INTERNAL_H */

@@ -61,12 +61,12 @@ void proto_indexnode_teardown( proto_indexnode_t *pin )
     free_const( pin->port );
 }
 
-const char *proto_indexnode_host( proto_indexnode_t *pin )
+const char *proto_indexnode_host( const proto_indexnode_t *pin )
 {
     return strdup( pin->host );
 }
 
-const char *proto_indexnode_port( proto_indexnode_t *pin )
+const char *proto_indexnode_port( const proto_indexnode_t *pin )
 {
     return strdup( pin->port );
 }
@@ -77,7 +77,7 @@ const char *proto_indexnode_port( proto_indexnode_t *pin )
  * Shouldn't over-estimate string length and sprintf - should use string_buffer
  */
 const char *proto_indexnode_make_url (
-    proto_indexnode_t *pin,
+    const proto_indexnode_t *pin,
     const char *path_prefix,
     const char *resource
 )

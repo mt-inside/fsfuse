@@ -22,33 +22,33 @@ typedef struct _indexnode_t indexnode_t;
 
 extern indexnode_t *indexnode_new(
     CALLER_DECL
-    const char * const host,
-    const char * const port,
-    const char * const version,
-    const char * const id
+    const char *host,
+    const char *port,
+    const char *version,
+    const char *id
 );
 extern indexnode_t *indexnode_from_proto(
     CALLER_DECL
-    proto_indexnode_t * const pin,
-    const char * const version,
-    const char * const id
+    proto_indexnode_t *pin,
+    const char *version,
+    const char *id
 );
 
-extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in);
-extern void indexnode_delete( CALLER_DECL indexnode_t * const in );
+extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in);
+extern void indexnode_delete( CALLER_DECL indexnode_t *in );
 
 /* TODO: The tell, don't ask dream is that these can go. Why can't they? */
-extern const char *indexnode_host   ( const indexnode_t * const in );
-extern const char *indexnode_port   ( const indexnode_t * const in );
-extern const char *indexnode_version( const indexnode_t * const in );
+extern const char *indexnode_host   ( const indexnode_t *in );
+extern const char *indexnode_port   ( const indexnode_t *in );
+extern const char *indexnode_version( const indexnode_t *in );
 /* NULL if we can't get an ID, e.g. it's statically configured */
-extern const char *indexnode_id     ( const indexnode_t * const in );
+extern const char *indexnode_id     ( const indexnode_t *in );
 
 /* TODO: shouldn't be here (see proto_indexnode) */
 extern const char *indexnode_make_url(
-    const indexnode_t * const in,
-    const char * const path_prefix,
-    const char * const resource
+    const indexnode_t *in,
+    const char *path_prefix,
+    const char *resource
 );
 
 #endif /* _INCLUDED_INDEXNODE_H */

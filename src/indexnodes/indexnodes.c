@@ -48,10 +48,10 @@ static void load_indexnodes_from_config (indexnodes_list_t *list);
 static const char *parse_version_cb (proto_indexnode_t *in, const char *buf);
 static void packet_received_cb (
     const void *ctxt,
-    const char * const host,
-    const char * const port,
-    const char * const version,
-    const char * const id
+    const char *host,
+    const char *port,
+    const char *version,
+    const char *id
 );
 
 
@@ -175,10 +175,10 @@ static int parse_fs2protocol_version (const char *fs2protocol, const char **vers
 
 static void packet_received_cb (
     const void *ctxt,
-    const char * const host,
-    const char * const port,
-    const char * const fs2protocol,
-    const char * const id
+    const char *host,
+    const char *port,
+    const char *fs2protocol,
+    const char *id
 )
 {
     indexnodes_t *ins = (indexnodes_t *)ctxt;

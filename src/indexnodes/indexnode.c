@@ -46,7 +46,7 @@ struct _indexnode_t
 #define BASE_CLASS(in) ((proto_indexnode_t *)in)
 
 
-static int check_version( const char * const version )
+static int check_version( const char *version )
 {
     return( compare_dotted_version(PROTO_MINIMUM, version) < 0 ||
             compare_dotted_version(version, PROTO_MAXIMUM) < 0 );
@@ -54,10 +54,10 @@ static int check_version( const char * const version )
 
 indexnode_t *indexnode_new(
     CALLER_DECL
-    const char * const host,
-    const char * const port,
-    const char * const version,
-    const char * const id
+    const char *host,
+    const char *port,
+    const char *version,
+    const char *id
 )
 {
     indexnode_t *in = NULL;
@@ -97,9 +97,9 @@ indexnode_t *indexnode_new(
 
 indexnode_t *indexnode_from_proto(
     CALLER_DECL
-    proto_indexnode_t * const pin,
-    const char * const version,
-    const char * const id
+    proto_indexnode_t *pin,
+    const char *version,
+    const char *id
 )
 {
     indexnode_t *in;
@@ -122,7 +122,7 @@ indexnode_t *indexnode_from_proto(
     return in;
 }
 
-indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in )
+indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in )
 {
     unsigned refc = ref_count_inc( in->ref_count );
 
@@ -135,7 +135,7 @@ indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in )
     return in;
 }
 
-void indexnode_delete( CALLER_DECL indexnode_t * const in )
+void indexnode_delete( CALLER_DECL indexnode_t *in )
 {
     unsigned refc = ref_count_dec( in->ref_count );
 
@@ -163,22 +163,22 @@ void indexnode_delete( CALLER_DECL indexnode_t * const in )
     indexnode_trace_dedent();
 }
 
-const char *indexnode_host( const indexnode_t * const in )
+const char *indexnode_host( const indexnode_t *in )
 {
     return proto_indexnode_host( BASE_CLASS(in) );
 }
 
-const char *indexnode_port( const indexnode_t * const in )
+const char *indexnode_port( const indexnode_t *in )
 {
     return proto_indexnode_port( BASE_CLASS(in) );
 }
 
-const char *indexnode_version( const indexnode_t * const in )
+const char *indexnode_version( const indexnode_t *in )
 {
     return strdup( in->version );
 }
 
-const char *indexnode_id( const indexnode_t * const in )
+const char *indexnode_id( const indexnode_t *in )
 {
     return strdup( in->id );
 }
@@ -188,20 +188,20 @@ const char *indexnode_id( const indexnode_t * const in )
 /* TODO: move me! Really? Tell, don't ask. Obviously these should call off to
  * other places and not be concerned with escaping or URI formats themselves. */
 const char *indexnode_make_url(
-    const indexnode_t * const in,
-    const char * const path_prefix,
-    const char * const resource
+    const indexnode_t *in,
+    const char *path_prefix,
+    const char *resource
 )
 {
     return proto_indexnode_make_url( BASE_CLASS(in), path_prefix, resource );
 }
 
-void indexnode_seen( indexnode_t * const in )
+void indexnode_seen( indexnode_t *in )
 {
     in->last_seen = time( NULL );
 }
 
-int indexnode_still_valid( const indexnode_t * const in )
+int indexnode_still_valid( const indexnode_t *in )
 {
     return ( time( NULL ) - in->last_seen ) < config_indexnode_timeout;
 }
