@@ -136,7 +136,7 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 
 
 /* TODO: I should free protocol, but you'll have to check all my callers */
-static int parse_fs2protocol_version (const char *fs2protocol, const char **version)
+static int parse_fs2protocol (const char *fs2protocol, const char **version)
 {
     int rc = 1;
     const char *prefix = "fs2protocol-";
@@ -168,7 +168,7 @@ static void packet_received_cb (
     const char *version;
 
 
-    if (!parse_fs2protocol_version(fs2protocol, &version))
+    if (!parse_fs2protocol(fs2protocol, &version))
     {
         trace_info("Seen advert for indexnode %s at %s:%s (version %s)\n", id, host, port, version);
 
