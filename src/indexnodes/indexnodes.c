@@ -46,7 +46,6 @@ struct _indexnodes_t
 
 
 static void load_indexnodes_from_config (indexnodes_t *ins);
-static const char *parse_version_cb (const char *buf);
 static void packet_received_cb (
     const void *ctxt,
     const char *host,
@@ -87,7 +86,7 @@ void indexnodes_delete (indexnodes_t *ins)
 static void load_indexnodes_from_config (indexnodes_t *ins)
 {
     int i = 0;
-    const char *host, *port, *protocol, *version, *id;
+    const char *host, *port, *protocol, *id;
     string_buffer_t *id_buffer;
 
 
@@ -104,14 +103,13 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
         /* TODO: what happens if this fails? */
         /* TODO: "get version and id headers" or soemthign */
         protocol = fetcher_get_indexnode_version(pin); /* blocks */
-        version = parse_version_cb(protocol);
         id_buffer = string_buffer_new();
             /* TODO: can now get the uid of an indexnode from an HTTP header -
              * do this. For now it's just added assuming there isn't a duplicate */
         string_buffer_printf(id_buffer, "static-indexnode-%d", i);
         id = string_buffer_commit(id_buffer);
 
-        packet_received_cb(ins, host, port, version, id);
+        packet_received_cb(ins, host, port, protocol, id);
 
         free_const(id);
         i++;
@@ -200,16 +198,4 @@ static void packet_received_cb (
     {
         free_const(host); free_const(port); free_const(version); free_const(id);
     }
-}
-
-/* TODO: i am a useless wrapper */
-static const char *parse_version_cb (const char *fs2protocol)
-{
-    const char *version;
-
-    assert(fs2protocol); assert(*fs2protocol);
-
-    parse_fs2protocol_version(fs2protocol, &version);
-
-    return version;
 }
