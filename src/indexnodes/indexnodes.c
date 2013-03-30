@@ -87,7 +87,6 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
 {
     int i = 0;
     const char *host, *port, *protocol, *id;
-    string_buffer_t *id_buffer;
 
 
     while ((host = config_indexnode_hosts[i]) &&
@@ -101,17 +100,10 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
          * as possible and that we can get on with other stuff straight away.
          * The following logic would have to move to a callback. */
         /* TODO: what happens if this fails? */
-        /* TODO: "get version and id headers" or soemthign */
-        protocol = fetcher_get_indexnode_protocol(pin); /* blocks */
-        id_buffer = string_buffer_new();
-            /* TODO: can now get the uid of an indexnode from an HTTP header -
-             * do this. For now it's just added assuming there isn't a duplicate */
-        string_buffer_printf(id_buffer, "static-indexnode-%d", i);
-        id = string_buffer_commit(id_buffer);
+        fetcher_get_indexnode_info(pin, &protocol, &id); /* blocks */
 
         packet_received_cb(ins, host, port, protocol, id);
 
-        free_const(id);
         i++;
     }
 }

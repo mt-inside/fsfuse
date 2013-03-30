@@ -39,7 +39,14 @@
 TRACE_DEFINE(fetcher)
 
 
-static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream);
+typedef struct
+{
+    const char *protocol;
+    const char *id;
+} indexnode_info_t;
+
+
+static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream);
 
 static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp);
 
@@ -281,15 +288,19 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-const char *fetcher_get_indexnode_protocol (proto_indexnode_t *pin)
+void fetcher_get_indexnode_info (proto_indexnode_t *pin,
+                                 const char **protocol,
+                                 const char **id)
 {
-    const char *url, *protocol;
+    const char *url;
     char *error_buffer;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
     long http_code;
     CURL *eh;
     struct curl_slist *slist = NULL;
+    indexnode_info_t *info =
+        malloc(sizeof(indexnode_info_t));
 
 
     fetcher_trace("fetcher_get_indexnode_protocol(%p)\n", pin);
@@ -323,14 +334,18 @@ const char *fetcher_get_indexnode_protocol (proto_indexnode_t *pin)
     curl_easy_setopt(eh, CURLOPT_FORBID_REUSE, 1);
 
     /* Header consumer */
-    curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_version_header_cb);
-    curl_easy_setopt(eh, CURLOPT_HEADERDATA, &protocol);
+    curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_header_info_cb);
+    curl_easy_setopt(eh, CURLOPT_HEADERDATA, info);
 
     /* Do a HEAD request */
     curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
 
     /* Do it - blocks */
     curl_rc = curl_easy_perform(eh);
+
+    *protocol = info->protocol;
+    *id = info->id;
+    free(info);
 
     fetcher_trace("curl returned %d, error: %s\n", curl_rc,
         (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
@@ -343,13 +358,11 @@ const char *fetcher_get_indexnode_protocol (proto_indexnode_t *pin)
     }
 
     fetcher_trace_dedent();
-
-    return protocol;
 }
 
-static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
+static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream)
 {
-    char **protocol = (char **)stream;
+    indexnode_info_t *info = (indexnode_info_t *)stream;
     char *header = (char *)ptr;
 
 
@@ -358,7 +371,12 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        *protocol = strdup(header);
+        info->protocol = strdup(header);
+    }
+    else if (!strncasecmp(header, "fs2-id: ", strlen("fs2-id: ")))
+    {
+        header += strlen("fs2-id: ");
+        info->id = strdup(header);
     }
 
 
