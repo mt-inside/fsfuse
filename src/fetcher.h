@@ -21,12 +21,6 @@ typedef struct
     void *cb_data;
 } fetcher_cb_data_t;
 
-/* TODO: why is this public?? */
-typedef struct
-{
-    const char *protocol;
-} indexnode_version_cb_pair_t;
-
 
 TRACE_DECLARE(fetcher)
 #define fetcher_trace(...) TRACE(fetcher,__VA_ARGS__)
