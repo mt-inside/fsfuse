@@ -45,7 +45,7 @@ struct _indexnodes_t
 };
 
 
-static void load_indexnodes_from_config (indexnodes_list_t *list);
+static void load_indexnodes_from_config (indexnodes_t *ins);
 static const char *parse_version_cb (proto_indexnode_t *in, const char *buf);
 static void packet_received_cb (
     const void *ctxt,
@@ -64,7 +64,7 @@ indexnodes_t *indexnodes_new (void)
     ins->lock = rw_lock_new();
     ins->list = indexnodes_list_new();
 
-    load_indexnodes_from_config(ins->list);
+    load_indexnodes_from_config(ins);
 
     ins->listener = indexnodes_listener_new(&packet_received_cb, ins);
 
@@ -84,10 +84,10 @@ void indexnodes_delete (indexnodes_t *ins)
     free(ins);
 }
 
-static void load_indexnodes_from_config (indexnodes_list_t *list)
+static void load_indexnodes_from_config (indexnodes_t *ins)
 {
     int i = 0;
-    const char *host, *port, *version;
+    const char *host, *port, *version, *id;
     string_buffer_t *id_buffer;
 
 
@@ -107,28 +107,14 @@ static void load_indexnodes_from_config (indexnodes_list_t *list)
          * ourselves */
         version = fetcher_get_indexnode_version(pin, &parse_version_cb); /* blocks */
         id_buffer = string_buffer_new();
-        string_buffer_printf(id_buffer, "static-indexnode-%d", i);
-
-        indexnode_t *in = indexnode_from_proto(CALLER_INFO pin, version, string_buffer_peek(id_buffer));
-        if (in)
-        {
             /* TODO: can now get the uid of an indexnode from an HTTP header -
              * do this. For now it's just added assuming there isn't a duplicate */
-            /* TODO: raise the event. Does this mean we don't need proto
-             * indexnodd? I don't thing so - it'll be a useful ctxt when we do
-             * the get_version_and_id in parallel */
-            indexnodes_list_add(list, in);
+        string_buffer_printf(id_buffer, "static-indexnode-%d", i);
+        id = string_buffer_commit(id_buffer);
 
-            trace_info(
-                "Static index node configured at %s:%s, version %s, id %s\n",
-                host,
-                port,
-                version,
-                string_buffer_peek(id_buffer)
-            );
-        }
+        packet_received_cb(ins, host, port, version, id);
 
-        string_buffer_delete(id_buffer);
+        free_const(id);
         i++;
     }
 }
