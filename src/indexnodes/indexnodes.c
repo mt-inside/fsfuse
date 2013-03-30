@@ -102,7 +102,7 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
          * The following logic would have to move to a callback. */
         /* TODO: what happens if this fails? */
         /* TODO: "get version and id headers" or soemthign */
-        protocol = fetcher_get_indexnode_version(pin); /* blocks */
+        protocol = fetcher_get_indexnode_protocol(pin); /* blocks */
         id_buffer = string_buffer_new();
             /* TODO: can now get the uid of an indexnode from an HTTP header -
              * do this. For now it's just added assuming there isn't a duplicate */

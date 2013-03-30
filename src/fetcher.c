@@ -281,7 +281,7 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-const char *fetcher_get_indexnode_version (proto_indexnode_t *pin)
+const char *fetcher_get_indexnode_protocol (proto_indexnode_t *pin)
 {
     const char *url, *protocol;
     char *error_buffer;
@@ -292,7 +292,7 @@ const char *fetcher_get_indexnode_version (proto_indexnode_t *pin)
     struct curl_slist *slist = NULL;
 
 
-    fetcher_trace("fetcher_get_indexnode_version(%p)\n", pin);
+    fetcher_trace("fetcher_get_indexnode_protocol(%p)\n", pin);
     fetcher_trace_indent();
 
     /* New handle */
