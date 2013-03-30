@@ -43,6 +43,8 @@ int main( int argc, char **argv )
 
 
     utils_init( );
+    config_init( );
+    config_read( );
     trace_init( );
     indexnode_trace_on( );
 
@@ -78,7 +80,9 @@ int main( int argc, char **argv )
 
     indexnodes_delete( ins );
 
+    indexnode_trace_off( );
     trace_finalise( );
+    config_finalise( );
     utils_finalise( );
 
 
