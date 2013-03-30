@@ -127,7 +127,6 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 }
 
 
-/* TODO: I should free protocol, but you'll have to check all my callers */
 static int parse_fs2protocol (const char *fs2protocol, const char **version)
 {
     int rc = 1;
@@ -143,6 +142,8 @@ static int parse_fs2protocol (const char *fs2protocol, const char **version)
         *version = v;
         rc = 0;
     }
+
+    free_const(fs2protocol);
 
     return rc;
 }
@@ -185,7 +186,6 @@ static void packet_received_cb (
         }
     }
 
-    free_const(fs2protocol);
     if (!new_in)
     {
         free_const(host); free_const(port); free_const(version); free_const(id);
