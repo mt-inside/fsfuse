@@ -46,7 +46,7 @@ struct _indexnodes_t
 
 
 static void load_indexnodes_from_config (indexnodes_t *ins);
-static const char *parse_version_cb (proto_indexnode_t *in, const char *buf);
+static const char *parse_version_cb (const char *buf);
 static void packet_received_cb (
     const void *ctxt,
     const char *host,
@@ -202,11 +202,11 @@ static void packet_received_cb (
     }
 }
 
-static const char *parse_version_cb (proto_indexnode_t *in, const char *fs2protocol)
+/* TODO: i am a useless wrapper */
+static const char *parse_version_cb (const char *fs2protocol)
 {
     const char *version;
 
-    assert(in);
     assert(fs2protocol); assert(*fs2protocol);
 
     parse_fs2protocol_version(fs2protocol, &version);

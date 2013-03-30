@@ -15,7 +15,7 @@
 #include "listing.h"
 
 
-typedef const char *(*indexnode_version_cb_t)(proto_indexnode_t *, const char *);
+typedef const char *(*indexnode_version_cb_t)(const char *);
 
 typedef struct
 {
@@ -26,7 +26,6 @@ typedef struct
 /* TODO: why is this public?? */
 typedef struct
 {
-    proto_indexnode_t *indexnode;
     indexnode_version_cb_t callback;
     const char *version;
 } indexnode_version_cb_pair_t;

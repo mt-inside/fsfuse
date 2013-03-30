@@ -299,7 +299,6 @@ const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
     fetcher_trace_indent();
 
     /* Package data for header callback */
-    pair->indexnode = pin;
     pair->callback = cb;
 
     /* New handle */
@@ -368,7 +367,7 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        pair->version = pair->callback(pair->indexnode, header);
+        pair->version = pair->callback(header);
     }
 
 
