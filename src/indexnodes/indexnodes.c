@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "fetcher.h"
+#include "locks.h"
 #include "queue.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -40,7 +41,7 @@ struct _indexnodes_t
 {
     indexnodes_list_t *list;
     indexnodes_listener_t *listener;
-    pthread_mutex_t lock; /* TODO: rwlock. */
+    rw_lock_t *lock;
 };
 
 
@@ -60,7 +61,7 @@ indexnodes_t *indexnodes_new (void)
     indexnodes_t *ins = malloc(sizeof(indexnodes_t));
 
 
-    pthread_mutex_init(&(ins->lock), NULL);
+    ins->lock = rw_lock_new();
     ins->list = indexnodes_list_new();
 
     load_indexnodes_from_config(ins->list);
@@ -81,7 +82,7 @@ void indexnodes_delete (indexnodes_t *ins)
     /* TODO: delete static indexnodes? - does the list own them? do we? */
 
     indexnodes_list_delete(ins->list);
-    pthread_mutex_destroy(&(ins->lock));
+    rw_lock_delete(ins->lock);
 
     free(ins);
 }
@@ -144,10 +145,10 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
     indexnodes_list_t *list;
 
 
-    pthread_mutex_lock(&(ins->lock));
+    rw_lock_rlock(ins->lock);
     ins->list = indexnodes_list_remove_expired(CALLER_PASS ins->list);
     list = indexnodes_list_copy(CALLER_PASS ins->list);
-    pthread_mutex_unlock(&(ins->lock));
+    rw_lock_runlock(ins->lock);
 
 
     return list;
@@ -201,12 +202,12 @@ static void packet_received_cb (
             new_in = indexnode_new(CALLER_INFO host, port, version, id);
             if (new_in)
             {
-                pthread_mutex_lock(&(ins->lock));
+                rw_lock_wlock(ins->lock);
 
                 /* If it's not been seen before, add it */
                 indexnodes_list_add(ins->list, new_in);
 
-                pthread_mutex_unlock(&(ins->lock));
+                rw_lock_wunlock(ins->lock);
             }
         }
     }
