@@ -25,6 +25,7 @@
 
 #include "indexnodes.h"
 
+#include "indexnode_internal.h"
 #include "indexnodes_list_internal.h"
 #include "indexnodes_listener.h"
 

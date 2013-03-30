@@ -26,6 +26,7 @@
 #include "indexnodes_list_internal.h"
 
 #include "indexnode.h"
+#include "indexnode_internal.h"
 
 
 indexnodes_list_t *indexnodes_list_new (void)

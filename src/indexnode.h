@@ -37,6 +37,7 @@ extern indexnode_t *indexnode_from_proto(
 extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t * const in);
 extern void indexnode_delete( CALLER_DECL indexnode_t * const in );
 
+/* TODO: The tell, don't ask dream is that these can go. Why can't they? */
 extern const char *indexnode_host   ( const indexnode_t * const in );
 extern const char *indexnode_port   ( const indexnode_t * const in );
 extern const char *indexnode_version( const indexnode_t * const in );
@@ -49,8 +50,5 @@ extern const char *indexnode_make_url(
     const char * const path_prefix,
     const char * const resource
 );
-
-extern void indexnode_seen( indexnode_t * const in );
-extern int indexnode_still_valid( const indexnode_t * const in );
 
 #endif /* _INCLUDED_INDEXNODE_H */

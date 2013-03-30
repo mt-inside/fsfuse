@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "indexnode.h"
+#include "indexnode_internal.h"
 #include "proto_indexnode_internal.h"
 
 #include "ref_count.h"
@@ -162,7 +163,6 @@ void indexnode_delete( CALLER_DECL indexnode_t * const in )
     indexnode_trace_dedent();
 }
 
-/* TODO: The tell, don't ask dream is that these can go. Why can't they? */
 const char *indexnode_host( const indexnode_t * const in )
 {
     return proto_indexnode_host( BASE_CLASS(in) );
