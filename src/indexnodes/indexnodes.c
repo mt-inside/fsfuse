@@ -74,9 +74,6 @@ indexnodes_t *indexnodes_new (void)
 
 void indexnodes_delete (indexnodes_t *ins)
 {
-    /* TODO: assert the thread state == stopped */
-    /* TODO: should we do this, or should the thread bump their statemachine to
-     * dead, let them die, then just assert they're dead here? */
     indexnodes_listener_delete(ins->listener);
 
     /* TODO: delete static indexnodes? - does the list own them? do we? */
