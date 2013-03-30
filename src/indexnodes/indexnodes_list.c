@@ -6,16 +6,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * TODO: split this into indexnodes_set which is the google structure and
- * internal to the indexnodes module. AND indexnodes_list which is what's
- * produced and returned to consumers. This really can be a generic_list<> (as
- * it will have no methods other than those to support enumeration), or a
- * typedef of a LINKED_LIST (no need for TAILQ)
- * TODO: internally this needs to be a google-interview data structure :)
- * - Array with hash over it (maybe pull some logic out of hash like a hasher
- *   class)
- * - O(1) add, delete, find-by-uid
- * No. no need to delete or get-random, so can just be a hash table
+ * TODO: I should be a hash table one day for O(1) add, find, delete.
+ * That may mean spliting this into indexnodes_set which is the hash table,
+ * internal to the indexnodes module, and indexnodes_list which is what's
+ * returned to consumers. (This really could be a generic_list<> as
+ * it will have no methods other than those to support enumeration).
+ * However, itterating hash tables isn't hard, and indeed that hash class
+ * already has an itterator, so that'll probably do.
  */
 
 #include "common.h"

@@ -8,6 +8,12 @@
  *
  *
  * Indexnode class unit tests.
+ *
+ * TODO: test:
+ * - passing incorrect versions
+ * - _equals()
+ * - _make_url()
+ * - _seen & _still_valid (somehow)
  */
 
 #include "common.h"
@@ -100,9 +106,6 @@ START_TEST( indexnode_can_be_copied_and_has_right_data )
 }
 END_TEST
 
-/* TODO: test seen and still valid. Don't make the unit tests sleep...
- * Don't test make_url as it shouldn't be here.
- * Move make_url */
 Suite *indexnode_tests( void )
 {
     Suite *s = suite_create( "indexnode" );
