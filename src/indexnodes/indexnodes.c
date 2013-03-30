@@ -172,7 +172,7 @@ static void packet_received_cb (
 
     if (!parse_fs2protocol_version(fs2protocol, &version))
     {
-        trace_info("Seen indexnode %s at %s:%s (version %s)\n", id, host, port, version);
+        trace_info("Seen advert for indexnode %s at %s:%s (version %s)\n", id, host, port, version);
 
         if ((found_in = indexnodes_list_find(CALLER_INFO ins->list, id)))
         {
