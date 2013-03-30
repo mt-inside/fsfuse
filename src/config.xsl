@@ -107,15 +107,12 @@
     <xsl:template match="item" mode="symbols">
         <xsl:choose>
             <xsl:when test="$filetype = 'c'">
-                <xsl:call-template name="type_to_ctype_prefix">
+                <xsl:call-template name="type_to_ctype">
                     <xsl:with-param name="type" select="type"/>
                 </xsl:call-template>
                 <xsl:value-of select="$space"/>
                 <xsl:text>config_</xsl:text>
                 <xsl:value-of select="symbol"/>
-                <xsl:call-template name="type_to_ctype_postfix">
-                    <xsl:with-param name="type" select="type"/>
-                </xsl:call-template>
                 <xsl:value-of select="$space"/>
                 <xsl:text>=</xsl:text>
                 <xsl:value-of select="$space"/>
@@ -127,15 +124,12 @@
             </xsl:when>
             <xsl:when test="$filetype = 'h'">
                 <xsl:text>extern </xsl:text>
-                <xsl:call-template name="type_to_ctype_prefix">
+                <xsl:call-template name="type_to_ctype">
                     <xsl:with-param name="type" select="type"/>
                 </xsl:call-template>
                 <xsl:value-of select="$space"/>
                 <xsl:text>config_</xsl:text>
                 <xsl:value-of select="symbol"/>
-                <xsl:call-template name="type_to_ctype_postfix">
-                    <xsl:with-param name="type" select="type"/>
-                </xsl:call-template>
                 <xsl:value-of select="$sc"/>
                 <xsl:value-of select="$newline"/>
             </xsl:when>
@@ -176,7 +170,7 @@
         </xsl:choose>
     </xsl:template>
 
-    <xsl:template name="type_to_ctype_prefix">
+    <xsl:template name="type_to_ctype">
         <xsl:param name="type"/>
 
         <xsl:choose>
@@ -190,17 +184,7 @@
                 <xsl:text>char *</xsl:text>
             </xsl:when>
             <xsl:when test="$type = 'string_collection'">
-                <xsl:text>char *</xsl:text>
-            </xsl:when>
-        </xsl:choose>
-    </xsl:template>
-
-    <xsl:template name="type_to_ctype_postfix">
-        <xsl:param name="type"/>
-
-        <xsl:choose>
-            <xsl:when test="$type = 'string_collection'">
-                <xsl:text>[]</xsl:text>
+                <xsl:text>char **</xsl:text>
             </xsl:when>
         </xsl:choose>
     </xsl:template>
