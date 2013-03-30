@@ -281,10 +281,9 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
-                                           indexnode_version_cb_t cb)
+const char *fetcher_get_indexnode_version (proto_indexnode_t *pin)
 {
-    const char *url, *version;
+    const char *url, *protocol;
     char *error_buffer;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
@@ -297,9 +296,6 @@ const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
 
     fetcher_trace("fetcher_get_indexnode_version(%p)\n", pin);
     fetcher_trace_indent();
-
-    /* Package data for header callback */
-    pair->callback = cb;
 
     /* New handle */
     eh = curl_eh_new();
@@ -338,7 +334,7 @@ const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
     /* Do it - blocks */
     curl_rc = curl_easy_perform(eh);
 
-    version = pair->version;
+    protocol = pair->protocol;
     free(pair);
 
     fetcher_trace("curl returned %d, error: %s\n", curl_rc,
@@ -353,7 +349,7 @@ const char *fetcher_get_indexnode_version (proto_indexnode_t *pin,
 
     fetcher_trace_dedent();
 
-    return version;
+    return protocol;
 }
 
 static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
@@ -367,7 +363,7 @@ static size_t indexnode_version_header_cb (void *ptr, size_t size, size_t nmemb,
     if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
     {
         header += strlen("fs2-version: ");
-        pair->version = pair->callback(header);
+        pair->protocol = strdup(header);
     }
 
 

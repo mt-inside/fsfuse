@@ -87,7 +87,7 @@ void indexnodes_delete (indexnodes_t *ins)
 static void load_indexnodes_from_config (indexnodes_t *ins)
 {
     int i = 0;
-    const char *host, *port, *version, *id;
+    const char *host, *port, *protocol, *version, *id;
     string_buffer_t *id_buffer;
 
 
@@ -103,9 +103,8 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
          * The following logic would have to move to a callback. */
         /* TODO: what happens if this fails? */
         /* TODO: "get version and id headers" or soemthign */
-        /* TODO: should just return fs2protocol header string and we'll parse it
-         * ourselves */
-        version = fetcher_get_indexnode_version(pin, &parse_version_cb); /* blocks */
+        protocol = fetcher_get_indexnode_version(pin); /* blocks */
+        version = parse_version_cb(protocol);
         id_buffer = string_buffer_new();
             /* TODO: can now get the uid of an indexnode from an HTTP header -
              * do this. For now it's just added assuming there isn't a duplicate */
@@ -138,6 +137,7 @@ indexnodes_list_t *indexnodes_get (CALLER_DECL indexnodes_t *ins)
 }
 
 
+/* TODO: I should free protocol, but you'll have to check all my callers */
 static int parse_fs2protocol_version (const char *fs2protocol, const char **version)
 {
     int rc = 1;

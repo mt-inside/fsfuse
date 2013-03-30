@@ -15,8 +15,6 @@
 #include "listing.h"
 
 
-typedef const char *(*indexnode_version_cb_t)(const char *);
-
 typedef struct
 {
     CURL *eh;
@@ -26,8 +24,7 @@ typedef struct
 /* TODO: why is this public?? */
 typedef struct
 {
-    indexnode_version_cb_t callback;
-    const char *version;
+    const char *protocol;
 } indexnode_version_cb_pair_t;
 
 
@@ -54,8 +51,7 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern const char *fetcher_get_indexnode_version (proto_indexnode_t *in,
-                                                  indexnode_version_cb_t cb);
+extern const char *fetcher_get_indexnode_version (proto_indexnode_t *in);
 extern int http2errno (int http_code);
 
 #endif /* _INCLUDED_FETCHER_H */
