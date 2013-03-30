@@ -296,7 +296,7 @@ static void direntry_get_path_inner (direntry_t *de, string_buffer_t *path)
     }
 
     string_buffer_append(path, direntry_get_name(de));
-    string_buffer_append(path, "/");
+    string_buffer_append(path, strdup("/"));
 }
 char *direntry_get_path (direntry_t *de)
 {

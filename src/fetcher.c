@@ -205,7 +205,7 @@ int fetcher_fetch_internal (const char * const   url,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    string_buffer_append(alias, "fs2-alias: ");
+    string_buffer_append(alias, strdup("fs2-alias: "));
     string_buffer_append(alias, config_alias);
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
@@ -323,7 +323,7 @@ void fetcher_get_indexnode_info (proto_indexnode_t *pin,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    string_buffer_append(alias, "fs2-alias: ");
+    string_buffer_append(alias, strdup("fs2-alias: "));
     string_buffer_append(alias, config_alias);
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
