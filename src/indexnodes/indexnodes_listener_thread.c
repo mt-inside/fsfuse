@@ -60,8 +60,9 @@ void *indexnodes_listen_main(void *args)
 
     print_network_interfaces();
 
-    s4 = get_ipv4_socket();
+    /* Order important */
     s6 = get_ipv6_socket();
+    s4 = get_ipv4_socket();
 
     listener_thread_event_loop(s4, s6, info->control_fd, info->packet_received_cb, info->packet_received_ctxt);
 
