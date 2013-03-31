@@ -364,6 +364,10 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
            *id       && **id;
 }
 
+/* These header lines come in complete with their trailing new-lines.
+ * HTTP/1.1 (RFC-2616) states that this sequence is \r\n
+ *   (http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2)
+ */
 static void match_header (const char *header, size_t len, const char *key, const char **value_out)
 {
     size_t key_len, value_len;
@@ -372,8 +376,8 @@ static void match_header (const char *header, size_t len, const char *key, const
     key_len = strlen(key);
     if (!strncasecmp(header, key, key_len))
     {
-        value_len = len - key_len;
-        value = malloc(value_len + 1);
+        value_len = len - key_len - 2; /* -2 for line-end */
+        value = malloc(value_len + 1); /* +1 for terminating \0 */
         strncpy(value, header + key_len, value_len);
         value[value_len] = '\0';
         *value_out = value;
