@@ -364,37 +364,36 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
            *id       && **id;
 }
 
+static void match_header (const char *header, size_t len, const char *key, const char **value_out)
+{
+    size_t key_len, value_len;
+    char *value;
+
+    key_len = strlen(key);
+    if (!strncasecmp(header, key, key_len))
+    {
+        value_len = len - key_len;
+        value = malloc(value_len + 1);
+        strncpy(value, header + key_len, value_len);
+        value[value_len] = '\0';
+        *value_out = value;
+    }
+}
+
 /* From the libcurl API docs:
  *   "Do not assume that the header line is zero terminated!"
  */
 static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream)
 {
-    size_t len = size * nmemb, key_len, value_len;
+    size_t len = size * nmemb;
     indexnode_info_t *info = (indexnode_info_t *)stream;
-    char *header = (char *)ptr, *value;
+    char *header = (char *)ptr;
 
 
     NOT_USED(stream);
 
-    key_len = strlen("fs2-version: ");
-    if (!strncasecmp(header, "fs2-version: ", key_len))
-    {
-        value_len = len - key_len;
-        value = malloc(value_len + 1);
-        strncpy(value, header + key_len, value_len);
-        value[value_len] = '\0';
-        info->protocol = value;
-    }
-
-    key_len = strlen("fs2-indexnode-uid: ");
-    if (!strncasecmp(header, "fs2-indexnode-uid: ", key_len))
-    {
-        value_len = len - key_len;
-        value = malloc(value_len + 1);
-        strncpy(value, header + key_len, value_len);
-        value[value_len] = '\0';
-        info->id = value;
-    }
+    match_header(header, len, "fs2-version: ", &(info->protocol));
+    match_header(header, len, "fs2-indexnode-uid: ", &(info->id));
 
 
     return len;
