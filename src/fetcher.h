@@ -45,9 +45,9 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern void fetcher_get_indexnode_info (proto_indexnode_t *in,
-                                        const char **protocol,
-                                        const char **id);
+extern int fetcher_get_indexnode_info (proto_indexnode_t *in,
+                                       const char **protocol,
+                                       const char **id);
 
 extern int http2errno (int http_code);
 

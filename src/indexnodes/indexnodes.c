@@ -100,9 +100,10 @@ static void load_indexnodes_from_config (indexnodes_t *ins)
          * as possible and that we can get on with other stuff straight away.
          * The following logic would have to move to a callback. */
         /* TODO: what happens if this fails? */
-        fetcher_get_indexnode_info(pin, &protocol, &id); /* blocks */
-
-        packet_received_cb(ins, host, port, protocol, id);
+        if (fetcher_get_indexnode_info(pin, &protocol, &id)) /* blocks */
+        {
+            packet_received_cb(ins, host, port, protocol, id);
+        }
 
         i++;
     }

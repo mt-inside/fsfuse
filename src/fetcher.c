@@ -288,9 +288,9 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-void fetcher_get_indexnode_info (proto_indexnode_t *pin,
-                                 const char **protocol,
-                                 const char **id)
+int fetcher_get_indexnode_info (proto_indexnode_t *pin,
+                                const char **protocol,
+                                const char **id)
 {
     const char *url;
     char *error_buffer;
@@ -358,6 +358,10 @@ void fetcher_get_indexnode_info (proto_indexnode_t *pin,
     }
 
     fetcher_trace_dedent();
+
+
+    return *protocol && **protocol &&
+           *id       && **id;
 }
 
 static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream)
