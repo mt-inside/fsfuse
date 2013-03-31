@@ -364,27 +364,40 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
            *id       && **id;
 }
 
+/* From the libcurl API docs:
+ *   "Do not assume that the header line is zero terminated!"
+ */
 static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream)
 {
+    size_t len = size * nmemb, key_len, value_len;
     indexnode_info_t *info = (indexnode_info_t *)stream;
-    char *header = (char *)ptr;
+    char *header = (char *)ptr, *value;
 
 
     NOT_USED(stream);
 
-    if (!strncasecmp(header, "fs2-version: ", strlen("fs2-version: ")))
+    key_len = strlen("fs2-version: ");
+    if (!strncasecmp(header, "fs2-version: ", key_len))
     {
-        header += strlen("fs2-version: ");
-        info->protocol = strdup(header);
+        value_len = len - key_len;
+        value = malloc(value_len + 1);
+        strncpy(value, header + key_len, value_len);
+        value[value_len] = '\0';
+        info->protocol = value;
     }
-    else if (!strncasecmp(header, "fs2-id: ", strlen("fs2-id: ")))
+
+    key_len = strlen("fs2-indexnode-uid: ");
+    if (!strncasecmp(header, "fs2-indexnode-uid: ", key_len))
     {
-        header += strlen("fs2-id: ");
-        info->id = strdup(header);
+        value_len = len - key_len;
+        value = malloc(value_len + 1);
+        strncpy(value, header + key_len, value_len);
+        value[value_len] = '\0';
+        info->id = value;
     }
 
 
-    return size * nmemb;
+    return len;
 }
 
 /* We currently throw HTTP error codes around internally, because they're quite
