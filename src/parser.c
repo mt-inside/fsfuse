@@ -10,13 +10,17 @@
  * Interface to the library used to parse e.g. metadata files.
  */
 
+#include "common.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 
-#include "common.h"
 #include "parser.h"
+
 #include "fetcher.h"
+#include "fs2_constants.h"
+#include "string_buffer.h"
 
 
 TRACE_DEFINE(parser)
@@ -140,6 +144,7 @@ int parser_fetch_listing (
     xmlParserCtxtPtr parser = parser_new();
     xmlXPathObjectPtr xpathObj;
     xmlDocPtr doc;
+    string_buffer_t *sb = string_buffer_new();
 
 
     assert(url); assert(*url);
@@ -155,13 +160,15 @@ int parser_fetch_listing (
          * Indicate to the parser that that's it */
         doc = parser_done(parser);
 
-        xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='fs2-filelist']/xhtml:a[@fs2-name]");
+        string_buffer_printf(sb, "//xhtml:div[@id='%s']/xhtml:a[@%s]", fs2_filelist_node_id, fs2_name_attribute_key);
+        xpathObj = parser_xhtml_xpath(doc, string_buffer_peek(sb));
         if (xpathObj->type == XPATH_NODESET)
         {
             rc = filelist_entries_parse(xpathObj->nodesetval, lis);
         }
 
         xmlXPathFreeObject(xpathObj);
+        string_buffer_delete(sb);
         xmlFreeDoc(doc);
     }
 
@@ -246,7 +253,7 @@ static int filelist_entry_parse (
             !curAttr->children->next)
         {
             /* ignore what the indexnode says the path is for now */
-            if (strcmp((char *)curAttr->name, "fs2-path"))
+            if (strcmp((char *)curAttr->name, fs2_path_attribute_key))
             {
                 parser_trace("Attribute %s == %s\n", curAttr->name, curAttr->children->content);
                 listing_attribute_add(li, (char *)curAttr->name, (char *)curAttr->children->content);

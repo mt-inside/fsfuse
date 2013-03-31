@@ -20,6 +20,7 @@
 #include "indexnode.h"
 
 #include "config.h"
+#include "fs2_constants.h"
 #include "listing.h"
 #include "ref_count.h"
 #include "utils.h"
@@ -285,32 +286,32 @@ void listing_attribute_add (
     const char *value
 )
 {
-    if (!strcmp(name, "fs2-name"))
+    if (!strcmp(name, fs2_name_attribute_key))
     {
         li->name = strdup(value);
     }
-    else if (!strcmp(name, "fs2-hash"))
+    else if (!strcmp(name, fs2_hash_attribute_key))
     {
         li->hash = strdup(value);
     }
-    else if (!strcmp(name, "fs2-type"))
+    else if (!strcmp(name, fs2_type_attribute_key))
     {
         li->type = listing_type_from_string(value);
     }
-    else if (!strcmp(name, "fs2-size"))
+    else if (!strcmp(name, fs2_size_attribute_key))
     {
         li->size = atoll(value);
     }
-    else if (!strcmp(name, "fs2-linkcount") ||
-             !strcmp(name, "fs2-alternativescount"))
+    else if (!strcmp(name, fs2_linkcount_attribute_key) ||
+             !strcmp(name, fs2_alternativescount_attribute_key))
     {
         li->link_count = atol(value);
     }
-    else if (!strcmp(name, "href"))
+    else if (!strcmp(name, fs2_href_attribute_key))
     {
         li->href = strdup(value);
     }
-    else if (!strcmp(name, "fs2-clientalias"))
+    else if (!strcmp(name, fs2_clientalias_attribute_key))
     {
         li->client = strdup(value);
     }

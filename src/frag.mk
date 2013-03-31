@@ -20,6 +20,7 @@ SRC_OBJECTS :=                         \
                download_thread.o       \
                download_thread_pool.o  \
                fetcher.o               \
+               fs2_constants.o         \
                inode_map.o             \
                listing.o               \
                localei.o               \

@@ -24,6 +24,7 @@
 #include "config.h"
 #include "curl_utils.h"
 #include "fetcher.h"
+#include "fs2_constants.h"
 #include "parser.h"
 #include "indexnodes.h"
 #include "indexnodes_list.h"
@@ -205,7 +206,7 @@ int fetcher_fetch_internal (const char * const   url,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    string_buffer_append(alias, strdup("fs2-alias: "));
+    string_buffer_append(alias, strdup(fs2_alias_header_key));
     string_buffer_append(alias, config_alias);
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
@@ -323,7 +324,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
-    string_buffer_append(alias, strdup("fs2-alias: "));
+    string_buffer_append(alias, strdup(fs2_alias_header_key));
     string_buffer_append(alias, config_alias);
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
@@ -394,8 +395,8 @@ static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, vo
     char *header = (char *)ptr;
 
 
-    match_header(header, len, "fs2-version: ", &(info->protocol));
-    match_header(header, len, "fs2-indexnode-uid: ", &(info->id));
+    match_header(header, len, fs2_version_header_key, &(info->protocol));
+    match_header(header, len, fs2_indexnode_uid_header_key, &(info->id));
 
 
     return len;

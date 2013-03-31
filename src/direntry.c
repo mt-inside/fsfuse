@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "fetcher.h"
+#include "fs2_constants.h"
 #include "inode_map.h"
 #include "parser.h"
 #include "ref_count.h"
@@ -180,15 +181,15 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
     listing_t *li = listing_new(CALLER_PASS_ONLY);
 
 
-    listing_attribute_add(li, "fs2-name", "");
-    listing_attribute_add(li, "fs2-type", "directory");
+    listing_attribute_add(li, fs2_name_attribute_key, "");
+    listing_attribute_add(li, fs2_type_attribute_key, "directory");
     /* Set the link count to something non-0. We can't query this from the
      * indexnode. We could work it out every time, but that would be tedious.
      * It turns out to be vitally important that this is non-0 if samba is going
      * to share the filesystem */
     //TODO: calculate me in the future, or get best guess (i.e. the cache might
     //know, else 1)
-    listing_attribute_add(li, "fs2-linkcount", "1");
+    listing_attribute_add(li, fs2_linkcount_attribute_key, "1");
 
     de->li = li;
 
