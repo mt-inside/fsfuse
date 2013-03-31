@@ -390,8 +390,6 @@ static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, vo
     char *header = (char *)ptr;
 
 
-    NOT_USED(stream);
-
     match_header(header, len, "fs2-version: ", &(info->protocol));
     match_header(header, len, "fs2-indexnode-uid: ", &(info->id));
 
