@@ -83,6 +83,11 @@ void indexnodes_delete (indexnodes_t *ins)
     free(ins);
 }
 
+/* TODO: these can be alive or dead too. Rather than just trying to contact them
+ * once at startup we should have a thread that tries to ping them every n secs
+ * (the equivalent of getting advert packets) and raises the event if they
+ * respond).
+ */
 static void load_indexnodes_from_config (indexnodes_t *ins)
 {
     int i = 0;
