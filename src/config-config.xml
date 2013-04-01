@@ -22,7 +22,7 @@
     <item>
         <symbol>timeout_cache</symbol>
         <type>integer</type>
-        <default>10</default>
+        <default>60</default>
         <xpath>/config/timeouts/cache/text()</xpath>
     </item>
     <item>
@@ -40,7 +40,7 @@
     <item>
         <symbol>indexnode_timeout</symbol>
         <type>integer</type>
-        <default>3</default>
+        <default>5</default>
         <xpath>/config/indexnode/timeout/text()</xpath>
     </item>
     <item>
