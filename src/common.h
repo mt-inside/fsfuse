@@ -13,6 +13,8 @@
 #include "trace.h"
 
 
+#define typeof __typeof__
+
 #define FSFUSE_NAME      "fsfuse"
 #define FSFUSE_VERSION   "0.5.0"
 #define FSFUSE_DATE      "August 2012"
