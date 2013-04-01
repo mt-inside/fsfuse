@@ -361,7 +361,8 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
     fetcher_trace_dedent();
 
 
-    return *protocol && **protocol &&
+    return curl_rc == CURLE_OK &&
+           *protocol && **protocol &&
            *id       && **id;
 }
 
