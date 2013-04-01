@@ -207,7 +207,7 @@ int fetcher_fetch_internal (const char * const   url,
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
     string_buffer_append(alias, strdup(fs2_alias_header_key));
-    string_buffer_append(alias, config_alias);
+    string_buffer_append(alias, strdup(config_alias));
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
@@ -325,7 +325,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
     string_buffer_append(alias, strdup(fs2_alias_header_key));
-    string_buffer_append(alias, config_alias);
+    string_buffer_append(alias, strdup(config_alias));
     slist = curl_slist_append(slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
     curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
