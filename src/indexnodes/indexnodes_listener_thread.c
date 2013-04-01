@@ -32,7 +32,7 @@
 static void print_network_interfaces (void);
 static int get_ipv6_socket (void);
 static int get_ipv4_socket (void);
-static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb, void *packet_received_ctxt);
+static void listener_thread_event_loop (int s4, int s6, int control_fd, new_indexnode_event_t packet_received_cb, void *packet_received_ctxt);
 
 
 /* On SO_REUSEADDR: my understanding thus far is: "A socket is a 5 tuple
@@ -260,7 +260,7 @@ static void receive_advert(
     const socklen_t socklen_in,
     void * const addr_src,
     const size_t host_len,
-    packet_received_cb_t packet_received_cb,
+    new_indexnode_event_t packet_received_cb,
     void *packet_received_ctxt
 )
 {
@@ -306,7 +306,7 @@ static void receive_advert(
     string_buffer_delete(buffer);
 }
 
-static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_received_cb_t packet_received_cb, void *packet_received_ctxt)
+static void listener_thread_event_loop (int s4, int s6, int control_fd, new_indexnode_event_t packet_received_cb, void *packet_received_ctxt)
 {
     fd_set r_fds;
     int select_rc;

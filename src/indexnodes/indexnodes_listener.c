@@ -30,7 +30,7 @@ struct _indexnodes_listener_t
  * ports and interfaces to listen on but just gets them from the global config
  * system, it should be passed into here and passed on, really
  */
-indexnodes_listener_t *indexnodes_listener_new (packet_received_cb_t packet_received_cb, void *packet_received_ctxt)
+indexnodes_listener_t *indexnodes_listener_new (new_indexnode_event_t packet_received_cb, void *packet_received_ctxt)
 {
     indexnodes_listener_t *listener = malloc(sizeof(indexnodes_listener_t));
     listener->thread_args = malloc(sizeof(listener_thread_args_t));

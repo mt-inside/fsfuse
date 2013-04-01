@@ -10,6 +10,7 @@
 
 #include "common.h"
 
+#include "indexnodes_internal.h"
 #include "indexnodes_listener.h"
 
 
@@ -21,7 +22,7 @@ typedef enum
 
 typedef struct
 {
-    packet_received_cb_t packet_received_cb;
+    new_indexnode_event_t packet_received_cb;
     void *packet_received_ctxt;
     int control_fd;
 } listener_thread_args_t;

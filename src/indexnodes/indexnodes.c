@@ -24,15 +24,15 @@
 #include <string.h>
 
 #include "indexnodes.h"
+#include "indexnodes_internal.h"
 
 #include "indexnode_internal.h"
 #include "indexnodes_list_internal.h"
 #include "indexnodes_listener.h"
+#include "indexnodes_statics_manager.h"
 
-#include "config.h"
 #include "fetcher.h"
 #include "locks.h"
-#include "queue.h"
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -40,13 +40,13 @@
 struct _indexnodes_t
 {
     indexnodes_list_t *list;
+    indexnodes_statics_manager_t *statics;
     indexnodes_listener_t *listener;
     rw_lock_t *lock;
 };
 
 
-static void load_indexnodes_from_config (indexnodes_t *ins);
-static void packet_received_cb (
+static void new_indexnode_event (
     const void *ctxt,
     const char *host,
     const char *port,
@@ -63,9 +63,8 @@ indexnodes_t *indexnodes_new (void)
     ins->lock = rw_lock_new();
     ins->list = indexnodes_list_new();
 
-    load_indexnodes_from_config(ins);
-
-    ins->listener = indexnodes_listener_new(&packet_received_cb, ins);
+    ins->statics = indexnodes_statics_manager_new(&new_indexnode_event, ins);
+    ins->listener = indexnodes_listener_new(&new_indexnode_event, ins);
 
 
     return ins;
@@ -74,44 +73,12 @@ indexnodes_t *indexnodes_new (void)
 void indexnodes_delete (indexnodes_t *ins)
 {
     indexnodes_listener_delete(ins->listener);
-
-    /* TODO: delete static indexnodes? - does the list own them? do we? */
+    indexnodes_statics_manager_delete(ins->statics);
 
     indexnodes_list_delete(ins->list);
     rw_lock_delete(ins->lock);
 
     free(ins);
-}
-
-/* TODO: these can be alive or dead too. Rather than just trying to contact them
- * once at startup we should have a thread that tries to ping them every n secs
- * (the equivalent of getting advert packets) and raises the event if they
- * respond).
- */
-static void load_indexnodes_from_config (indexnodes_t *ins)
-{
-    int i = 0;
-    const char *host, *port, *protocol, *id;
-
-
-    while ((host = config_indexnode_hosts[i]) &&
-           (port = config_indexnode_ports[i]))
-    {
-        /* TODO: No need to strdup these when config is a real class with real
-         * getters that return copies */
-        proto_indexnode_t *pin = proto_indexnode_new(strdup(host), strdup(port));
-
-        /* TODO: should do this async, in parallel, so that it happens as fast
-         * as possible and that we can get on with other stuff straight away.
-         * The following logic would have to move to a callback. */
-        /* TODO: what happens if this fails? */
-        if (fetcher_get_indexnode_info(pin, &protocol, &id)) /* blocks */
-        {
-            packet_received_cb(ins, host, port, protocol, id);
-        }
-
-        i++;
-    }
 }
 
 /* de's should make their own URIs and have their own fetch and list functions,
@@ -154,7 +121,7 @@ static int parse_fs2protocol (const char *fs2protocol, const char **version)
     return rc;
 }
 
-static void packet_received_cb (
+static void new_indexnode_event (
     const void *ctxt,
     const char *host,
     const char *port,
