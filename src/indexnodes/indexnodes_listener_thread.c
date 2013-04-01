@@ -338,12 +338,12 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, packet_r
                 assert(0);
                 break;
             default:
-                if (FD_ISSET(s4, &r_fds))
+                if ((s4 != -1) && FD_ISSET(s4, &r_fds))
                 {
                     struct sockaddr_in sa;
                     receive_advert(s4, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin_addr), INET_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
                 }
-                if (FD_ISSET(s6, &r_fds))
+                if ((s6 != -1) && FD_ISSET(s6, &r_fds))
                 {
                     struct sockaddr_in6 sa;
                     receive_advert(s6, (struct sockaddr *)&sa, sizeof(sa), &(sa.sin6_addr), INET6_ADDRSTRLEN, packet_received_cb, packet_received_ctxt);
