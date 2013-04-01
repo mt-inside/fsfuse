@@ -11,6 +11,7 @@ typedef struct _alarm_t alarm_t;
 typedef void (*alarm_cb_t)( void *cb_data );
 
 
+/* The callback will be called on a random thread! */
 extern alarm_t *alarm_new(
     unsigned interval,
     alarm_cb_t cb,

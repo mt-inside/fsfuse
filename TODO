@@ -21,6 +21,8 @@ DO FIRST to drive API of everything else               fsfuse_methods/*
   a lot of fuse API semantics to take advantage of
 IN PROGRESS               indexnodes/*
 
+statfs:
+indexnodes_get - indexnode_get_size - fetcher_doc_from_indexnode(host,port,prefix,resource, new stats_parser), return stats_parser_szie
 finishe indexnodes
 - make internal_seen and _still_valid internal
 - do all the other TODOs in the indexnodes code
