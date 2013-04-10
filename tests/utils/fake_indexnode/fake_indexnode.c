@@ -3,6 +3,7 @@
  * re-write in node.js or something
  */
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -10,6 +11,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 
 static const char fixed1[] = "fs2protocol-0.13:1337:-479049884424373567";
