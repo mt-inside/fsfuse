@@ -10,6 +10,7 @@
  * should just know about IFetchShitFromTheInternet
  *   e.g. no way this should be making URIs for resorces - IFetchShit should be
  *   doing that.
+ * TODO: does this need to be external?
  */
 
 #ifndef _INCLUDED_PROTO_INDEXNODE_H
@@ -23,6 +24,10 @@ extern void proto_indexnode_delete( proto_indexnode_t *pin );
 
 extern const char *proto_indexnode_host( const proto_indexnode_t *pin );
 extern const char *proto_indexnode_port( const proto_indexnode_t *pin );
+
+extern int proto_indexnode_get_info( proto_indexnode_t *pin,
+                                     const char **protocol,
+                                     const char **id );
 
 extern const char *proto_indexnode_make_url (
     const proto_indexnode_t *pin,

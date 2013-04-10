@@ -40,15 +40,17 @@ extern int fetcher_fetch_stats (indexnodes_t        *ins,
                                 curl_write_callback  cb,
                                 void                *cb_data);
 
+extern int fetcher_get_indexnode_info (const char *indexnode_url,
+                                       const char **protocol,
+                                       const char **id);
+
+/* TODO: why extrernal? */
 extern int fetcher_fetch_internal (const char * const   url,
                                    const char * const   range,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern int fetcher_get_indexnode_info (proto_indexnode_t *in,
-                                       const char **protocol,
-                                       const char **id);
-
+/* TODO: why public? */
 extern int http2errno (int http_code);
 
 #endif /* _INCLUDED_FETCHER_H */

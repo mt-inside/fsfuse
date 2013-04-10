@@ -20,6 +20,7 @@
 #include "proto_indexnode_internal.h"
 
 #include "curl_utils.h"
+#include "fetcher.h"
 #include "utils.h"
 
 
@@ -71,6 +72,15 @@ const char *proto_indexnode_port( const proto_indexnode_t *pin )
     return strdup( pin->port );
 }
 
+extern int proto_indexnode_get_info( proto_indexnode_t *pin,
+                                     const char **protocol,
+                                     const char **id )
+{
+    const char *url = proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) );
+
+    return fetcher_get_indexnode_info( url, protocol, id );
+}
+
 /* TODO
  * Should be moved to the class that needs to use the URI
  * Should be decouped from CURL
@@ -114,6 +124,9 @@ const char *proto_indexnode_make_url (
     curl_free( resource_esc );
 
     curl_eh_delete( eh );
+
+    free_const( path_prefix );
+    free_const( resource );
 
 
     return url;

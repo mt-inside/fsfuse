@@ -289,11 +289,10 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-int fetcher_get_indexnode_info (proto_indexnode_t *pin,
+int fetcher_get_indexnode_info (const char *indexnode_url,
                                 const char **protocol,
                                 const char **id)
 {
-    const char *url;
     char *error_buffer;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
@@ -304,7 +303,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
         malloc(sizeof(indexnode_info_t));
 
 
-    fetcher_trace("fetcher_get_indexnode_protocol(%p)\n", pin);
+    fetcher_trace("fetcher_get_indexnode_info(%s)\n", indexnode_url);
     fetcher_trace_indent();
 
     /* New handle */
@@ -318,8 +317,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
     }
 
     /* URL */
-    url = proto_indexnode_make_url(pin, "browse", "");
-    curl_easy_setopt(eh, CURLOPT_URL, url);
+    curl_easy_setopt(eh, CURLOPT_URL, indexnode_url);
 
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
@@ -357,6 +355,12 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
         curl_easy_getinfo(eh, CURLINFO_RESPONSE_CODE, &http_code);
         fetcher_trace("http code %d\n", http_code);
     }
+
+    curl_eh_delete(eh);
+    curl_slist_free_all(slist);
+    free(error_buffer);
+    free_const(indexnode_url);
+
 
     fetcher_trace_dedent();
 

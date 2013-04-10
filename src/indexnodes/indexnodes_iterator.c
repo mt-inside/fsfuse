@@ -26,7 +26,6 @@ struct _indexnodes_iterator_t
 };
 
 
-/* TODO: make me generic over TAILQ */
 indexnodes_iterator_t *indexnodes_iterator_begin( indexnodes_list_t *ins )
 {
     indexnodes_iterator_t *iter = calloc( sizeof(struct _indexnodes_iterator_t), 1 );
