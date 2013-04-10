@@ -17,7 +17,6 @@
 #include <curl/curl.h>
 
 #include "proto_indexnode.h"
-#include "proto_indexnode_internal.h"
 
 #include "curl_utils.h"
 #include "fetcher.h"

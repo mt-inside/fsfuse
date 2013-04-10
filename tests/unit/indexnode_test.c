@@ -41,23 +41,6 @@ START_TEST( indexnode_can_be_created_and_destroyed )
 }
 END_TEST
 
-START_TEST( indexnode_can_be_created_from_proto )
-{
-    /* Setup */
-    proto_indexnode_t *pin = get_proto_indexnode_stub( );
-
-    /* Action */
-    indexnode_t *in = indexnode_from_proto( CALLER_INFO pin, strdup( indexnode_stub_version ), strdup( indexnode_stub_id ) );
-
-    /* Assert */
-    fail_unless( in != NULL, "indexnode should be non-null" );
-    fail_unless( indexnode_equals_stub( in ), "indexnode data should match stub" );
-
-    /* Teardown */
-    indexnode_delete( CALLER_INFO in );
-}
-END_TEST
-
 START_TEST( indexnode_is_sane_property_bag )
 {
     /* Action */
@@ -112,7 +95,6 @@ Suite *indexnode_tests( void )
 
     TCase *tc_lifecycle = tcase_create( "lifecycle" );
     tcase_add_test( tc_lifecycle, indexnode_can_be_created_and_destroyed );
-    tcase_add_test( tc_lifecycle, indexnode_can_be_created_from_proto );
     tcase_add_test( tc_lifecycle, indexnode_is_sane_property_bag );
     tcase_add_test( tc_lifecycle, indexnode_can_be_copied_and_copy_outlives_original );
     tcase_add_test( tc_lifecycle, indexnode_can_be_copied_and_has_right_data );

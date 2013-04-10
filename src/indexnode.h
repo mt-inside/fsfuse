@@ -7,8 +7,6 @@
 #ifndef _INCLUDED_INDEXNODE_H
 #define _INCLUDED_INDEXNODE_H
 
-#include "proto_indexnode.h"
-
 #include "trace.h"
 
 TRACE_DECLARE(indexnode)
@@ -24,12 +22,6 @@ extern indexnode_t *indexnode_new(
     CALLER_DECL
     const char *host,
     const char *port,
-    const char *version,
-    const char *id
-);
-extern indexnode_t *indexnode_from_proto(
-    CALLER_DECL
-    proto_indexnode_t *pin,
     const char *version,
     const char *id
 );
