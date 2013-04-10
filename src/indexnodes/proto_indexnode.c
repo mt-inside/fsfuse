@@ -20,6 +20,7 @@
 
 #include "curl_utils.h"
 #include "fetcher.h"
+#include "string_buffer.h"
 #include "utils.h"
 
 
@@ -83,7 +84,6 @@ extern int proto_indexnode_get_info( proto_indexnode_t *pin,
 /* TODO
  * Should be moved to the class that needs to use the URI
  * Should be decouped from CURL
- * Shouldn't over-estimate string length and sprintf - should use string_buffer
  */
 const char *proto_indexnode_make_url (
     const proto_indexnode_t *pin,
@@ -91,9 +91,9 @@ const char *proto_indexnode_make_url (
     const char *resource
 )
 {
+    string_buffer_t *sb = string_buffer_new( );
     char *fmt;
     char *resource_esc, *url;
-    size_t len;
     CURL *eh;
 
 
@@ -117,15 +117,12 @@ const char *proto_indexnode_make_url (
     /* we escape from resource + 1 and render the first '/' ourselves because
      * the indexnode insists on it being real */
     resource_esc = curl_easy_escape( eh, resource, 0 );
-    len = strlen( pin->host ) + strlen( pin->port ) + strlen( path_prefix ) + strlen( resource_esc ) + strlen( fmt ) + 1;
-    url = (char *)malloc( len * sizeof(*url) );
-    sprintf( url, fmt, pin->host, pin->port, path_prefix, resource_esc );
-    curl_free( resource_esc );
+    string_buffer_printf( sb, url, fmt, proto_indexnode_host( pin ), proto_indexnode_port( pin ), path_prefix, resource_esc );
+    url = string_buffer_commit( sb );
 
-    curl_eh_delete( eh );
-
-    free_const( path_prefix );
     free_const( resource );
+    curl_free( resource_esc );
+    curl_eh_delete( eh );
 
 
     return url;
