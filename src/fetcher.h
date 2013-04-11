@@ -36,10 +36,6 @@ extern int fetcher_fetch_file (listing_t           *li,
                                curl_write_callback  cb,
                                void                *cb_data);
 
-extern int fetcher_fetch_stats (indexnodes_t        *ins,
-                                curl_write_callback  cb,
-                                void                *cb_data);
-
 extern int fetcher_get_indexnode_info (const char *indexnode_url,
                                        const char **protocol,
                                        const char **id);

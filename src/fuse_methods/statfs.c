@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner.
+ * Copyright (C) 2008-2013 Matthew Turner.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,11 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
     xmlDocPtr         doc;
     indexnodes_t *ins = ((fsfuse_ctxt_t *)fuse_req_userdata(req))->indexnodes;
     struct statvfs stvfs;
-    int rc;
+    int rc = 1;
+    const char *url;
+    indexnodes_list_t *list;
+    indexnodes_iterator_t *iter;
+    indexnode_t *in;
 
 
     NOT_USED(ino);
@@ -63,9 +67,26 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
      * should sit somwhere else. How about a ctor that gets a new "i eat stats
      * results and return a total" object? */
     /* TODO: the parser_consumer callback shouldn't be in another file */
-    rc = fetcher_fetch_stats(ins,
-                             (curl_write_callback)&parser_consumer,
-                             (void *)parser);
+    list = indexnodes_get(CALLER_INFO ins);
+    for (iter = indexnodes_iterator_begin(list);
+         !indexnodes_iterator_end(iter);
+         iter = indexnodes_iterator_next(iter))
+    {
+        in = indexnodes_iterator_current(iter);
+        url = indexnode_make_url(in, "stats", "");
+
+        rc = fetcher_fetch_internal(
+            url,
+            NULL,
+            (curl_write_callback)&parser_consumer,
+            (void *)parser
+        );
+
+        indexnode_delete(CALLER_INFO in);
+        free_const(url);
+    }
+    indexnodes_iterator_delete(iter);
+    indexnodes_list_delete(list);
 
     if (!rc)
     {

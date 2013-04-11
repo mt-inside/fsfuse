@@ -123,42 +123,6 @@ int fetcher_fetch_file (listing_t           *li,
     return rc;
 }
 
-int fetcher_fetch_stats (indexnodes_t        *ins,
-                         curl_write_callback  cb,
-                         void                *cb_data)
-{
-    int rc = 1;
-    const char *url;
-    indexnodes_list_t *list;
-    indexnodes_iterator_t *iter;
-    indexnode_t *in;
-
-
-    fetcher_trace("fetcher_fetch_stats()\n");
-    fetcher_trace_indent();
-
-    list = indexnodes_get(CALLER_INFO ins);
-    for (iter = indexnodes_iterator_begin(list);
-         !indexnodes_iterator_end(iter);
-         iter = indexnodes_iterator_next(iter))
-    {
-        in = indexnodes_iterator_current(iter);
-        url = indexnode_make_url(in, "stats", "");
-
-        rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
-
-        indexnode_delete(CALLER_INFO in);
-        free_const(url);
-    }
-    indexnodes_iterator_delete(iter);
-    indexnodes_list_delete(list);
-
-    fetcher_trace_dedent();
-
-
-    return rc;
-}
-
 int fetcher_fetch_internal (const char * const   url,
                             const char * const   range,
                             curl_write_callback  cb,
