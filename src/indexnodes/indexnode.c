@@ -161,10 +161,7 @@ char *indexnode_tostring( indexnode_t *in )
     return string_buffer_commit( sb );
 }
 
-/* API to make URLs ========================================================= */
-
-/* TODO: move me! Really? Tell, don't ask. Obviously these should call off to
- * other places and not be concerned with escaping or URI formats themselves. */
+/* TODO who are we making uris for and why? Should tell, not ask */
 const char *indexnode_make_url(
     const indexnode_t *in,
     const char *path_prefix,

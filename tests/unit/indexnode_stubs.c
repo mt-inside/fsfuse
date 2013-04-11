@@ -82,7 +82,7 @@ int indexnode_equals_stub( indexnode_t *in )
     const char *test_uri;
     int rc;
 
-    test_uri = indexnode_make_url( in, "foo", "bar" );
+    test_uri = indexnode_make_url( in, strdup( "foo" ), strdup( "bar" ) );
     rc = !strcmp( test_uri, "http://fs2.example.org:1337/foo/bar" );
     free_const( test_uri );
 
@@ -94,7 +94,7 @@ int indexnode_equals_stub2( indexnode_t *in )
     const char *test_uri;
     int rc;
 
-    test_uri = indexnode_make_url( in, "foo", "bar" );
+    test_uri = indexnode_make_url( in, strdup( "foo" ), strdup( "bar" ) );
     rc = !strcmp( test_uri, "http://second.indexnode.com:1337/foo/bar" );
     free_const( test_uri );
 

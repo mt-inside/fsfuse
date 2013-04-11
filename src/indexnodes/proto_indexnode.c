@@ -72,58 +72,49 @@ const char *proto_indexnode_port( const proto_indexnode_t *pin )
     return strdup( pin->port );
 }
 
-extern int proto_indexnode_get_info( proto_indexnode_t *pin,
-                                     const char **protocol,
-                                     const char **id )
+int proto_indexnode_get_info( proto_indexnode_t *pin,
+                              const char **protocol,
+                              const char **id )
 {
-    const char *url = proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) );
-
-    return fetcher_get_indexnode_info( url, protocol, id );
+    /* TODO: this should be more generic. This (pin) class should be parsing the
+     * responses */
+    return fetcher_get_indexnode_info(
+        proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) ),
+        protocol,
+        id
+    );
 }
 
-/* TODO
- * Should be moved to the class that needs to use the URI
- * Should be decouped from CURL
- */
-const char *proto_indexnode_make_url (
-    const proto_indexnode_t *pin,
+static const char *make_path (
     const char *path_prefix,
     const char *resource
 )
 {
     string_buffer_t *sb = string_buffer_new( );
-    char *fmt;
-    char *resource_esc, *url;
-    CURL *eh;
+    char *path;
 
 
-    assert(pin);
-    assert(pin->host); assert(*pin->host);
-    assert(pin->port); assert(*pin->port);
+    assert(path_prefix); assert(*path_prefix);
+    assert(resource);
 
-    eh = curl_eh_new( );
-
-
-    if( is_ip4_address( pin->host ) || is_ip6_address( pin->host ))
-    {
-        fmt = "http://[%s]:%s/%s/%s";
-    }
-    else
-    {
-        fmt = "http://%s:%s/%s/%s";
-    }
+    string_buffer_printf( sb, "%s/%s", path_prefix, fetcher_escape_for_http( resource ) );
+    path = string_buffer_commit( sb );
 
 
-    /* we escape from resource + 1 and render the first '/' ourselves because
-     * the indexnode insists on it being real */
-    resource_esc = curl_easy_escape( eh, resource, 0 );
-    string_buffer_printf( sb, url, fmt, proto_indexnode_host( pin ), proto_indexnode_port( pin ), path_prefix, resource_esc );
-    url = string_buffer_commit( sb );
+    return path;
+}
 
-    free_const( resource );
-    curl_free( resource_esc );
-    curl_eh_delete( eh );
-
-
-    return url;
+const char *proto_indexnode_make_url(
+    proto_indexnode_t *pin,
+    const char *path_prefix,
+    const char *resource
+)
+{
+    /* I think it's OK for the indexnode to know that indexnodes are accessed
+     * over HTTP and what the URI format is */
+    return fetcher_make_http_url(
+        proto_indexnode_host( pin ),
+        proto_indexnode_port( pin ),
+        make_path( path_prefix, resource )
+    );
 }

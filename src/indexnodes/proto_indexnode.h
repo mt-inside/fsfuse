@@ -38,7 +38,7 @@ extern int proto_indexnode_get_info( proto_indexnode_t *pin,
                                      const char **id );
 
 extern const char *proto_indexnode_make_url (
-    const proto_indexnode_t *pin,
+    proto_indexnode_t *pin,
     const char *path_prefix,
     const char *resource
 );

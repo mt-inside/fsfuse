@@ -512,6 +512,69 @@ int http2errno (int http_code)
 
 
 /* ========================================================================== */
+/* URL Operations                                                             */
+/* ========================================================================== */
+
+/* Is this string IPv4 address? */
+static int is_ip4_address (const char *s)
+{
+    return (strspn(s, "0123456789.") == strlen(s));
+}
+
+/* Is this string IPv6 address? */
+static int is_ip6_address (const char *s)
+{
+    return (strspn(s, "0123456789abcdefABCDEF:") == strlen(s));
+}
+
+
+const char *fetcher_make_http_url (
+    const char *host,
+    const char *port,
+    const char *path
+)
+{
+    string_buffer_t *sb = string_buffer_new( );
+    char *fmt, *url;
+
+
+    assert(host); assert(*host);
+    assert(port); assert(*port);
+    assert(path);
+
+
+    if( is_ip4_address( host ) || is_ip6_address( host ))
+    {
+        fmt = "http://[%s]:%s/%s";
+    }
+    else
+    {
+        fmt = "http://%s:%s/%s";
+    }
+
+
+    string_buffer_printf( sb, fmt, host, port, path );
+    url = string_buffer_commit( sb );
+
+
+    return url;
+}
+
+const char *fetcher_escape_for_http ( const char *str )
+{
+    CURL *eh = curl_eh_new( );
+    const char *esc = curl_easy_escape( eh, str, 0 );
+
+
+    free_const( str );
+    curl_eh_delete( eh );
+
+
+    return esc;
+}
+
+
+/* ========================================================================== */
 /* Misc                                                                       */
 /* ========================================================================== */
 

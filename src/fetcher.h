@@ -53,4 +53,12 @@ extern int fetcher_fetch_internal (const char * const   url,
 /* TODO: why public? */
 extern int http2errno (int http_code);
 
+extern const char *fetcher_make_http_url (
+    const char *host,
+    const char *port,
+    const char *path
+);
+
+extern const char *fetcher_escape_for_http ( const char *str );
+
 #endif /* _INCLUDED_FETCHER_H */
