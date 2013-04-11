@@ -21,23 +21,25 @@
  * would have a chunk list actor that it could ask questions of.
  */
 
+#include "common.h"
+
 #include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "common.h"
-#include "locks.h"
+#include "download_thread.h"
+
 #include "config.h"
 #include "direntry.h"
-#include "download_thread.h"
 #include "fetcher.h"
-#include "queue.h"
-#include "string_buffer.h"
+#include "locks.h"
 #include "parser.h"
 #include "peerstats.h"
+#include "queue.h"
+#include "string_buffer.h"
 
 
 TRACE_DEFINE(dl_thr)
