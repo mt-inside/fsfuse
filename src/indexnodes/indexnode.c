@@ -13,6 +13,9 @@
 /* NB: this file relies on _POSIX_SOURCE to get NI_MAX[HOST|etc], even though
  * the man page and netdb.h seem to say it really should be _BSD_SOURCE */
 
+/* Indexnodes should have indexnode_get_stats, indexnode_get_alternatives,
+ * indexnode_get_file */
+
 #include "common.h"
 
 #include <stdlib.h>
@@ -25,6 +28,7 @@
 #include "ref_count.h"
 #include "config.h"
 #include "fetcher.h"
+#include "parser.h"
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -179,4 +183,11 @@ void indexnode_seen( indexnode_t *in )
 int indexnode_still_valid( const indexnode_t *in )
 {
     return ( time( NULL ) - in->last_seen ) < config_indexnode_timeout;
+}
+
+/* TODO: obviously parser_fetch_listing is nonsense */
+int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
+{
+    const char *url = indexnode_make_url( in, strdup( "browse" ), path );
+    return parser_fetch_listing(in, url, lis);
 }

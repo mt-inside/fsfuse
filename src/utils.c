@@ -174,7 +174,7 @@ int compare_dotted_version (const char *ver, const char *cmp)
 }
 
 
-int hash_equal (char *h1, char *h2)
+int hash_equal (const char *h1, const char *h2)
 {
     return !strcmp(h1, h2);
 }

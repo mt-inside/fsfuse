@@ -18,6 +18,6 @@ extern unsigned fsfuse_get_thread_index (void);
 
 extern int compare_dotted_version (const char *ver, const char *cmp);
 
-extern int hash_equal (char *h1, char *h2);
+extern int hash_equal (const char *h1, const char *h2);
 
 #endif /* _INCLUDED_UTILS_H */

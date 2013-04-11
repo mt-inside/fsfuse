@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "direntry.h"
+#include "listing_internal.h"
 
 #include "config.h"
 #include "fetcher.h"
@@ -33,15 +34,9 @@
 TRACE_DEFINE(direntry)
 
 
-/* TODO:
- * wtf does this add ref_counting fields again?
- * wtf dies this have-an li, when it could /be/ and li?
- */
 struct _direntry_t
 {
-    listing_t          *li;
-
-    ref_count_t        *ref_count;
+    listing_t           li;
 
     ino_t               inode;
     struct _direntry_t *next;
@@ -54,6 +49,9 @@ struct _direntry_t
 static direntry_t *direntry_new_root (CALLER_DECL_ONLY);
 static direntry_t *direntry_from_listing (CALLER_DECL listing_t *li);
 static direntry_t *direntries_from_listing_list (listing_list_t *lis, direntry_t *parent);
+
+
+#define BASE_CLASS(de) ((listing_t *)de)
 
 
 /* direntry module external interface ======================================= */
@@ -84,7 +82,7 @@ int direntry_ensure_children (
 )
 {
     int rc = EIO;
-    const char *path, *url;
+    const char *path;
     listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
 
@@ -94,16 +92,11 @@ int direntry_ensure_children (
         path = direntry_get_path(de);
         direntry_trace("direntry_get_children(%s)\n", path);
 
-
-        /* fetch the directory listing from the indexnode */
-        url = direntry_make_url(de, "browse", path + 1);
-        rc = parser_fetch_listing(url, &lis);
-        free_const(path);
-        free_const(url);
-
-        if (!rc && lis)
+        /* skip the leading '/' from the path that fuse gives us */
+        if (indexnode_tryget_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), path + 1, &lis))
         {
             dirents = direntries_from_listing_list (lis, de);
+            rc = 0;
 
             listing_list_delete(CALLER_INFO lis);
         }
@@ -145,14 +138,15 @@ static direntry_t *direntries_from_listing_list (listing_list_t *lis, direntry_t
 
 /* direntry lifecycle ======================================================= */
 
-static direntry_t *direntry_new (CALLER_DECL ino_t inode)
+static direntry_t *direntry_from_listing (CALLER_DECL listing_t *li)
 {
-    direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
+    /* TODO: stop being lazy and have listing_init */
+    direntry_t *de = realloc(li, sizeof(direntry_t));
 
 
-    de->ref_count = ref_count_new( );
+    bzero(de + sizeof(listing_t), sizeof(direntry_t) - sizeof(listing_t));
 
-    de->inode = inode;
+    de->inode = inode_next();
     inode_map_add(de);
 
     direntry_trace(
@@ -164,34 +158,30 @@ static direntry_t *direntry_new (CALLER_DECL ino_t inode)
     return de;
 }
 
-static direntry_t *direntry_from_listing (CALLER_DECL listing_t *li)
-{
-    direntry_t *de = direntry_new(CALLER_PASS inode_next());
-
-
-    de->li = listing_post(CALLER_PASS li);
-
-
-    return de;
-}
-
 direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 {
-    direntry_t *de = direntry_new(CALLER_PASS FSFUSE_ROOT_INODE);
-    listing_t *li = listing_new(CALLER_PASS_ONLY);
+    direntry_t *de = (direntry_t *)calloc(1, sizeof(direntry_t));
 
 
-    listing_attribute_add(li, fs2_name_attribute_key, "");
-    listing_attribute_add(li, fs2_type_attribute_key, "directory");
     /* Set the link count to something non-0. We can't query this from the
      * indexnode. We could work it out every time, but that would be tedious.
      * It turns out to be vitally important that this is non-0 if samba is going
      * to share the filesystem */
     //TODO: calculate me in the future, or get best guess (i.e. the cache might
     //know, else 1)
-    listing_attribute_add(li, fs2_linkcount_attribute_key, "1");
+    //FIXME: this is going to break. How do you list this direntry with a null
+    //indexnode? There must be special-case code.
+    BASE_CLASS(de)->name = strdup( "" );
+    BASE_CLASS(de)->type = listing_type_DIRECTORY;
+    BASE_CLASS(de)->link_count = 1;
 
-    de->li = li;
+    de->inode = FSFUSE_ROOT_INODE;
+    inode_map_add(de);
+
+    direntry_trace(
+        "[direntry %p inode %lu] new (" CALLER_FORMAT ") ref %u\n",
+        de, de->inode, CALLER_PASS 1
+    );
 
 
     return de;
@@ -199,7 +189,7 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
 
 direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 {
-    unsigned refc = ref_count_inc( de->ref_count );
+    unsigned refc = ref_count_inc( BASE_CLASS(de)->ref_count );
 
 
     NOT_USED(refc);
@@ -212,7 +202,7 @@ direntry_t *direntry_post (CALLER_DECL direntry_t *de)
 
 void direntry_delete (CALLER_DECL direntry_t *de)
 {
-    unsigned refc = ref_count_dec( de->ref_count );
+    unsigned refc = ref_count_dec( BASE_CLASS(de)->ref_count );
 
     direntry_trace("[direntry %p inode %lu] delete (" CALLER_FORMAT ") ref %u\n",
                    de, de->inode, CALLER_PASS refc);
@@ -222,9 +212,7 @@ void direntry_delete (CALLER_DECL direntry_t *de)
     {
         direntry_trace("refcount == 0 => free()ing\n");
 
-        ref_count_delete( de->ref_count );
-
-        listing_delete(CALLER_INFO de->li);
+        listing_teardown(BASE_CLASS(de));
 
         free(de);
     }
@@ -249,7 +237,7 @@ void direntry_delete_list (CALLER_DECL direntry_t *de)
 
 int direntry_equal (direntry_t *de, direntry_t *other)
 {
-    return listing_equal(de->li, other->li);
+    return listing_equal(BASE_CLASS(de), BASE_CLASS(other));
 }
 
 
@@ -274,11 +262,6 @@ direntry_t *direntry_get_next_sibling (direntry_t *de)
 
 
 /* direntry attribute getters =============================================== */
-
-listing_t *direntry_peek_listing (direntry_t *de)
-{
-    return de->li;
-}
 
 ino_t direntry_get_inode (direntry_t *de)
 {
@@ -312,32 +295,32 @@ char *direntry_get_path (direntry_t *de)
 
 char *direntry_get_name (direntry_t *de)
 {
-    return listing_get_name(de->li);
+    return listing_get_name(BASE_CLASS(de));
 }
 
 char *direntry_get_hash (direntry_t *de)
 {
-    return listing_get_hash(de->li);
+    return listing_get_hash(BASE_CLASS(de));
 }
 
 listing_type_t direntry_get_type (direntry_t *de)
 {
-    return listing_get_type(de->li);
+    return listing_get_type(BASE_CLASS(de));
 }
 
 off_t direntry_get_size (direntry_t *de)
 {
-    return listing_get_size(de->li);
+    return listing_get_size(BASE_CLASS(de));
 }
 
 unsigned long direntry_get_link_count (direntry_t *de)
 {
-    return listing_get_link_count(de->li);
+    return listing_get_link_count(BASE_CLASS(de));
 }
 
 char *direntry_get_href (direntry_t *de)
 {
-    return listing_get_href(de->li);
+    return listing_get_href(BASE_CLASS(de));
 }
 
 int direntry_get_looked_for_children (direntry_t *de)
@@ -357,19 +340,11 @@ int direntry_is_root (direntry_t *de)
 
 void direntry_de2stat (direntry_t *de, struct stat *st)
 {
-    listing_li2stat(de->li, st);
+    listing_li2stat(BASE_CLASS(de), st);
 
     st->st_ino = de->inode;
 }
 
-const char *direntry_make_url (
-    direntry_t *de,
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    return listing_make_url(de->li, path_prefix, resource);
-}
 
 void direntry_still_exists (direntry_t *de)
 {

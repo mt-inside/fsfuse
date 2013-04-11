@@ -29,7 +29,6 @@
 #include "indexnodes.h"
 #include "indexnodes_list.h"
 #include "indexnodes_iterator.h"
-#include "peerstats.h"
 #include "string_buffer.h"
 #include "utils.h"
 
