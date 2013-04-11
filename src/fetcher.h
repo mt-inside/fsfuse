@@ -46,9 +46,6 @@ extern int fetcher_fetch_internal (const char * const   url,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-/* TODO: why public? */
-extern int http2errno (int http_code);
-
 extern const char *fetcher_make_http_url (
     const char *host,
     const char *port,

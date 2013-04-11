@@ -72,6 +72,109 @@ void fetcher_finalise (void)
     curl_global_cleanup();
 }
 
+/* We currently throw HTTP error codes around internally, because they're quite
+ * nice and we only deal with HTTP atm. If, in future, we become transport
+ * agnostic, we might change to some independent representation. As we're a
+ * filesystem, this new representation would likely be similar to filesystem
+ * error codes. */
+
+/* Turn an http error code into a unix errno code.
+ * See:
+ * - RFC2616 (HTTP/1.1) http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+ * - errno.h
+ * Most of these codes indicate that we've sent rubbish, or the server is
+ * talking rubbish. In release builds we just return EIO, and in debug builds we
+ * assert so the bug can be found */
+static int http2errno (int http_code)
+{
+    int rc = EIO;
+
+
+    switch (http_code)
+    {
+        /* 1xx: Informational */
+        case 100: /* Continue */
+        case 101: /* Switching Protocols */
+            break;
+
+        /* 2xx: Successful */
+        case 200: /* OK */
+            rc = 0;
+            break;
+        case 201: /* Created */
+        case 202: /* Accepted */
+        case 203: /* Non-Authoritative Information */
+        case 204: /* No Content */
+        case 205: /* Reset Content */
+            break;
+        case 206: /* Partial Content */
+            rc = 0;
+            break;
+
+        /* 3xx: Redirection */
+        case 300: /* Multiple Choices */
+        case 301: /* Moved Permanently */
+        case 302: /* Found */
+        case 303: /* See Other */
+        case 304: /* Not Modified */
+        case 305: /* Use Proxy */
+        case 306: /* (Unused) */
+        case 307: /* Temporary Redirect */
+            break;
+
+        /* 4xx: Client Error */
+        /* i.e. some indicate user error, and some fsfuse bugs */
+        case 400: /* Bad Request */
+        case 401: /* Unauthorized */
+        case 402: /* Payment Required */
+        case 403: /* Forbidden */
+            break;
+        case 404: /* Not Found */
+            rc = ENOENT;
+            break;
+        case 405: /* Method Not Allowed */
+        case 406: /* Not Acceptable */
+        case 407: /* Proxy Authentication Required */
+        case 408: /* Request Timeout */
+        case 409: /* Conflict */
+        case 410: /* Gone */
+        case 411: /* Length Required */
+        case 412: /* Precondition Failed */
+        case 413: /* Request Entity Too Large */
+        case 414: /* Request-URI Too Long */
+        case 415: /* Unsupported Media Type */
+        case 416: /* Requested Range Not Satisfiable */
+        case 417: /* Expectation Failed */
+            break;
+
+        /* 5xx: Server Error */
+        case 500: /* Internal Server Error */
+            rc = EIO;
+            break;
+        case 501: /* Not Implemented */
+        case 502: /* Bad Gateway */
+            break;
+        case 503: /* Service Unavailable */
+            /* Returned when sharer's upload limit has been reached */
+            rc = EBUSY;
+            break;
+        case 504: /* Gateway Timeout */
+        case 505: /* HTTP Version Not Supported */
+            break;
+
+        default: /* Not in the HTTP/1.1 spec */
+            break;
+    }
+
+    if (rc == EIO)
+    {
+        trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
+    }
+
+
+    return rc;
+}
+
 
 /* ========================================================================== */
 /*      File Operations                                                       */
@@ -369,109 +472,6 @@ static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, vo
 
 
     return len;
-}
-
-/* We currently throw HTTP error codes around internally, because they're quite
- * nice and we only deal with HTTP atm. If, in future, we become transport
- * agnostic, we might change to some independent representation. As we're a
- * filesystem, this new representation would likely be similar to filesystem
- * error codes. */
-
-/* Turn an http error code into a unix errno code.
- * See:
- * - RFC2616 (HTTP/1.1) http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
- * - errno.h
- * Most of these codes indicate that we've sent rubbish, or the server is
- * talking rubbish. In release builds we just return EIO, and in debug builds we
- * assert so the bug can be found */
-int http2errno (int http_code)
-{
-    int rc = EIO;
-
-
-    switch (http_code)
-    {
-        /* 1xx: Informational */
-        case 100: /* Continue */
-        case 101: /* Switching Protocols */
-            break;
-
-        /* 2xx: Successful */
-        case 200: /* OK */
-            rc = 0;
-            break;
-        case 201: /* Created */
-        case 202: /* Accepted */
-        case 203: /* Non-Authoritative Information */
-        case 204: /* No Content */
-        case 205: /* Reset Content */
-            break;
-        case 206: /* Partial Content */
-            rc = 0;
-            break;
-
-        /* 3xx: Redirection */
-        case 300: /* Multiple Choices */
-        case 301: /* Moved Permanently */
-        case 302: /* Found */
-        case 303: /* See Other */
-        case 304: /* Not Modified */
-        case 305: /* Use Proxy */
-        case 306: /* (Unused) */
-        case 307: /* Temporary Redirect */
-            break;
-
-        /* 4xx: Client Error */
-        /* i.e. some indicate user error, and some fsfuse bugs */
-        case 400: /* Bad Request */
-        case 401: /* Unauthorized */
-        case 402: /* Payment Required */
-        case 403: /* Forbidden */
-            break;
-        case 404: /* Not Found */
-            rc = ENOENT;
-            break;
-        case 405: /* Method Not Allowed */
-        case 406: /* Not Acceptable */
-        case 407: /* Proxy Authentication Required */
-        case 408: /* Request Timeout */
-        case 409: /* Conflict */
-        case 410: /* Gone */
-        case 411: /* Length Required */
-        case 412: /* Precondition Failed */
-        case 413: /* Request Entity Too Large */
-        case 414: /* Request-URI Too Long */
-        case 415: /* Unsupported Media Type */
-        case 416: /* Requested Range Not Satisfiable */
-        case 417: /* Expectation Failed */
-            break;
-
-        /* 5xx: Server Error */
-        case 500: /* Internal Server Error */
-            rc = EIO;
-            break;
-        case 501: /* Not Implemented */
-        case 502: /* Bad Gateway */
-            break;
-        case 503: /* Service Unavailable */
-            /* Returned when sharer's upload limit has been reached */
-            rc = EBUSY;
-            break;
-        case 504: /* Gateway Timeout */
-        case 505: /* HTTP Version Not Supported */
-            break;
-
-        default: /* Not in the HTTP/1.1 spec */
-            break;
-    }
-
-    if (rc == EIO)
-    {
-        trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
-    }
-
-
-    return rc;
 }
 
 
