@@ -36,6 +36,8 @@
 #include "fetcher.h"
 #include "queue.h"
 #include "string_buffer.h"
+#include "parser.h"
+#include "peerstats.h"
 
 
 TRACE_DEFINE(dl_thr)
@@ -308,6 +310,8 @@ static void *downloader_thread_main (void *arg)
 {
     thread_t *thread = (thread_t *)arg;
     string_buffer_t *range_buffer;
+    const char *url;
+    listing_list_t *lis;
     char *range_str;
     int rc;
     int first_time = 1;
@@ -383,11 +387,35 @@ static void *downloader_thread_main (void *arg)
         thread->download_offset = thread->current_chunk->start;
         dl_thr_trace("fetching range \"%s\"\n", range_str);
 
-        /* begin the download */
-        rc = fetcher_fetch_file(direntry_peek_listing(thread->de),
-                                (thread->current_chunk->start) ? range_str : NULL,
-                                (curl_write_callback)&thread_pool_consumer,
-                                (void *)thread                              );
+        /* Find alternatives */
+        url = listing_make_url(direntry_peek_listing(thread->de), "alternatives", listing_get_hash(direntry_peek_listing(thread->de)));
+        rc = parser_fetch_listing(url, &lis);
+        free_const(url);
+
+        if (lis)
+        {
+            listing_t *li = peerstats_chose_alternative(lis);
+
+            /* Get the file */
+            if (li)
+            {
+                /* begin the download */
+                rc = fetcher_fetch_internal(
+                    listing_get_href(li),
+                    (thread->current_chunk->start) ? range_str : NULL,
+                    (curl_write_callback)&thread_pool_consumer,
+                    (void *)thread
+                );
+                listing_delete(CALLER_INFO li);
+            }
+            else
+            {
+                rc = EBUSY;
+                /* TODO sort out handling of this whole area */
+            }
+
+            listing_list_delete(CALLER_INFO lis);
+        }
 
         free(range_str);
 

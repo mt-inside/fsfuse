@@ -67,6 +67,7 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
      * should sit somwhere else. How about a ctor that gets a new "i eat stats
      * results and return a total" object? */
     /* TODO: the parser_consumer callback shouldn't be in another file */
+    /* TODO: these should happen in parallel. Some kind of fetcher_thread_pool? */
     list = indexnodes_get(CALLER_INFO ins);
     for (iter = indexnodes_iterator_begin(list);
          !indexnodes_iterator_end(iter);

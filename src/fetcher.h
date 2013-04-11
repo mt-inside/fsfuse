@@ -31,11 +31,6 @@ TRACE_DECLARE(fetcher)
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
-extern int fetcher_fetch_file (listing_t           *li,
-                               const char * const   range,
-                               curl_write_callback  cb,
-                               void                *cb_data);
-
 extern int fetcher_get_indexnode_info (const char *indexnode_url,
                                        const char **protocol,
                                        const char **id);

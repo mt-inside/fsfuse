@@ -175,57 +175,6 @@ static int http2errno (int http_code)
     return rc;
 }
 
-
-/* ========================================================================== */
-/*      File Operations                                                       */
-/* ========================================================================== */
-
-int fetcher_fetch_file (listing_t           *li,
-                        const char * const   range,
-                        curl_write_callback  cb,
-                        void                *cb_data)
-{
-    int rc = EIO;
-    const char *url;
-    listing_list_t *lis;
-
-
-    assert(li);
-
-    fetcher_trace("fetcher_fetch_file(hash: %s, range: \"%s\")\n", listing_get_hash(li), range);
-    fetcher_trace_indent();
-
-
-    /* Find alternatives */
-    url = listing_make_url(li, "alternatives", listing_get_hash(li));
-    rc = parser_fetch_listing(url, &lis);
-    free_const(url);
-
-    if (lis)
-    {
-        li = peerstats_chose_alternative(lis);
-
-        /* Get the file */
-        if (li)
-        {
-            rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
-            listing_delete(CALLER_INFO li);
-        }
-        else
-        {
-            rc = EBUSY;
-            /* TODO sort out handling of this whole area */
-        }
-
-        listing_list_delete(CALLER_INFO lis);
-    }
-
-    fetcher_trace_dedent();
-
-
-    return rc;
-}
-
 int fetcher_fetch_internal (const char * const   url,
                             const char * const   range,
                             curl_write_callback  cb,
