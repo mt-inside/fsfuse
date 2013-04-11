@@ -104,6 +104,8 @@ static void load_indexnodes_from_config (indexnodes_statics_manager_t *mgr)
         /* TODO: No need to strdup these when config is a real class with real
          * getters that return copies */
         proto_indexnode_t *pin = proto_indexnode_new(strdup(host), strdup(port));
+        /* FIXME: pairs and protos need freeing. Make the list be of pairs
+         * instead */
         pair = malloc( sizeof(mgr_pin_pair_t) );
         pair->mgr = mgr;
         pair->pin = pin;
