@@ -33,11 +33,15 @@ extern int indexnode_equals( indexnode_t *in, const char *id );
 
 extern char *indexnode_tostring( indexnode_t *in );
 
+#include "listing.h"
+
 /* TODO: shouldn't be here (see proto_indexnode) */
 extern const char *indexnode_make_url(
     const indexnode_t *in,
     const char *path_prefix,
     const char *resource
 );
+
+extern int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis );
 
 #endif /* _INCLUDED_INDEXNODE_H */

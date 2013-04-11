@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "indexnode.h"
 #include "trace.h"
 
 
@@ -33,6 +32,8 @@ typedef enum
     listing_type_DIRECTORY
 } listing_type_t;
 
+
+#include "indexnode.h"
 
 extern listing_t *listing_new (
     CALLER_DECL
@@ -60,11 +61,8 @@ extern char *          listing_get_client        (listing_t *li);
 extern void            listing_li2stat           (listing_t *li,
                                                   struct stat *st);
 
-/* TODO: again, so wrong that listing make their URIs */
-extern const char *    listing_make_url (
-    listing_t *li,
-    const char * const path_prefix,
-    const char * const resource
+extern listing_t *listing_get_best_alternative (
+    listing_t *li_reference
 );
 
 

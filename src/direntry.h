@@ -48,11 +48,6 @@ extern int             direntry_get_looked_for_children (direntry_t *de);
 extern void            direntry_set_looked_for_children (direntry_t *de, int val);
 extern int             direntry_is_root                 (direntry_t *de);
 extern void            direntry_de2stat                 (direntry_t *de, struct stat *st);
-extern const char *direntry_make_url (
-    direntry_t *de,
-    const char * const path_prefix,
-    const char * const resource
-);
 extern void            direntry_still_exists            (direntry_t *de);
 extern void            direntry_no_longer_exists        (direntry_t *de);
 

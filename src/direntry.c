@@ -82,7 +82,7 @@ int direntry_ensure_children (
 )
 {
     int rc = EIO;
-    const char *path, *url;
+    const char *path;
     listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
 
@@ -92,16 +92,11 @@ int direntry_ensure_children (
         path = direntry_get_path(de);
         direntry_trace("direntry_get_children(%s)\n", path);
 
-
-        /* fetch the directory listing from the indexnode */
-        url = listing_make_url(BASE_CLASS(de), "browse", path + 1);
-        rc = parser_fetch_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), url, &lis);
-        free_const(path);
-        free_const(url);
-
-        if (!rc && lis)
+        /* skip the leading '/' from the path that fuse gives us */
+        if (indexnode_tryget_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), path + 1, &lis))
         {
             dirents = direntries_from_listing_list (lis, de);
+            rc = 0;
 
             listing_list_delete(CALLER_INFO lis);
         }
@@ -350,14 +345,6 @@ void direntry_de2stat (direntry_t *de, struct stat *st)
     st->st_ino = de->inode;
 }
 
-const char *direntry_make_url (
-    direntry_t *de,
-    const char * const path_prefix,
-    const char * const resource
-)
-{
-    return listing_make_url(BASE_CLASS(de), path_prefix, resource);
-}
 
 void direntry_still_exists (direntry_t *de)
 {
