@@ -72,88 +72,104 @@ void fetcher_finalise (void)
     curl_global_cleanup();
 }
 
+/* We currently throw HTTP error codes around internally, because they're quite
+ * nice and we only deal with HTTP atm. If, in future, we become transport
+ * agnostic, we might change to some independent representation. As we're a
+ * filesystem, this new representation would likely be similar to filesystem
+ * error codes. */
 
-/* ========================================================================== */
-/*      File Operations                                                       */
-/* ========================================================================== */
-
-int fetcher_fetch_file (listing_t           *li,
-                        const char * const   range,
-                        curl_write_callback  cb,
-                        void                *cb_data)
+/* Turn an http error code into a unix errno code.
+ * See:
+ * - RFC2616 (HTTP/1.1) http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+ * - errno.h
+ * Most of these codes indicate that we've sent rubbish, or the server is
+ * talking rubbish. In release builds we just return EIO, and in debug builds we
+ * assert so the bug can be found */
+static int http2errno (int http_code)
 {
     int rc = EIO;
-    const char *url;
-    listing_list_t *lis;
 
 
-    assert(li);
-
-    fetcher_trace("fetcher_fetch_file(hash: %s, range: \"%s\")\n", listing_get_hash(li), range);
-    fetcher_trace_indent();
-
-
-    /* Find alternatives */
-    url = listing_make_url(li, "alternatives", listing_get_hash(li));
-    rc = parser_fetch_listing(url, &lis);
-    free_const(url);
-
-    if (lis)
+    switch (http_code)
     {
-        li = peerstats_chose_alternative(lis);
+        /* 1xx: Informational */
+        case 100: /* Continue */
+        case 101: /* Switching Protocols */
+            break;
 
-        /* Get the file */
-        if (li)
-        {
-            rc = fetcher_fetch_internal(listing_get_href(li), range, cb, cb_data);
-            listing_delete(CALLER_INFO li);
-        }
-        else
-        {
+        /* 2xx: Successful */
+        case 200: /* OK */
+            rc = 0;
+            break;
+        case 201: /* Created */
+        case 202: /* Accepted */
+        case 203: /* Non-Authoritative Information */
+        case 204: /* No Content */
+        case 205: /* Reset Content */
+            break;
+        case 206: /* Partial Content */
+            rc = 0;
+            break;
+
+        /* 3xx: Redirection */
+        case 300: /* Multiple Choices */
+        case 301: /* Moved Permanently */
+        case 302: /* Found */
+        case 303: /* See Other */
+        case 304: /* Not Modified */
+        case 305: /* Use Proxy */
+        case 306: /* (Unused) */
+        case 307: /* Temporary Redirect */
+            break;
+
+        /* 4xx: Client Error */
+        /* i.e. some indicate user error, and some fsfuse bugs */
+        case 400: /* Bad Request */
+        case 401: /* Unauthorized */
+        case 402: /* Payment Required */
+        case 403: /* Forbidden */
+            break;
+        case 404: /* Not Found */
+            rc = ENOENT;
+            break;
+        case 405: /* Method Not Allowed */
+        case 406: /* Not Acceptable */
+        case 407: /* Proxy Authentication Required */
+        case 408: /* Request Timeout */
+        case 409: /* Conflict */
+        case 410: /* Gone */
+        case 411: /* Length Required */
+        case 412: /* Precondition Failed */
+        case 413: /* Request Entity Too Large */
+        case 414: /* Request-URI Too Long */
+        case 415: /* Unsupported Media Type */
+        case 416: /* Requested Range Not Satisfiable */
+        case 417: /* Expectation Failed */
+            break;
+
+        /* 5xx: Server Error */
+        case 500: /* Internal Server Error */
+            rc = EIO;
+            break;
+        case 501: /* Not Implemented */
+        case 502: /* Bad Gateway */
+            break;
+        case 503: /* Service Unavailable */
+            /* Returned when sharer's upload limit has been reached */
             rc = EBUSY;
-            /* TODO sort out handling of this whole area */
-        }
+            break;
+        case 504: /* Gateway Timeout */
+        case 505: /* HTTP Version Not Supported */
+            break;
 
-        listing_list_delete(CALLER_INFO lis);
+        default: /* Not in the HTTP/1.1 spec */
+            break;
     }
 
-    fetcher_trace_dedent();
-
-
-    return rc;
-}
-
-int fetcher_fetch_stats (indexnodes_t        *ins,
-                         curl_write_callback  cb,
-                         void                *cb_data)
-{
-    int rc = 1;
-    const char *url;
-    indexnodes_list_t *list;
-    indexnodes_iterator_t *iter;
-    indexnode_t *in;
-
-
-    fetcher_trace("fetcher_fetch_stats()\n");
-    fetcher_trace_indent();
-
-    list = indexnodes_get(CALLER_INFO ins);
-    for (iter = indexnodes_iterator_begin(list);
-         !indexnodes_iterator_end(iter);
-         iter = indexnodes_iterator_next(iter))
+    if (rc == EIO)
     {
-        in = indexnodes_iterator_current(iter);
-        url = indexnode_make_url(in, "stats", "");
-
-        rc = fetcher_fetch_internal(url, NULL, cb, cb_data);
-
-        indexnode_delete(CALLER_INFO in);
-        free_const(url);
+        trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
     }
-    indexnodes_iterator_delete(iter);
-    indexnodes_list_delete(list);
-
-    fetcher_trace_dedent();
 
 
     return rc;
@@ -289,11 +305,10 @@ int fetcher_fetch_internal (const char * const   url,
 }
 
 /* TODO: factor the first part of this into fetcher_setup_common() */
-int fetcher_get_indexnode_info (proto_indexnode_t *pin,
+int fetcher_get_indexnode_info (const char *indexnode_url,
                                 const char **protocol,
                                 const char **id)
 {
-    const char *url;
     char *error_buffer;
     string_buffer_t *alias = string_buffer_new();
     int curl_rc;
@@ -304,7 +319,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
         malloc(sizeof(indexnode_info_t));
 
 
-    fetcher_trace("fetcher_get_indexnode_protocol(%p)\n", pin);
+    fetcher_trace("fetcher_get_indexnode_info(%s)\n", indexnode_url);
     fetcher_trace_indent();
 
     /* New handle */
@@ -318,8 +333,7 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
     }
 
     /* URL */
-    url = proto_indexnode_make_url(pin, "browse", "");
-    curl_easy_setopt(eh, CURLOPT_URL, url);
+    curl_easy_setopt(eh, CURLOPT_URL, indexnode_url);
 
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
@@ -357,6 +371,12 @@ int fetcher_get_indexnode_info (proto_indexnode_t *pin,
         curl_easy_getinfo(eh, CURLINFO_RESPONSE_CODE, &http_code);
         fetcher_trace("http code %d\n", http_code);
     }
+
+    curl_eh_delete(eh);
+    curl_slist_free_all(slist);
+    free(error_buffer);
+    free_const(indexnode_url);
+
 
     fetcher_trace_dedent();
 
@@ -403,107 +423,67 @@ static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, vo
     return len;
 }
 
-/* We currently throw HTTP error codes around internally, because they're quite
- * nice and we only deal with HTTP atm. If, in future, we become transport
- * agnostic, we might change to some independent representation. As we're a
- * filesystem, this new representation would likely be similar to filesystem
- * error codes. */
 
-/* Turn an http error code into a unix errno code.
- * See:
- * - RFC2616 (HTTP/1.1) http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
- * - errno.h
- * Most of these codes indicate that we've sent rubbish, or the server is
- * talking rubbish. In release builds we just return EIO, and in debug builds we
- * assert so the bug can be found */
-int http2errno (int http_code)
+/* ========================================================================== */
+/* URL Operations                                                             */
+/* ========================================================================== */
+
+/* Is this string IPv4 address? */
+static int is_ip4_address (const char *s)
 {
-    int rc = EIO;
+    return (strspn(s, "0123456789.") == strlen(s));
+}
+
+/* Is this string IPv6 address? */
+static int is_ip6_address (const char *s)
+{
+    return (strspn(s, "0123456789abcdefABCDEF:") == strlen(s));
+}
 
 
-    switch (http_code)
+const char *fetcher_make_http_url (
+    const char *host,
+    const char *port,
+    const char *path
+)
+{
+    string_buffer_t *sb = string_buffer_new( );
+    char *fmt, *url;
+
+
+    assert(host); assert(*host);
+    assert(port); assert(*port);
+    assert(path);
+
+
+    if( is_ip4_address( host ) || is_ip6_address( host ))
     {
-        /* 1xx: Informational */
-        case 100: /* Continue */
-        case 101: /* Switching Protocols */
-            break;
-
-        /* 2xx: Successful */
-        case 200: /* OK */
-            rc = 0;
-            break;
-        case 201: /* Created */
-        case 202: /* Accepted */
-        case 203: /* Non-Authoritative Information */
-        case 204: /* No Content */
-        case 205: /* Reset Content */
-            break;
-        case 206: /* Partial Content */
-            rc = 0;
-            break;
-
-        /* 3xx: Redirection */
-        case 300: /* Multiple Choices */
-        case 301: /* Moved Permanently */
-        case 302: /* Found */
-        case 303: /* See Other */
-        case 304: /* Not Modified */
-        case 305: /* Use Proxy */
-        case 306: /* (Unused) */
-        case 307: /* Temporary Redirect */
-            break;
-
-        /* 4xx: Client Error */
-        /* i.e. some indicate user error, and some fsfuse bugs */
-        case 400: /* Bad Request */
-        case 401: /* Unauthorized */
-        case 402: /* Payment Required */
-        case 403: /* Forbidden */
-            break;
-        case 404: /* Not Found */
-            rc = ENOENT;
-            break;
-        case 405: /* Method Not Allowed */
-        case 406: /* Not Acceptable */
-        case 407: /* Proxy Authentication Required */
-        case 408: /* Request Timeout */
-        case 409: /* Conflict */
-        case 410: /* Gone */
-        case 411: /* Length Required */
-        case 412: /* Precondition Failed */
-        case 413: /* Request Entity Too Large */
-        case 414: /* Request-URI Too Long */
-        case 415: /* Unsupported Media Type */
-        case 416: /* Requested Range Not Satisfiable */
-        case 417: /* Expectation Failed */
-            break;
-
-        /* 5xx: Server Error */
-        case 500: /* Internal Server Error */
-            rc = EIO;
-            break;
-        case 501: /* Not Implemented */
-        case 502: /* Bad Gateway */
-            break;
-        case 503: /* Service Unavailable */
-            /* Returned when sharer's upload limit has been reached */
-            rc = EBUSY;
-            break;
-        case 504: /* Gateway Timeout */
-        case 505: /* HTTP Version Not Supported */
-            break;
-
-        default: /* Not in the HTTP/1.1 spec */
-            break;
+        fmt = "http://[%s]:%s/%s";
     }
-
-    if (rc == EIO)
+    else
     {
-        trace_warn("http2errno: unknown HTTP return code %d\n", http_code);
+        fmt = "http://%s:%s/%s";
     }
 
 
-    return rc;
+    string_buffer_printf( sb, fmt, host, port, path );
+    url = string_buffer_commit( sb );
+
+
+    return url;
+}
+
+const char *fetcher_escape_for_http ( const char *str )
+{
+    CURL *eh = curl_eh_new( );
+    const char *esc = curl_easy_escape( eh, str, 0 );
+
+
+    free_const( str );
+    curl_eh_delete( eh );
+
+
+    return esc;
 }
 
 

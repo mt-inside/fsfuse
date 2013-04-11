@@ -19,7 +19,7 @@
 #include "tests.h"
 #include "indexnode_stubs.h"
 
-#include "proto_indexnode.h"
+#include "indexnodes/proto_indexnode.h"
 
 
 START_TEST( proto_indexnode_can_be_created_and_destroyed )

@@ -17,9 +17,10 @@
 #include <curl/curl.h>
 
 #include "proto_indexnode.h"
-#include "proto_indexnode_internal.h"
 
 #include "curl_utils.h"
+#include "fetcher.h"
+#include "string_buffer.h"
 #include "utils.h"
 
 
@@ -71,50 +72,49 @@ const char *proto_indexnode_port( const proto_indexnode_t *pin )
     return strdup( pin->port );
 }
 
-/* TODO
- * Should be moved to the class that needs to use the URI
- * Should be decouped from CURL
- * Shouldn't over-estimate string length and sprintf - should use string_buffer
- */
-const char *proto_indexnode_make_url (
-    const proto_indexnode_t *pin,
+int proto_indexnode_get_info( proto_indexnode_t *pin,
+                              const char **protocol,
+                              const char **id )
+{
+    /* TODO: this should be more generic. This (pin) class should be parsing the
+     * responses */
+    return fetcher_get_indexnode_info(
+        proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) ),
+        protocol,
+        id
+    );
+}
+
+static const char *make_path (
     const char *path_prefix,
     const char *resource
 )
 {
-    char *fmt;
-    char *resource_esc, *url;
-    size_t len;
-    CURL *eh;
+    string_buffer_t *sb = string_buffer_new( );
+    char *path;
 
 
-    assert(pin);
-    assert(pin->host); assert(*pin->host);
-    assert(pin->port); assert(*pin->port);
+    assert(path_prefix); assert(*path_prefix);
+    assert(resource);
 
-    eh = curl_eh_new( );
-
-
-    if( is_ip4_address( pin->host ) || is_ip6_address( pin->host ))
-    {
-        fmt = "http://[%s]:%s/%s/%s";
-    }
-    else
-    {
-        fmt = "http://%s:%s/%s/%s";
-    }
+    string_buffer_printf( sb, "%s/%s", path_prefix, fetcher_escape_for_http( resource ) );
+    path = string_buffer_commit( sb );
 
 
-    /* we escape from resource + 1 and render the first '/' ourselves because
-     * the indexnode insists on it being real */
-    resource_esc = curl_easy_escape( eh, resource, 0 );
-    len = strlen( pin->host ) + strlen( pin->port ) + strlen( path_prefix ) + strlen( resource_esc ) + strlen( fmt ) + 1;
-    url = (char *)malloc( len * sizeof(*url) );
-    sprintf( url, fmt, pin->host, pin->port, path_prefix, resource_esc );
-    curl_free( resource_esc );
+    return path;
+}
 
-    curl_eh_delete( eh );
-
-
-    return url;
+const char *proto_indexnode_make_url(
+    proto_indexnode_t *pin,
+    const char *path_prefix,
+    const char *resource
+)
+{
+    /* I think it's OK for the indexnode to know that indexnodes are accessed
+     * over HTTP and what the URI format is */
+    return fetcher_make_http_url(
+        proto_indexnode_host( pin ),
+        proto_indexnode_port( pin ),
+        make_path( path_prefix, resource )
+    );
 }

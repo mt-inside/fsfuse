@@ -18,7 +18,6 @@
 
 #include "alarm_simple.h"
 #include "config.h"
-#include "fetcher.h"
 #include "linked_list.h"
 #include "proto_indexnode.h"
 
@@ -68,6 +67,7 @@ void indexnodes_statics_manager_delete(
     free( mgr );
 }
 
+/* TODO: What thread does this happen on? What does that mean? */
 static void ping_indexnode( void *ctxt )
 {
     mgr_pin_pair_t *pair = (mgr_pin_pair_t *)ctxt;
@@ -77,8 +77,7 @@ static void ping_indexnode( void *ctxt )
 
 
     /* TODO: what happens if this fails? */
-    /* should be: proto_indexnode_get_info */
-    if (fetcher_get_indexnode_info(pin, &protocol, &id)) /* blocks */
+    if (proto_indexnode_get_info(pin, &protocol, &id)) /* blocks */
     {
         mgr->cb(
             mgr->cb_ctxt,

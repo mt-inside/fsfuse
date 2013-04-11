@@ -10,6 +10,7 @@
 #include "common.h"
 
 #include "indexnode.h"
+#include "indexnodes/proto_indexnode.h"
 
 extern const char *indexnode_stub_host;
 extern const char *indexnode_stub_port;

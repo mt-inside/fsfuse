@@ -20,7 +20,7 @@
 
 #include "indexnode.h"
 #include "indexnode_internal.h"
-#include "proto_indexnode_internal.h"
+#include "proto_indexnode.h"
 
 #include "ref_count.h"
 #include "config.h"
@@ -96,33 +96,6 @@ indexnode_t *indexnode_new(
 
 }
 
-indexnode_t *indexnode_from_proto(
-    CALLER_DECL
-    proto_indexnode_t *pin,
-    const char *version,
-    const char *id
-)
-{
-    indexnode_t *in;
-    const char *host = proto_indexnode_host( pin );
-    const char *port = proto_indexnode_port( pin );
-
-
-    in = indexnode_new(
-        CALLER_PASS
-        host,
-        port,
-        version,
-        id
-    );
-
-
-    proto_indexnode_delete( pin );
-
-
-    return in;
-}
-
 indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in )
 {
     unsigned refc = ref_count_inc( in->ref_count );
@@ -188,10 +161,7 @@ char *indexnode_tostring( indexnode_t *in )
     return string_buffer_commit( sb );
 }
 
-/* API to make URLs ========================================================= */
-
-/* TODO: move me! Really? Tell, don't ask. Obviously these should call off to
- * other places and not be concerned with escaping or URI formats themselves. */
+/* TODO who are we making uris for and why? Should tell, not ask */
 const char *indexnode_make_url(
     const indexnode_t *in,
     const char *path_prefix,

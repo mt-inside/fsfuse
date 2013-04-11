@@ -31,24 +31,22 @@ TRACE_DECLARE(fetcher)
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
-extern int fetcher_fetch_file (listing_t           *li,
-                               const char * const   range,
-                               curl_write_callback  cb,
-                               void                *cb_data);
+extern int fetcher_get_indexnode_info (const char *indexnode_url,
+                                       const char **protocol,
+                                       const char **id);
 
-extern int fetcher_fetch_stats (indexnodes_t        *ins,
-                                curl_write_callback  cb,
-                                void                *cb_data);
-
+/* TODO: why extrernal? */
 extern int fetcher_fetch_internal (const char * const   url,
                                    const char * const   range,
                                    curl_write_callback  cb,
                                    void                *cb_data);
 
-extern int fetcher_get_indexnode_info (proto_indexnode_t *in,
-                                       const char **protocol,
-                                       const char **id);
+extern const char *fetcher_make_http_url (
+    const char *host,
+    const char *port,
+    const char *path
+);
 
-extern int http2errno (int http_code);
+extern const char *fetcher_escape_for_http ( const char *str );
 
 #endif /* _INCLUDED_FETCHER_H */
