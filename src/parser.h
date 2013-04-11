@@ -34,6 +34,7 @@ extern xmlDocPtr parser_done (xmlParserCtxtPtr ctxt);
 extern xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath);
 
 extern int parser_fetch_listing (
+    indexnode_t *in,
     const char * const url,
     listing_list_t **lis
 );

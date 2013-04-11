@@ -390,8 +390,9 @@ static void *downloader_thread_main (void *arg)
         dl_thr_trace("fetching range \"%s\"\n", range_str);
 
         /* Find alternatives */
-        url = listing_make_url(direntry_peek_listing(thread->de), "alternatives", listing_get_hash(direntry_peek_listing(thread->de)));
-        rc = parser_fetch_listing(url, &lis);
+        /* TODO: BASE_CLASS() should be universal */
+        url = listing_make_url((listing_t *)thread->de, "alternatives", listing_get_hash((listing_t *)thread->de));
+        rc = parser_fetch_listing(NULL, url, &lis);
         free_const(url);
 
         if (lis)

@@ -17,32 +17,18 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "indexnode.h"
+#include "listing.h"
+#include "listing_internal.h"
 
 #include "config.h"
 #include "fs2_constants.h"
-#include "listing.h"
+#include "indexnode.h"
 #include "ref_count.h"
 #include "utils.h"
 
 
 TRACE_DEFINE(listing)
 
-
-struct _listing_t
-{
-    ref_count_t               *ref_count;
-
-    indexnode_t               *in;
-    char                      *name;
-    char                      *hash;
-    listing_type_t             type;
-    off_t                      size; /* st_size in struct stat is off_t */
-    unsigned long              link_count;
-    char                      *href;
-
-    char                      *client;
-};
 
 struct _listing_list_t
 {
@@ -78,15 +64,35 @@ static listing_type_t listing_type_from_string (const char * const s)
 
 /* listing lifecycle ======================================================= */
 
-listing_t *listing_new (CALLER_DECL_ONLY)
+listing_t *listing_new (
+    CALLER_DECL
+    indexnode_t *in,
+    const char *hash,
+    const char *name,
+    const char *type,
+    off_t size,
+    unsigned long link_count,
+    const char *href,
+    const char *client
+)
 {
-    listing_t *li = (listing_t *)calloc(1, sizeof(listing_t));
+    listing_t *li = malloc(sizeof(listing_t));
 
 
-    li->ref_count = ref_count_new( );
+    li->ref_count = ref_count_new();
+
+    li->in = in;
+    li->name = name;
+    li->hash = hash;
+    li->type = listing_type_from_string(type);
+    li->size = size;
+    li->link_count = link_count;
+    li->href = href;
+    li->client = client;
 
     listing_trace("[listing %p] new (" CALLER_FORMAT ") ref %u\n",
                    li, CALLER_PASS 1);
+
 
     return li;
 }
@@ -104,6 +110,18 @@ listing_t *listing_post (CALLER_DECL listing_t *li)
     return li;
 }
 
+void listing_teardown (listing_t *li)
+{
+    ref_count_delete( li->ref_count );
+
+    /* TODO: be explicti about whic of these are mandatory (e.g. name) and
+     * assert on the way in and don't check here */
+    if (li->name)   free_const(li->name);
+    if (li->hash)   free_const(li->hash);
+    if (li->href)   free_const(li->href);
+    if (li->client) free_const(li->client);
+}
+
 void listing_delete (CALLER_DECL listing_t *li)
 {
     unsigned refc = ref_count_dec( li->ref_count );
@@ -116,13 +134,7 @@ void listing_delete (CALLER_DECL listing_t *li)
     {
         listing_trace("refcount == 0 => free()ing\n");
 
-        ref_count_delete( li->ref_count );
-
-        if (li->name)   free(li->name);
-        if (li->hash)   free(li->hash);
-        if (li->href)   free(li->href);
-        if (li->client) free(li->client);
-
+        listing_teardown(li);
         free(li);
     }
 
@@ -142,12 +154,12 @@ int listing_equal (listing_t *li, listing_t *other)
 
 char *listing_get_name (listing_t *li)
 {
-    return li->name;
+    return strdup( li->name );
 }
 
 char *listing_get_hash (listing_t *li)
 {
-    return li->hash;
+    return strdup( li->hash );
 }
 
 listing_type_t listing_get_type (listing_t *li)
@@ -167,12 +179,12 @@ unsigned long listing_get_link_count (listing_t *li)
 
 char *listing_get_href (listing_t *li)
 {
-    return li->href;
+    return strdup( li->href );
 }
 
 char *listing_get_client (listing_t *li)
 {
-    return li->client;
+    return strdup( li->client );
 }
 
 void listing_li2stat (listing_t *li, struct stat *st)
@@ -279,44 +291,4 @@ void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
 listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
 {
     return listing_post(CALLER_INFO lis->items[item]);
-}
-void listing_attribute_add (
-    listing_t * const li,
-    const char *name,
-    const char *value
-)
-{
-    if (!strcmp(name, fs2_name_attribute_key))
-    {
-        li->name = strdup(value);
-    }
-    else if (!strcmp(name, fs2_hash_attribute_key))
-    {
-        li->hash = strdup(value);
-    }
-    else if (!strcmp(name, fs2_type_attribute_key))
-    {
-        li->type = listing_type_from_string(value);
-    }
-    else if (!strcmp(name, fs2_size_attribute_key))
-    {
-        li->size = atoll(value);
-    }
-    else if (!strcmp(name, fs2_linkcount_attribute_key) ||
-             !strcmp(name, fs2_alternativescount_attribute_key))
-    {
-        li->link_count = atol(value);
-    }
-    else if (!strcmp(name, fs2_href_attribute_key))
-    {
-        li->href = strdup(value);
-    }
-    else if (!strcmp(name, fs2_clientalias_attribute_key))
-    {
-        li->client = strdup(value);
-    }
-    else
-    {
-        listing_trace("Unknown attribute %s == %s\n", name, value);
-    }
 }
