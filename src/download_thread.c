@@ -391,12 +391,9 @@ static void *downloader_thread_main (void *arg)
 
         /* Find alternatives */
         /* TODO: BASE_CLASS() should be universal */
-        li = listing_get_best_alternative((listing_t *)thread->de);
-
-        /* Get the file */
-        if (li)
+        if (listing_tryget_best_alternative((listing_t *)thread->de, &li))
         {
-            /* begin the download */
+            /* Get the file */
             rc = fetch(
                 listing_get_href(li),
                 NULL, NULL,

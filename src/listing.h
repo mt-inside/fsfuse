@@ -61,9 +61,7 @@ extern char *          listing_get_client        (listing_t *li);
 extern void            listing_li2stat           (listing_t *li,
                                                   struct stat *st);
 
-extern listing_t *listing_get_best_alternative (
-    listing_t *li_reference
-);
+extern int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_best );
 
 
 extern listing_list_t *listing_list_new (unsigned count);

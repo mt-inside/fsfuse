@@ -10,6 +10,12 @@
  * Fetcher module. This contains the functions that arrange for actual file
  * transfers, be they of XML metadata files (e.g. dir listings), or actual data
  * (e.g. for read()).
+ *
+ * TODO: make this a class with methods:
+ *   new( host, port, path ) - does the setup part of fetch(), writes eh, error_buffer, etc to member vars
+ *   delete( ) - does end of fetch() - the teardown
+ *   fetch_headers( cb, ctxt )
+ *   fetch_body( cb, ctxt, range )
  */
 
 #include "common.h"

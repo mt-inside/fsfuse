@@ -29,6 +29,7 @@
 #include "config.h"
 #include "fetcher.h"
 #include "parser.h"
+#include "peerstats.h"
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -189,5 +190,23 @@ int indexnode_still_valid( const indexnode_t *in )
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
 {
     const char *url = indexnode_make_url( in, strdup( "browse" ), path );
-    return parser_fetch_listing(in, url, lis);
+    return parser_fetch_listing( in, url, lis );
+}
+
+int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best )
+{
+    listing_list_t *lis;
+    const char *url = indexnode_make_url( in, strdup( "alternatives" ), hash );
+    int rc = 0;
+
+
+    if ( !parser_fetch_listing( in, url, &lis ) )
+    {
+        *li_best = peerstats_chose_alternative( lis );
+        listing_list_delete( CALLER_INFO lis );
+        rc = 1;
+    }
+
+
+    return rc;
 }

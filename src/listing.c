@@ -24,7 +24,6 @@
 #include "fs2_constants.h"
 #include "indexnode.h"
 #include "parser.h"
-#include "peerstats.h"
 #include "ref_count.h"
 #include "utils.h"
 
@@ -223,24 +222,13 @@ void listing_li2stat (listing_t *li, struct stat *st)
     }
 }
 
-listing_t *listing_get_best_alternative (
-    listing_t *li_reference
-)
+int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_best )
 {
-    listing_list_t *lis;
-    listing_t *li_best = NULL;
-    const char *url;
-
-
-    url = indexnode_make_url(li_reference->in, strdup( "alternatives" ), listing_get_hash(li_reference));
-
-    if (!parser_fetch_listing(li_reference->in, url, &lis))
-    {
-        li_best = peerstats_chose_alternative(lis);
-    }
-
-
-    return li_best;
+    return indexnode_tryget_best_alternative(
+        indexnode_post( CALLER_INFO li_reference->in ),
+        listing_get_hash( li_reference ),
+        li_best
+    );
 }
 
 

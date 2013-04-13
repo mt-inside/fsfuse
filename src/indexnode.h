@@ -43,5 +43,6 @@ extern const char *indexnode_make_url(
 );
 
 extern int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis );
+extern int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best );
 
 #endif /* _INCLUDED_INDEXNODE_H */
