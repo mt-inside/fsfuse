@@ -1,4 +1,5 @@
 Listing doens't need any of its getters
+de's should own download threads. What does the pool do?
 
 TODO:
                config.o                \

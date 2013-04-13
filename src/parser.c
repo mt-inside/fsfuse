@@ -71,7 +71,7 @@ size_t parser_consumer (void *buf, size_t size, size_t nmemb, void *userp)
 {
     int rc;
     size_t len = size * nmemb;
-    xmlParserCtxtPtr ctxt = (xmlParserCtxtPtr)((fetcher_cb_data_t *)userp)->cb_data;
+    xmlParserCtxtPtr ctxt = (xmlParserCtxtPtr)userp;
 
 
     parser_trace("parser_consumer(size==%zd, nmemb==%zd, userp==%p)\n",
@@ -265,7 +265,13 @@ int parser_fetch_listing (
     parser_trace("parser_fetch_listing(url: %s)\n", url);
     parser_trace_indent();
 
-    rc = fetcher_fetch_internal(url, NULL, (curl_write_callback)&parser_consumer, (void *)parser);
+    rc = fetch(
+        url,
+        NULL, NULL,
+        (curl_write_callback)&parser_consumer, (void *)parser,
+        0,
+        NULL
+    );
 
     if (rc == 0 && lis)
     {

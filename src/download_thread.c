@@ -396,11 +396,12 @@ static void *downloader_thread_main (void *arg)
         if (li)
         {
             /* begin the download */
-            rc = fetcher_fetch_internal(
+            rc = fetch(
                 listing_get_href(li),
-                (thread->current_chunk->start) ? range_str : NULL,
-                (curl_write_callback)&thread_pool_consumer,
-                (void *)thread
+                NULL, NULL,
+                (curl_write_callback)&thread_pool_consumer, (void *)thread,
+                0,
+                (thread->current_chunk->start) ? range_str : NULL
             );
             listing_delete(CALLER_INFO li);
         }
@@ -467,7 +468,7 @@ static void chunk_list_empty (thread_t *thread, int rc)
 static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *userp)
 {
     buf_t *buf = (buf_t *)malloc(sizeof(buf_t));
-    thread_t *thread = (thread_t *)((fetcher_cb_data_t *)userp)->cb_data;
+    thread_t *thread = (thread_t *)userp;
     chunk_t *chunk;
     size_t buf_len = size * nmemb, rc = EIO, copy_len;
 

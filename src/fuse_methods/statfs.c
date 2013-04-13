@@ -76,11 +76,12 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
         in = indexnodes_iterator_current(iter);
         url = indexnode_make_url(in, "stats", "");
 
-        rc = fetcher_fetch_internal(
+        rc = fetch(
             url,
-            NULL,
-            (curl_write_callback)&parser_consumer,
-            (void *)parser
+            NULL, NULL,
+            (curl_write_callback)&parser_consumer, (void *)parser,
+            0,
+            NULL
         );
 
         indexnode_delete(CALLER_INFO in);

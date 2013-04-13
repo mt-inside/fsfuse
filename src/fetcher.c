@@ -39,18 +39,6 @@
 TRACE_DEFINE(fetcher)
 
 
-typedef struct
-{
-    const char *protocol;
-    const char *id;
-} indexnode_info_t;
-
-
-static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream);
-
-static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp);
-
-
 /* ========================================================================== */
 /*      Init & Teardown                                                       */
 /* ========================================================================== */
@@ -174,24 +162,25 @@ static int http2errno (int http_code)
     return rc;
 }
 
-int fetcher_fetch_internal (const char * const   url,
-                            const char * const   range,
-                            curl_write_callback  cb,
-                            void                *cb_data)
+/* TODO: Hide CURL, i.e. abstract the curl types (have len rather than size * nmemb)
+ * TODO: also make the signature of the header callback more sane (pre-parse to
+ * 0-terminated key & value)
+ * */
+int fetch(
+    const char *url,
+    curl_write_callback header_cb, void *header_cb_ctxt,
+    curl_write_callback body_cb,   void *body_cb_ctxt,
+    int headers_only,
+    const char *range
+)
 {
-    char *redirect_target, *error_buffer;
-    string_buffer_t *alias = string_buffer_new();
-    int rc = EIO, curl_rc;
-    long http_code = 0;
     CURL *eh;
+    char *error_buffer;
     struct curl_slist *slist = NULL;
-    fetcher_cb_data_t cb_data_real;
-
-
-    assert(url); assert(*url);
-
-    fetcher_trace("fetcher_fetch_internal(url: %s, range: \"%s\")\n", url, range);
-    fetcher_trace_indent();
+    string_buffer_t *alias = string_buffer_new();
+    char *redirect_target;
+    long http_code;
+    int rc = EIO, curl_rc;
 
 
     /* New handle */
@@ -199,24 +188,10 @@ int fetcher_fetch_internal (const char * const   url,
 
     /* Error buffer */
     error_buffer = (char *)malloc(CURL_ERROR_SIZE * sizeof(char));
-    if (error_buffer)
-    {
-        curl_easy_setopt(eh, CURLOPT_ERRORBUFFER, error_buffer);
-    }
-
-    /* Stuff away download-specific data */
-    cb_data_real.eh = eh;
-    cb_data_real.cb_data = cb_data;
+    curl_easy_setopt(eh, CURLOPT_ERRORBUFFER, error_buffer);
 
     /* URL */
     curl_easy_setopt(eh, CURLOPT_URL, url);
-    fetcher_trace("fetching url \"%s\"\n", url);
-
-    /* Range */
-    if (range)
-    {
-        curl_easy_setopt(eh, CURLOPT_RANGE, range);
-    }
 
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
@@ -231,32 +206,31 @@ int fetcher_fetch_internal (const char * const   url,
     curl_easy_setopt(eh, CURLOPT_FRESH_CONNECT, 1);
     curl_easy_setopt(eh, CURLOPT_FORBID_REUSE, 1);
 
-    /* Data consumer */
-    if (cb)
-    {
-        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, cb);
-        curl_easy_setopt(eh, CURLOPT_WRITEDATA, &cb_data_real);
-    }
-    else
-    {
-        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, &null_writefn);
-    }
-
     /* Have libcurl abort on error (http >= 400) */
     curl_easy_setopt(eh, CURLOPT_FAILONERROR, 1);
 
-    /* Do it */
-    curl_rc = curl_easy_perform(eh);
+    /* Header consumer */
+    curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, header_cb);
+    curl_easy_setopt(eh, CURLOPT_HEADERDATA, header_cb_ctxt);
 
-    fetcher_trace("curl returned %d, error: %s\n", curl_rc,
-            (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
+    /* Body consumer */
+    curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, body_cb);
+    curl_easy_setopt(eh, CURLOPT_WRITEDATA, body_cb_ctxt);
 
-    if (curl_rc == CURLE_OK ||
-        curl_rc == CURLE_HTTP_RETURNED_ERROR)
+    if (headers_only)
     {
-        curl_easy_getinfo(eh, CURLINFO_RESPONSE_CODE, &http_code);
-        fetcher_trace("http code %d\n", http_code);
+        /* Do a HEAD request */
+        curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
     }
+
+    /* Range */
+    if (range)
+    {
+        curl_easy_setopt(eh, CURLOPT_RANGE, range);
+    }
+
+    /* Do it - blocks */
+    curl_rc = curl_easy_perform(eh);
 
     switch (curl_rc)
     {
@@ -287,82 +261,8 @@ int fetcher_fetch_internal (const char * const   url,
             break;
     }
 
-    curl_easy_getinfo(eh, CURLINFO_EFFECTIVE_URL, &redirect_target);
-    fetcher_trace("eventually redirected to: %s\n", redirect_target);
-
-
-    curl_easy_setopt(eh, CURLOPT_RANGE, NULL);
-    curl_eh_delete(eh);
-    curl_slist_free_all(slist);
-    free(error_buffer);
-
-
-    fetcher_trace_dedent();
-
-
-    return rc;
-}
-
-/* TODO: factor the first part of this into fetcher_setup_common() */
-int fetcher_get_indexnode_info (const char *indexnode_url,
-                                const char **protocol,
-                                const char **id)
-{
-    char *error_buffer;
-    string_buffer_t *alias = string_buffer_new();
-    int curl_rc;
-    long http_code;
-    CURL *eh;
-    struct curl_slist *slist = NULL;
-    indexnode_info_t *info =
-        malloc(sizeof(indexnode_info_t));
-
-
-    fetcher_trace("fetcher_get_indexnode_info(%s)\n", indexnode_url);
-    fetcher_trace_indent();
-
-    /* New handle */
-    eh = curl_eh_new();
-
-    /* Error buffer */
-    error_buffer = (char *)malloc(CURL_ERROR_SIZE * sizeof(char));
-    if (error_buffer)
-    {
-        curl_easy_setopt(eh, CURLOPT_ERRORBUFFER, error_buffer);
-    }
-
-    /* URL */
-    curl_easy_setopt(eh, CURLOPT_URL, indexnode_url);
-
-    /* Other headers */
-    curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
-
-    string_buffer_append(alias, strdup(fs2_alias_header_key));
-    string_buffer_append(alias, strdup(config_alias));
-    slist = curl_slist_append(slist, string_buffer_peek(alias));
-    string_buffer_delete(alias);
-    curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
-
-    /* No keep-alive */
-    curl_easy_setopt(eh, CURLOPT_FRESH_CONNECT, 1);
-    curl_easy_setopt(eh, CURLOPT_FORBID_REUSE, 1);
-
-    /* Header consumer */
-    curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &indexnode_header_info_cb);
-    curl_easy_setopt(eh, CURLOPT_HEADERDATA, info);
-
-    /* Do a HEAD request */
-    curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
-
-    /* Do it - blocks */
-    curl_rc = curl_easy_perform(eh);
-
-    *protocol = info->protocol;
-    *id = info->id;
-    free(info);
-
     fetcher_trace("curl returned %d, error: %s\n", curl_rc,
-        (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
+            (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
 
     if (curl_rc == CURLE_OK ||
         curl_rc == CURLE_HTTP_RETURNED_ERROR)
@@ -371,55 +271,18 @@ int fetcher_get_indexnode_info (const char *indexnode_url,
         fetcher_trace("http code %d\n", http_code);
     }
 
+    curl_easy_getinfo(eh, CURLINFO_EFFECTIVE_URL, &redirect_target);
+    fetcher_trace("eventually redirected to: %s\n", redirect_target);
+
+
+    curl_easy_setopt(eh, CURLOPT_RANGE, NULL);
     curl_eh_delete(eh);
     curl_slist_free_all(slist);
     free(error_buffer);
-    free_const(indexnode_url);
+    free_const(url);
 
 
-    fetcher_trace_dedent();
-
-
-    return curl_rc == CURLE_OK &&
-           *protocol && **protocol &&
-           *id       && **id;
-}
-
-/* These header lines come in complete with their trailing new-lines.
- * HTTP/1.1 (RFC-2616) states that this sequence is \r\n
- *   (http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2)
- */
-static void match_header (const char *header, size_t len, const char *key, const char **value_out)
-{
-    size_t key_len, value_len;
-    char *value;
-
-    key_len = strlen(key);
-    if (!strncasecmp(header, key, key_len))
-    {
-        value_len = len - key_len - 2; /* -2 for line-end */
-        value = malloc(value_len + 1); /* +1 for terminating \0 */
-        strncpy(value, header + key_len, value_len);
-        value[value_len] = '\0';
-        *value_out = value;
-    }
-}
-
-/* From the libcurl API docs:
- *   "Do not assume that the header line is zero terminated!"
- */
-static size_t indexnode_header_info_cb (void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    size_t len = size * nmemb;
-    indexnode_info_t *info = (indexnode_info_t *)stream;
-    char *header = (char *)ptr;
-
-
-    match_header(header, len, fs2_version_header_key, &(info->protocol));
-    match_header(header, len, fs2_indexnode_uid_header_key, &(info->id));
-
-
-    return len;
+    return rc;
 }
 
 
@@ -483,17 +346,4 @@ const char *fetcher_escape_for_http ( const char *str )
 
 
     return esc;
-}
-
-
-/* ========================================================================== */
-/* Misc                                                                       */
-/* ========================================================================== */
-
-static size_t null_writefn (void *buf, size_t size, size_t nmemb, void *userp)
-{
-    NOT_USED(buf);
-    NOT_USED(userp);
-
-    return size * nmemb;
 }

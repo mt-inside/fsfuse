@@ -15,13 +15,6 @@
 #include "listing.h"
 
 
-typedef struct
-{
-    CURL *eh;
-    void *cb_data;
-} fetcher_cb_data_t;
-
-
 TRACE_DECLARE(fetcher)
 #define fetcher_trace(...) TRACE(fetcher,__VA_ARGS__)
 #define fetcher_trace_indent() TRACE_INDENT(fetcher)
@@ -31,15 +24,13 @@ TRACE_DECLARE(fetcher)
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
-extern int fetcher_get_indexnode_info (const char *indexnode_url,
-                                       const char **protocol,
-                                       const char **id);
-
-/* TODO: why extrernal? */
-extern int fetcher_fetch_internal (const char * const   url,
-                                   const char * const   range,
-                                   curl_write_callback  cb,
-                                   void                *cb_data);
+extern int fetch(
+    const char *url,
+    curl_write_callback header_cb, void *header_cb_ctxt,
+    curl_write_callback body_cb,   void *body_cb_ctxt,
+    int headers_only,
+    const char *range
+);
 
 extern const char *fetcher_make_http_url (
     const char *host,
