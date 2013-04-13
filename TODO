@@ -4,7 +4,6 @@ de's should own download threads. What does the pool do?
 TODO:
                config.o                \
                config_define.o         \
-               curl_utils.o            \
                direntry.o              \
                download_thread.o       \
                download_thread_pool.o  \

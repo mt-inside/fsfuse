@@ -25,7 +25,6 @@
 #include "fetcher.h"
 
 #include "config.h"
-#include "curl_utils.h"
 #include "fs2_constants.h"
 #include "indexnodes.h"
 #include "indexnodes_list.h"
@@ -235,7 +234,7 @@ int fetch(
 
 
     /* New handle */
-    eh = curl_eh_new();
+    eh = curl_easy_init();
 
     /* Error buffer */
     error_buffer = (char *)malloc(CURL_ERROR_SIZE * sizeof(char));
@@ -243,6 +242,9 @@ int fetch(
 
     /* URL */
     curl_easy_setopt(eh, CURLOPT_URL, url);
+
+    /* Follow redirects */
+    curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
 
     /* Other headers */
     curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
@@ -343,7 +345,7 @@ int fetch(
     if( header_cb_wrapper_ctxt ) free( header_cb_wrapper_ctxt );
     if( body_cb_wrapper_ctxt   ) free( body_cb_wrapper_ctxt   );
     curl_easy_setopt(eh, CURLOPT_RANGE, NULL);
-    curl_eh_delete(eh);
+    curl_easy_cleanup(eh);
     curl_slist_free_all(slist);
     free(error_buffer);
     free_const(url);
@@ -404,12 +406,12 @@ const char *fetcher_make_http_url (
 
 const char *fetcher_escape_for_http ( const char *str )
 {
-    CURL *eh = curl_eh_new( );
+    CURL *eh = curl_easy_init( );
     const char *esc = curl_easy_escape( eh, str, 0 );
 
 
     free_const( str );
-    curl_eh_delete( eh );
+    curl_easy_cleanup( eh );
 
 
     return esc;

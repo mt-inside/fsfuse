@@ -17,7 +17,6 @@
 
 #include "proto_indexnode.h"
 
-#include "curl_utils.h"
 #include "fetcher.h"
 #include "fs2_constants.h"
 #include "string_buffer.h"
