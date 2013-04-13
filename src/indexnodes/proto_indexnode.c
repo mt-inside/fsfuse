@@ -14,7 +14,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
 
 #include "proto_indexnode.h"
 
@@ -80,40 +79,22 @@ const char *proto_indexnode_port( const proto_indexnode_t *pin )
     return strdup( pin->port );
 }
 
-/* These header lines come in complete with their trailing new-lines.
- * HTTP/1.1 (RFC-2616) states that this sequence is \r\n
- *   (http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2)
- * From the libcurl API docs:
- *   "Do not assume that the header line is zero terminated!"
- */
-static void match_header (const char *header, size_t len, const char *key, const char **value_out)
+static int header_cb (void *ctxt, const char *key, const char *value)
 {
-    size_t key_len, value_len;
-    char *value;
+    indexnode_info_t *info = (indexnode_info_t *)ctxt;
 
-    key_len = strlen(key);
-    if (!strncasecmp(header, key, key_len))
+
+    if( !strcasecmp( key, fs2_version_header_key ) )
     {
-        value_len = len - key_len - 2; /* -2 for line-end */
-        value = malloc(value_len + 1); /* +1 for terminating \0 */
-        strncpy(value, header + key_len, value_len);
-        value[value_len] = '\0';
-        *value_out = value;
+        info->protocol = value;
     }
-}
-
-static size_t header_cb (void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    size_t len = size * nmemb;
-    indexnode_info_t *info = (indexnode_info_t *)stream;
-    char *header = (char *)ptr;
+    else if( !strcasecmp( key, fs2_indexnode_uid_header_key ) )
+    {
+        info->id = value;
+    }
 
 
-    match_header(header, len, fs2_version_header_key, &(info->protocol));
-    match_header(header, len, fs2_indexnode_uid_header_key, &(info->id));
-
-
-    return len;
+    return 0;
 }
 
 
@@ -128,7 +109,7 @@ int proto_indexnode_get_info( proto_indexnode_t *pin,
 
     rc = fetch(
         proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) ),
-        (curl_write_callback)&header_cb,
+        (fetcher_header_cb_t)&header_cb,
         info,
         NULL,
         NULL,

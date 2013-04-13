@@ -79,7 +79,7 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
         rc = fetch(
             url,
             NULL, NULL,
-            (curl_write_callback)&parser_consumer, (void *)parser,
+            (fetcher_body_cb_t)&parser_consumer, (void *)parser,
             0,
             NULL
         );

@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "download_thread.h"
 
@@ -97,7 +98,7 @@ static chunk_t *chunk_get_next (thread_t *thread);
 
 static void *downloader_thread_main (void *arg);
 static void chunk_list_empty (thread_t *thread, int rc);
-static size_t thread_pool_consumer (void *buf, size_t size, size_t nmemb, void *userp);
+static int thread_pool_consumer (void *ctxt, void *data, size_t len);
 static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
 
@@ -399,7 +400,7 @@ static void *downloader_thread_main (void *arg)
             rc = fetch(
                 listing_get_href(li),
                 NULL, NULL,
-                (curl_write_callback)&thread_pool_consumer, (void *)thread,
+                (fetcher_body_cb_t)&thread_pool_consumer, (void *)thread,
                 0,
                 (thread->current_chunk->start) ? range_str : NULL
             );
@@ -465,30 +466,26 @@ static void chunk_list_empty (thread_t *thread, int rc)
 
 
 /* EXECUTES IN THREAD: downloader_thread_main(). */
-static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *userp)
+static int thread_pool_consumer (void *ctxt, void *data, size_t len)
 {
     buf_t *buf = (buf_t *)malloc(sizeof(buf_t));
-    thread_t *thread = (thread_t *)userp;
+    thread_t *thread = (thread_t *)ctxt;
     chunk_t *chunk;
-    size_t buf_len = size * nmemb, rc = EIO, copy_len;
+    int rc = 1;
+    size_t copy_len;
 
-
-    dl_thr_trace("thread_pool_consumer(size==%zd, nmemb==%zd, userp==%p)\n",
-              size, nmemb, userp);
-    dl_thr_trace_indent();
 
     if (!thread->current_chunk) thread->current_chunk = chunk_get_next(thread);
     if (!thread->current_chunk)
     {
-        rc = 0;
         thread->timed_out = 1;
         goto bail;
     }
     chunk = thread->current_chunk;
 
     buf->start = thread->download_offset;
-    buf->end   = thread->download_offset + buf_len;
-    buf->buf   = b;
+    buf->end   = thread->download_offset + len;
+    buf->buf   = data;
 
 
     while (1)
@@ -560,7 +557,6 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
                 thread->current_chunk = chunk_get_next(thread);
                 if (!thread->current_chunk)
                 {
-                    rc = 0;
                     thread->timed_out = 1;
                     goto bail;
                 }
@@ -572,10 +568,8 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
         {
             dl_thr_trace("chunk not ok - bailing out to seek\n");
 
-
-            rc = 0; /* haven't consumed the whole buf, so curl will bail out
-                       with an error and we end up back in
-                       downloader_thread_main() */
+            /* haven't consumed the whole buf, so curl will bail out with an
+             * error and we end up back in downloader_thread_main() */
             thread->seek = 1;
             goto bail;
         }
@@ -584,7 +578,7 @@ static size_t thread_pool_consumer (void *b, size_t size, size_t nmemb, void *us
 
     thread->download_offset = buf->end;
     dl_thr_trace("offset now == %#x\n\n", thread->download_offset);
-    rc = buf_len;
+    rc = 0;
 
 
 bail:

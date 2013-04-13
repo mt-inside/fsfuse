@@ -9,8 +9,6 @@
 
 #include "common.h"
 
-#include <curl/curl.h>
-
 #include "indexnodes.h"
 #include "listing.h"
 
@@ -21,13 +19,17 @@ TRACE_DECLARE(fetcher)
 #define fetcher_trace_dedent() TRACE_DEDENT(fetcher)
 
 
+typedef int (*fetcher_header_cb_t)( void *ctxt, const char *key, const char *value );
+typedef int (*fetcher_body_cb_t)(   void *ctxt, void *data, size_t len );
+
+
 extern int fetcher_init (void);
 extern void fetcher_finalise (void);
 
 extern int fetch(
     const char *url,
-    curl_write_callback header_cb, void *header_cb_ctxt,
-    curl_write_callback body_cb,   void *body_cb_ctxt,
+    fetcher_header_cb_t header_cb, void *header_cb_ctxt,
+    fetcher_body_cb_t   body_cb,   void *body_cb_ctxt,
     int headers_only,
     const char *range
 );

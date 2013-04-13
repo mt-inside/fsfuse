@@ -28,7 +28,7 @@ extern void parser_finalise (void);
 extern xmlParserCtxtPtr parser_new (void);
 extern void parser_delete (xmlParserCtxtPtr ctxt);
 
-extern size_t parser_consumer (void *buf, size_t size, size_t nmemb, void *userp);
+extern int parser_consumer (void *ctxt, void *data, size_t len);
 extern xmlDocPtr parser_done (xmlParserCtxtPtr ctxt);
 
 extern xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath);

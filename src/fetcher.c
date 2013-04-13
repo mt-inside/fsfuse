@@ -14,21 +14,23 @@
 
 #include "common.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
 #include <assert.h>
+#include <curl/curl.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "fetcher.h"
 
 #include "config.h"
 #include "curl_utils.h"
-#include "fetcher.h"
 #include "fs2_constants.h"
-#include "parser.h"
 #include "indexnodes.h"
 #include "indexnodes_list.h"
 #include "indexnodes_iterator.h"
+#include "parser.h"
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -37,6 +39,18 @@
 
 
 TRACE_DEFINE(fetcher)
+
+
+typedef struct
+{
+    fetcher_header_cb_t cb;
+    void *ctxt;
+} header_cb_wrapper_ctxt_t;
+typedef struct
+{
+    fetcher_body_cb_t cb;
+    void *ctxt;
+} body_cb_wrapper_ctxt_t;
 
 
 /* ========================================================================== */
@@ -162,14 +176,49 @@ static int http2errno (int http_code)
     return rc;
 }
 
-/* TODO: Hide CURL, i.e. abstract the curl types (have len rather than size * nmemb)
- * TODO: also make the signature of the header callback more sane (pre-parse to
- * 0-terminated key & value)
- * */
+/* These header lines come in complete with their trailing new-lines.
+ * HTTP/1.1 (RFC-2616) states that this sequence is \r\n
+ *   (http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2)
+ * From the libcurl API docs:
+ *   "Do not assume that the header line is zero terminated!"
+ */
+static size_t header_cb_wrapper( char *header, size_t size, size_t nmemb, void *ctxt )
+{
+    header_cb_wrapper_ctxt_t *wrapper_ctxt = (header_cb_wrapper_ctxt_t *)ctxt;
+    size_t len = size * nmemb, key_len, value_len;
+    char *colon, *key, *value;
+    size_t rc = len;
+
+    colon = memchr( header, ':', len );
+    if( colon )
+    {
+        key_len = colon - header;
+        key = malloc( key_len + 1 );
+        strncpy( key, header, key_len );
+        key[key_len] = '\0';
+
+        value_len = len - key_len - 2; /* -2 for line-end */
+        value = malloc( value_len + 1 ); /* +1 for terminating \0 */
+        strncpy( value, header + key_len, value_len );
+        value[value_len] = '\0';
+
+        rc = wrapper_ctxt->cb( wrapper_ctxt->ctxt, key, value ) ? 0 : len;
+    }
+
+    return rc;
+}
+
+static size_t body_cb_wrapper( char *data, size_t size, size_t nmemb, void *ctxt )
+{
+    body_cb_wrapper_ctxt_t *wrapper_ctxt = (body_cb_wrapper_ctxt_t *)ctxt;
+
+    return wrapper_ctxt->cb( wrapper_ctxt->ctxt, data, size * nmemb ) ? 0 : size * nmemb;
+}
+
 int fetch(
     const char *url,
-    curl_write_callback header_cb, void *header_cb_ctxt,
-    curl_write_callback body_cb,   void *body_cb_ctxt,
+    fetcher_header_cb_t header_cb, void *header_cb_ctxt,
+    fetcher_body_cb_t   body_cb,   void *body_cb_ctxt,
     int headers_only,
     const char *range
 )
@@ -178,6 +227,8 @@ int fetch(
     char *error_buffer;
     struct curl_slist *slist = NULL;
     string_buffer_t *alias = string_buffer_new();
+    header_cb_wrapper_ctxt_t *header_cb_wrapper_ctxt = NULL;
+    body_cb_wrapper_ctxt_t *body_cb_wrapper_ctxt = NULL;
     char *redirect_target;
     long http_code;
     int rc = EIO, curl_rc;
@@ -210,12 +261,26 @@ int fetch(
     curl_easy_setopt(eh, CURLOPT_FAILONERROR, 1);
 
     /* Header consumer */
-    curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, header_cb);
-    curl_easy_setopt(eh, CURLOPT_HEADERDATA, header_cb_ctxt);
+    if( header_cb && header_cb_ctxt )
+    {
+        header_cb_wrapper_ctxt = malloc(sizeof(*header_cb_wrapper_ctxt));
+        header_cb_wrapper_ctxt->cb = header_cb;
+        header_cb_wrapper_ctxt->ctxt = header_cb_ctxt;
+
+        curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &header_cb_wrapper);
+        curl_easy_setopt(eh, CURLOPT_HEADERDATA, header_cb_ctxt);
+    }
 
     /* Body consumer */
-    curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, body_cb);
-    curl_easy_setopt(eh, CURLOPT_WRITEDATA, body_cb_ctxt);
+    if( body_cb && body_cb_ctxt )
+    {
+        body_cb_wrapper_ctxt = malloc(sizeof(*body_cb_wrapper_ctxt));
+        body_cb_wrapper_ctxt->cb = body_cb;
+        body_cb_wrapper_ctxt->ctxt = body_cb_ctxt;
+
+        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, &body_cb_wrapper);
+        curl_easy_setopt(eh, CURLOPT_WRITEDATA, body_cb_ctxt);
+    }
 
     if (headers_only)
     {
@@ -275,6 +340,8 @@ int fetch(
     fetcher_trace("eventually redirected to: %s\n", redirect_target);
 
 
+    if( header_cb_wrapper_ctxt ) free( header_cb_wrapper_ctxt );
+    if( body_cb_wrapper_ctxt   ) free( body_cb_wrapper_ctxt   );
     curl_easy_setopt(eh, CURLOPT_RANGE, NULL);
     curl_eh_delete(eh);
     curl_slist_free_all(slist);

@@ -67,25 +67,16 @@ void parser_delete (xmlParserCtxtPtr ctxt)
 }
 
 
-size_t parser_consumer (void *buf, size_t size, size_t nmemb, void *userp)
+int parser_consumer (void *ctxt, void *data, size_t len)
 {
     int rc;
-    size_t len = size * nmemb;
-    xmlParserCtxtPtr ctxt = (xmlParserCtxtPtr)userp;
+    xmlParserCtxtPtr parser_ctxt = (xmlParserCtxtPtr)ctxt;
 
 
-    parser_trace("parser_consumer(size==%zd, nmemb==%zd, userp==%p)\n",
-                 size, nmemb, userp);
-    parser_trace_indent();
+    rc = xmlParseChunk(parser_ctxt, data, len, 0);
 
 
-    rc = xmlParseChunk(ctxt, buf, len, 0);
-
-
-    parser_trace_dedent();
-
-
-    return (!rc) ? len : 0;
+    return rc;
 }
 
 xmlDocPtr parser_done (xmlParserCtxtPtr ctxt)
@@ -268,7 +259,7 @@ int parser_fetch_listing (
     rc = fetch(
         url,
         NULL, NULL,
-        (curl_write_callback)&parser_consumer, (void *)parser,
+        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
         0,
         NULL
     );
