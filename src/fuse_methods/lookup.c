@@ -37,9 +37,7 @@ void fsfuse_lookup (fuse_req_t req,
 
     if (!rc)
     {
-        entry.ino = direntry_get_inode(de);
-        entry.generation = 0;
-        direntry_de2stat(de, &entry.attr);
+        direntry_de2fuse_entry(de, &entry);
         entry.attr_timeout = 1.0;
         entry.entry_timeout = 1.0;
     }

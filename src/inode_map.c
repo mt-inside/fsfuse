@@ -27,13 +27,9 @@ static ino_t s_inode_next = 2;
 static const size_t INODE_MAP_MOD = 32;
 
 
-void inode_map_add (direntry_t *de)
+void inode_map_add (ino_t inode, direntry_t *de)
 {
-    ino_t inode;
-
-
     assert(de);
-    inode = direntry_get_inode(de);
 
     if (inode >= s_inode_map_size)
     {

@@ -77,6 +77,31 @@ void direntry_finalise (void)
 
 /* Innards ================================================================== */
 
+static void direntry_get_path_inner (direntry_t *de, string_buffer_t *path)
+{
+    direntry_t *parent;
+
+
+    if ((parent = direntry_get_parent(de)))
+    {
+        direntry_get_path_inner(parent, path);
+        direntry_delete(CALLER_INFO parent);
+    }
+
+    string_buffer_append(path, direntry_get_name(de));
+    string_buffer_append(path, strdup("/"));
+}
+static char *direntry_get_path (direntry_t *de)
+{
+    string_buffer_t *path = string_buffer_new();
+
+
+    direntry_get_path_inner(de, path);
+
+
+    return string_buffer_commit(path);
+}
+
 int direntry_ensure_children (
     direntry_t *de
 )
@@ -268,31 +293,6 @@ ino_t direntry_get_inode (direntry_t *de)
     return de->inode;
 }
 
-static void direntry_get_path_inner (direntry_t *de, string_buffer_t *path)
-{
-    direntry_t *parent;
-
-
-    if ((parent = direntry_get_parent(de)))
-    {
-        direntry_get_path_inner(parent, path);
-        direntry_delete(CALLER_INFO parent);
-    }
-
-    string_buffer_append(path, direntry_get_name(de));
-    string_buffer_append(path, strdup("/"));
-}
-char *direntry_get_path (direntry_t *de)
-{
-    string_buffer_t *path = string_buffer_new();
-
-
-    direntry_get_path_inner(de, path);
-
-
-    return string_buffer_commit(path);
-}
-
 char *direntry_get_name (direntry_t *de)
 {
     return listing_get_name(BASE_CLASS(de));
@@ -343,6 +343,15 @@ void direntry_de2stat (direntry_t *de, struct stat *st)
     listing_li2stat(BASE_CLASS(de), st);
 
     st->st_ino = de->inode;
+}
+
+/* TODO: bit nasty that fuse_entry_param type leaks into here, but then so does
+ * struct stat */
+void direntry_de2fuse_entry (direntry_t *de, struct fuse_entry_param *entry)
+{
+    entry->ino = de->inode;;
+    entry->generation = 0;
+    direntry_de2stat(de, &(entry->attr));
 }
 
 

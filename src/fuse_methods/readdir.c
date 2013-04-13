@@ -81,7 +81,6 @@ void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, str
 
         if (!rc)
         {
-            assert(ino == direntry_get_inode(de));
             dirbuf_add(req, &buf, &bufsize, de, ".");
 
             /* NB: we always used to use NULL struct stat for "." and ".." and got
