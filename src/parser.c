@@ -289,3 +289,92 @@ int parser_fetch_listing (
 
     return rc;
 }
+
+static void stats_general_parse (xmlNodeSetPtr nodes, unsigned long *files, unsigned long *bytes)
+{
+    xmlNodePtr curNod = NULL;
+    int size, i;
+    char *id, *value;
+
+
+    size = (nodes) ? nodes->nodeNr : 0;
+
+    parser_trace("stats_general_parse(): enumerating %d nodes\n", size);
+    trace_indent();
+
+    /* Enumerate the SPAN elements */
+    for (i = 0; i < size; i++)
+    {
+        curNod = (xmlNodePtr)nodes->nodeTab[i];
+
+        if (!strcmp((char *)curNod->name, "span"))
+        {
+            id = (char *)xmlGetProp(curNod, BAD_CAST "id");
+            if (!strcmp(id, "file-count"))
+            {
+                value = (char *)xmlGetProp(curNod, BAD_CAST "value");
+
+                *files = atoll(value);
+
+                free(value);
+            }
+            else if (!strcmp(id, "total-size"))
+            {
+                value = (char *)xmlGetProp(curNod, BAD_CAST "value");
+
+                *bytes = atoll(value);
+
+                free(value);
+            }
+            free(id);
+        }
+    }
+
+    trace_dedent();
+}
+
+int parser_tryfetch_stats (
+    const char *url,
+    unsigned long *files,
+    unsigned long *bytes
+)
+{
+    /* TODO obviously this is a bit fucked up... (fetch_listing() is the same) */
+    xmlParserCtxtPtr  parser = parser_new();
+    xmlXPathObjectPtr xpathObj;
+    xmlDocPtr         doc;
+    int rc = 1;
+
+
+    rc = fetch(
+        url,
+        NULL, NULL,
+        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
+        0,
+        NULL
+    );
+
+
+    if (!rc)
+    {
+        /* The fetcher has returned, so that's all the document.
+         * Indicate to the parser that that's it */
+        doc = parser_done(parser);
+
+        xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='general']/xhtml:span[@id]");
+        if (xpathObj->type == XPATH_NODESET)
+        {
+            stats_general_parse(xpathObj->nodesetval, files, bytes);
+
+            rc = 0;
+        }
+
+        xmlXPathFreeObject(xpathObj);
+        xmlFreeDoc(doc);
+    }
+
+    parser_delete(parser);
+
+
+    return rc;
+}

@@ -38,5 +38,10 @@ extern int parser_fetch_listing (
     const char * const url,
     listing_list_t **lis
 );
+extern int parser_tryfetch_stats (
+    const char *url,
+    unsigned long *files,
+    unsigned long *bytes
+);
 
 #endif /* _INCLUDED_PARSER_H */
