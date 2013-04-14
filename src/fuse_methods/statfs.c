@@ -30,8 +30,6 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
     unsigned long files, bytes, bytes_total = 0;
     struct statvfs stvfs;
     int rc = 1;
-    parser_t *parser;
-    const char *url;
     indexnodes_list_t *list;
     indexnodes_iterator_t *iter;
     indexnode_t *in;
@@ -77,30 +75,17 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
          !indexnodes_iterator_end(iter);
          iter = indexnodes_iterator_next(iter))
     {
-        parser = parser_new();
         in = indexnodes_iterator_current(iter);
-        url = indexnode_make_url(in, "stats", "");
-        rc = fetch(
-            url,
-            NULL, NULL,
-            (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-            0,
-            NULL
-        );
 
-        if (!rc)
+        if (!indexnode_tryget_stats(in, &files, &bytes))
         {
-            parser_tryget_stats(parser, &files, &bytes);
-            if (!rc)
-            {
-                stvfs.f_files += files;
-                bytes_total += bytes;
-            }
+            stvfs.f_files += files;
+            bytes_total += bytes;
+
+            rc = 0;
         }
 
         indexnode_delete(CALLER_INFO in);
-        free_const(url);
-        parser_delete(parser);
     }
     stvfs.f_blocks = bytes_total / stvfs.f_bsize;
     indexnodes_iterator_delete(iter);

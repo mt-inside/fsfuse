@@ -35,14 +35,8 @@ extern char *indexnode_tostring( indexnode_t *in );
 
 #include "listing.h"
 
-/* TODO: shouldn't be here (see proto_indexnode) */
-extern const char *indexnode_make_url(
-    const indexnode_t *in,
-    const char *path_prefix,
-    const char *resource
-);
-
 extern int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis );
 extern int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best );
+extern int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes );
 
 #endif /* _INCLUDED_INDEXNODE_H */

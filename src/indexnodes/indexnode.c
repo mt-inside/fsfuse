@@ -166,8 +166,7 @@ char *indexnode_tostring( indexnode_t *in )
     return string_buffer_commit( sb );
 }
 
-/* TODO who are we making uris for and why? Should tell, not ask */
-const char *indexnode_make_url(
+static const char *make_url(
     const indexnode_t *in,
     const char *path_prefix,
     const char *resource
@@ -188,7 +187,7 @@ int indexnode_still_valid( const indexnode_t *in )
 
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
 {
-    const char *url = indexnode_make_url( in, strdup( "browse" ), path );
+    const char *url = make_url( in, strdup( "browse" ), path );
     parser_t *parser = parser_new( );
     int rc;
 
@@ -215,7 +214,7 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t 
 int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best )
 {
     listing_list_t *lis;
-    const char *url = indexnode_make_url( in, strdup( "alternatives" ), hash );
+    const char *url = make_url( in, strdup( "alternatives" ), hash );
     parser_t *parser = parser_new( );
     int rc;
 
@@ -237,6 +236,33 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
             listing_list_delete( CALLER_INFO lis );
         }
     }
+
+
+    return rc;
+}
+
+int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes )
+{
+    parser_t *parser = parser_new( );
+    const char *url = make_url( in, strdup( "stats" ), strdup( "" ) );
+    int rc;
+
+
+    rc = fetch(
+        url,
+        NULL, NULL,
+        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
+        0,
+        NULL
+    );
+
+    if (!rc)
+    {
+        rc = parser_tryget_stats(parser, files, bytes);
+    }
+
+    free_const(url);
+    parser_delete(parser);
 
 
     return rc;

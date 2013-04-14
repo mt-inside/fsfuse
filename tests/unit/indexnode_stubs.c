@@ -79,24 +79,24 @@ int proto_indexnode_equals_stub( proto_indexnode_t *pin )
 
 int indexnode_equals_stub( indexnode_t *in )
 {
-    const char *test_uri;
+    const char *test_render;
     int rc;
 
-    test_uri = indexnode_make_url( in, strdup( "foo" ), strdup( "bar" ) );
-    rc = !strcmp( test_uri, "http://fs2.example.org:1337/foo/bar" );
-    free_const( test_uri );
+    test_render = indexnode_tostring( in );
+    rc = !!strstr( test_render, "d34db33f @ fs2.example.org:1337 (version 0.13)" );
+    free_const( test_render );
 
     return rc;
 }
 
 int indexnode_equals_stub2( indexnode_t *in )
 {
-    const char *test_uri;
+    const char *test_render;
     int rc;
 
-    test_uri = indexnode_make_url( in, strdup( "foo" ), strdup( "bar" ) );
-    rc = !strcmp( test_uri, "http://second.indexnode.com:1337/foo/bar" );
-    free_const( test_uri );
+    test_render = indexnode_tostring( in );
+    rc = !!strstr( test_render, "80081355 @ second.indexnode.com:1337 (version 0.14)" );
+    free_const( test_render );
 
     return rc;
 }
