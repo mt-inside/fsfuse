@@ -3,28 +3,28 @@ Headers
 
 Header Order - Source Files
 ---------------------------
-"common.h"
+    "common.h"
 
-<sys.h>
+    <sys.h>
 
-"myclass.h"
-"my_superclass.h"
-"my_super_or_friendclass_internal.h"
+    "myclass.h"
+    "my_superclass.h"
+    "my_super_or_friendclass_internal.h"
 
-"other_modules.h" (few as possible)
+    "other_modules.h" (few as possible)
 
 Header Order - Tests
 --------------------
-"common.h"
+    "common.h"
 
-<sys.h>
+    <sys.h>
 
-<check.h>
-"tests.h"
-"other_test_headers.h" (e.g. stubs)
+    <check.h>
+    "tests.h"
+    "other_test_headers.h" (e.g. stubs)
 
-"class_under_test.h"
-"other_production_classes.h" (few as possible)
+    "class_under_test.h"
+    "other_production_classes.h" (few as possible)
 
 Modularisation
 ==============
@@ -35,13 +35,15 @@ Testing
 
 Valgrind
 --------
-valgrind --track-fds=yes --tool=memcheck --leak-check=full --show-possibly-lost=yes --show-reachable=yes --undef-value-errors=yes --track-origins=yes ./fsfuse
+    valgrind --track-fds=yes --tool=memcheck --leak-check=full --show-possibly-lost=yes --show-reachable=yes --undef-value-errors=yes --track-origins=yes ./fsfuse
 
 Unit tests
 ----------
 We use check (http://check.sourceforge.com)
-Tests should use: fail_unless( expr_that_should_be_true, "explanation of what should happen" );
-    e.g. fail_unless( in != NULL, "indexnode should be non-null" );
+Tests should use: fail_unless( expr_that_should_be_true, "explanation of what should happen" ), e.g.:
+
+    fail_unless( in != NULL, "indexnode should be non-null" );
+
 Don't check lifecycle stuff explicity, it's a bit passe. Just do _new() and _delete() in checked fixtures
 Don't check property getters and setters - that should all be hidden - tell, don't ask
 
@@ -80,10 +82,14 @@ To maintain this convention, if a method does not retain the object it's been gi
 
 The exception is when the first argument is a "this" pointer.
 e.g. in:
+
     static_utility( char *a, char *b );
+    
 both a and b must be usurped.
 however in:
+
     foo_method( foo_t *foo, char *a );
+    
 only a must be usurped; foo need not be copied to be passed in (indeed a lot of classes aren't ref-counted / copyable).
 
 This has the nice effect that a lot of functions, those that just get objects from one place and pass them onto another, don't need to do any copying or deleting.
