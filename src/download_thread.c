@@ -393,15 +393,18 @@ static void *downloader_thread_main (void *arg)
         /* TODO: BASE_CLASS() should be universal */
         if (listing_tryget_best_alternative((listing_t *)thread->de, &li))
         {
+            fetcher_t *fetcher = fetcher_new(listing_get_href(li));
+
             /* Get the file */
-            rc = fetch(
-                listing_get_href(li),
-                NULL, NULL,
-                (fetcher_body_cb_t)&thread_pool_consumer, (void *)thread,
-                0,
+            rc = fetcher_fetch_body(
+                fetcher,
+                (fetcher_body_cb_t)&thread_pool_consumer,
+                (void *)thread,
                 (thread->current_chunk->start) ? range_str : NULL
             );
+
             listing_delete(CALLER_INFO li);
+            fetcher_delete(fetcher);
         }
         else
         {
