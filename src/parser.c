@@ -48,6 +48,8 @@ int parser_init (void)
 #error libxml not comiled with push mode support
 #endif
 
+    xmlInitParser();
+
 
     return 0;
 }
@@ -55,6 +57,8 @@ int parser_init (void)
 void parser_finalise (void)
 {
     parser_trace("parser_finalise()\n");
+
+    xmlCleanupParser();
 }
 
 

@@ -18,6 +18,7 @@
 #include <getopt.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <fuse/fuse_lowlevel.h>
@@ -84,8 +85,6 @@ int main(int argc, char *argv[])
 
     fsfuse_splash();
 
-    xmlInitParser();
-
     /* Check system fuse version */
     if (fuse_version() < FUSE_USE_VERSION)
     {
@@ -104,6 +103,7 @@ int main(int argc, char *argv[])
     free(myargv);
 
 
+    parser_init();
     config_init();
     config_read();
 
@@ -152,7 +152,6 @@ int main(int argc, char *argv[])
         utils_init()                ||
         locale_init()               ||
         fetcher_init()              ||
-        parser_init()               ||
         direntry_init()             ||
 #if FEATURE_DIRENTRY_CACHE
         direntry_cache_init()       ||
@@ -175,7 +174,6 @@ int main(int argc, char *argv[])
     direntry_cache_finalise();
 #endif
     direntry_finalise();
-    parser_finalise();
     fetcher_finalise();
     locale_finalise();
     utils_finalise();
@@ -183,7 +181,7 @@ int main(int argc, char *argv[])
 
 pre_init_bail:
     config_finalise();
-    xmlCleanupParser();
+    parser_finalise();
     if (mountpoint.real) free(mountpoint.real);
     if (mountpoint.error) free(mountpoint.error);
 
