@@ -179,15 +179,15 @@ int indexnode_still_valid( const indexnode_t *in )
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
 {
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "browse" ), path );
+    fetcher_t *fetcher = fetcher_new( url );
     parser_t *parser = parser_new( );
     int rc;
 
 
-    rc = fetch(
-        url,
-        NULL, NULL,
-        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-        0,
+    rc = fetcher_fetch_body(
+        fetcher,
+        (fetcher_body_cb_t)&parser_consumer,
+        (void *)parser,
         NULL
     );
 
@@ -197,6 +197,7 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t 
     }
 
     parser_delete( parser );
+    fetcher_delete( fetcher );
 
 
     return rc;
@@ -206,15 +207,15 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
 {
     listing_list_t *lis;
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "alternatives" ), hash );
+    fetcher_t *fetcher = fetcher_new( url );
     parser_t *parser = parser_new( );
     int rc;
 
 
-    rc = fetch(
-        url,
-        NULL, NULL,
-        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-        0,
+    rc = fetcher_fetch_body(
+        fetcher,
+        (fetcher_body_cb_t)&parser_consumer,
+        (void *)parser,
         NULL
     );
 
@@ -229,6 +230,7 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
     }
 
     parser_delete(parser);
+    fetcher_delete(fetcher);
 
 
     return rc;
@@ -236,16 +238,16 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
 
 int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes )
 {
-    parser_t *parser = parser_new( );
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "stats" ), strdup( "" ) );
+    fetcher_t *fetcher = fetcher_new( url );
+    parser_t *parser = parser_new( );
     int rc;
 
 
-    rc = fetch(
-        url,
-        NULL, NULL,
-        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-        0,
+    rc = fetcher_fetch_body(
+        fetcher,
+        (fetcher_body_cb_t)&parser_consumer,
+        (void *)parser,
         NULL
     );
 
@@ -255,6 +257,7 @@ int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long
     }
 
     parser_delete(parser);
+    fetcher_delete(fetcher);
 
 
     return rc;

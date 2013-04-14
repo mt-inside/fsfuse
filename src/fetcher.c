@@ -10,13 +10,6 @@
  * Fetcher module. This contains the functions that arrange for actual file
  * transfers, be they of XML metadata files (e.g. dir listings), or actual data
  * (e.g. for read()).
- *
- * FIXME do the next buffer first, then me!
- * TODO: make this a class with methods:
- *   new( url ) - does the setup part of fetch(), writes eh, error_buffer, etc to member vars
- *   delete( ) - does end of fetch() - the teardown
- *   fetch_headers( cb, ctxt )
- *   fetch_body( cb, ctxt, range )
  */
 
 #include "common.h"
@@ -46,6 +39,14 @@
 
 TRACE_DEFINE(fetcher)
 
+
+struct _fetcher_t
+{
+    const char *url;
+    CURL *eh;
+    char *error_buffer;
+    struct curl_slist *slist;
+};
 
 typedef struct
 {
@@ -77,6 +78,59 @@ int fetcher_init (void)
 void fetcher_finalise (void)
 {
     curl_global_cleanup();
+}
+
+
+fetcher_t *fetcher_new (const char *url)
+{
+    fetcher_t *fetcher = malloc(sizeof(*fetcher));
+    string_buffer_t *alias = string_buffer_new();
+
+
+    fetcher->url = url;
+
+    /* New handle */
+    fetcher->eh = curl_easy_init();
+
+    /* Error buffer */
+    fetcher->error_buffer = (char *)malloc(CURL_ERROR_SIZE * sizeof(char));
+    curl_easy_setopt(fetcher->eh, CURLOPT_ERRORBUFFER, fetcher->error_buffer);
+
+    /* URL */
+    curl_easy_setopt(fetcher->eh, CURLOPT_URL, fetcher->url);
+
+    /* Follow redirects */
+    curl_easy_setopt(fetcher->eh, CURLOPT_FOLLOWLOCATION, 1);
+
+    /* Other headers */
+    curl_easy_setopt(fetcher->eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
+
+    string_buffer_append(alias, strdup(fs2_alias_header_key));
+    string_buffer_append(alias, strdup(config_alias));
+    fetcher->slist = NULL;
+    fetcher->slist = curl_slist_append(fetcher->slist, string_buffer_peek(alias));
+    string_buffer_delete(alias);
+    curl_easy_setopt(fetcher->eh, CURLOPT_HTTPHEADER, fetcher->slist);
+
+    /* No keep-alive */
+    curl_easy_setopt(fetcher->eh, CURLOPT_FRESH_CONNECT, 1);
+    curl_easy_setopt(fetcher->eh, CURLOPT_FORBID_REUSE, 1);
+
+    /* Have libcurl abort on error (http >= 400) */
+    curl_easy_setopt(fetcher->eh, CURLOPT_FAILONERROR, 1);
+
+
+    return fetcher;
+}
+
+void fetcher_delete (fetcher_t *fetcher)
+{
+    curl_easy_cleanup(fetcher->eh);
+    curl_slist_free_all(fetcher->slist);
+    free(fetcher->error_buffer);
+    free_const(fetcher->url);
+
+    free(fetcher);
 }
 
 /* We currently throw HTTP error codes around internally, because they're quite
@@ -182,6 +236,54 @@ static int http2errno (int http_code)
     return rc;
 }
 
+static int process_curl_response( fetcher_t *fetcher, int curl_rc )
+{
+    char *redirect_target;
+    long http_code;
+    int rc;
+
+
+    switch (curl_rc)
+    {
+        case CURLE_OK:
+        case CURLE_HTTP_RETURNED_ERROR:
+            rc = http2errno(http_code);
+            curl_easy_getinfo(fetcher->eh, CURLINFO_RESPONSE_CODE, &http_code);
+            fetcher_trace("http code %d\n", http_code);
+            break;
+
+        case CURLE_WRITE_ERROR:
+            /* assume benign atm - i.e. we caused it for a seek or timeout, so
+             * the appropriate flag will be set */
+            rc = 0;
+            break;
+
+        case CURLE_PARTIAL_FILE:
+            /* i.e. server closed the connection half way through */
+            rc = 0;
+            break;
+
+        case CURLE_COULDNT_CONNECT:
+            /* we see this when an indexnode redirects us to a client that's
+             * disappeared, but the indexnode hasn't noticed yet */
+            rc = ENOENT;
+            break;
+
+        default:
+            rc = EIO;
+            break;
+    }
+
+    fetcher_trace("curl returned %d, error: %s\n", curl_rc,
+            (curl_rc == CURLE_OK) ? "n/a" : fetcher->error_buffer);
+
+    curl_easy_getinfo(fetcher->eh, CURLINFO_EFFECTIVE_URL, &redirect_target);
+    fetcher_trace("eventually redirected to: %s\n", redirect_target);
+
+
+    return rc;
+}
+
 /* These header lines come in complete with their trailing new-lines.
  * HTTP/1.1 (RFC-2616) states that this sequence is \r\n
  *   (http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2)
@@ -221,141 +323,72 @@ static size_t body_cb_wrapper( char *data, size_t size, size_t nmemb, void *ctxt
     return wrapper_ctxt->cb( wrapper_ctxt->ctxt, data, size * nmemb ) ? 0 : size * nmemb;
 }
 
-int fetch(
-    const char *url,
-    fetcher_header_cb_t header_cb, void *header_cb_ctxt,
-    fetcher_body_cb_t   body_cb,   void *body_cb_ctxt,
-    int headers_only,
+int fetcher_fetch_headers(
+    fetcher_t *fetcher,
+    fetcher_header_cb_t header_cb,
+    void *header_cb_ctxt
+)
+{
+    header_cb_wrapper_ctxt_t *header_cb_wrapper_ctxt = NULL;
+    int rc;
+
+
+    assert(header_cb);
+
+    /* Do a HEAD request */
+    curl_easy_setopt(fetcher->eh, CURLOPT_NOBODY, 1);
+
+    /* Header consumer */
+    header_cb_wrapper_ctxt = malloc(sizeof(*header_cb_wrapper_ctxt));
+    header_cb_wrapper_ctxt->cb = header_cb;
+    header_cb_wrapper_ctxt->ctxt = header_cb_ctxt;
+
+    curl_easy_setopt(fetcher->eh, CURLOPT_HEADERFUNCTION, &header_cb_wrapper);
+    curl_easy_setopt(fetcher->eh, CURLOPT_HEADERDATA, header_cb_ctxt);
+
+
+    /* Do it - blocks */
+    rc = process_curl_response( fetcher, curl_easy_perform(fetcher->eh) );
+
+
+    free( header_cb_wrapper_ctxt );
+
+
+    return rc;
+}
+
+int fetcher_fetch_body(
+    fetcher_t *fetcher,
+    fetcher_body_cb_t body_cb,
+    void *body_cb_ctxt,
     const char *range
 )
 {
-    CURL *eh;
-    char *error_buffer;
-    struct curl_slist *slist = NULL;
-    string_buffer_t *alias = string_buffer_new();
-    header_cb_wrapper_ctxt_t *header_cb_wrapper_ctxt = NULL;
     body_cb_wrapper_ctxt_t *body_cb_wrapper_ctxt = NULL;
-    char *redirect_target;
-    long http_code;
-    int rc = EIO, curl_rc;
+    int rc;
 
-
-    /* New handle */
-    eh = curl_easy_init();
-
-    /* Error buffer */
-    error_buffer = (char *)malloc(CURL_ERROR_SIZE * sizeof(char));
-    curl_easy_setopt(eh, CURLOPT_ERRORBUFFER, error_buffer);
-
-    /* URL */
-    curl_easy_setopt(eh, CURLOPT_URL, url);
-
-    /* Follow redirects */
-    curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
-
-    /* Other headers */
-    curl_easy_setopt(eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
-
-    string_buffer_append(alias, strdup(fs2_alias_header_key));
-    string_buffer_append(alias, strdup(config_alias));
-    slist = curl_slist_append(slist, string_buffer_peek(alias));
-    string_buffer_delete(alias);
-    curl_easy_setopt(eh, CURLOPT_HTTPHEADER, slist);
-
-    /* No keep-alive */
-    curl_easy_setopt(eh, CURLOPT_FRESH_CONNECT, 1);
-    curl_easy_setopt(eh, CURLOPT_FORBID_REUSE, 1);
-
-    /* Have libcurl abort on error (http >= 400) */
-    curl_easy_setopt(eh, CURLOPT_FAILONERROR, 1);
-
-    /* Header consumer */
-    if( header_cb && header_cb_ctxt )
-    {
-        header_cb_wrapper_ctxt = malloc(sizeof(*header_cb_wrapper_ctxt));
-        header_cb_wrapper_ctxt->cb = header_cb;
-        header_cb_wrapper_ctxt->ctxt = header_cb_ctxt;
-
-        curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, &header_cb_wrapper);
-        curl_easy_setopt(eh, CURLOPT_HEADERDATA, header_cb_ctxt);
-    }
 
     /* Body consumer */
-    if( body_cb && body_cb_ctxt )
-    {
-        body_cb_wrapper_ctxt = malloc(sizeof(*body_cb_wrapper_ctxt));
-        body_cb_wrapper_ctxt->cb = body_cb;
-        body_cb_wrapper_ctxt->ctxt = body_cb_ctxt;
+    body_cb_wrapper_ctxt = malloc(sizeof(*body_cb_wrapper_ctxt));
+    body_cb_wrapper_ctxt->cb = body_cb;
+    body_cb_wrapper_ctxt->ctxt = body_cb_ctxt;
 
-        curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, &body_cb_wrapper);
-        curl_easy_setopt(eh, CURLOPT_WRITEDATA, body_cb_ctxt);
-    }
-
-    if (headers_only)
-    {
-        /* Do a HEAD request */
-        curl_easy_setopt(eh, CURLOPT_NOBODY, 1);
-    }
+    curl_easy_setopt(fetcher->eh, CURLOPT_WRITEFUNCTION, &body_cb_wrapper);
+    curl_easy_setopt(fetcher->eh, CURLOPT_WRITEDATA, body_cb_ctxt);
 
     /* Range */
     if (range)
     {
-        curl_easy_setopt(eh, CURLOPT_RANGE, range);
+        curl_easy_setopt(fetcher->eh, CURLOPT_RANGE, range);
     }
+
 
     /* Do it - blocks */
-    curl_rc = curl_easy_perform(eh);
-
-    switch (curl_rc)
-    {
-        case CURLE_OK:
-        case CURLE_HTTP_RETURNED_ERROR:
-            rc = http2errno(http_code);
-            break;
-
-        case CURLE_WRITE_ERROR:
-            /* assume benign atm - i.e. we caused it for a seek or timeout, so
-             * the appropriate flag will be set */
-            rc = 0;
-            break;
-
-        case CURLE_PARTIAL_FILE:
-            /* i.e. server closed the connection half way through */
-            rc = 0;
-            break;
-
-        case CURLE_COULDNT_CONNECT:
-            /* we see this when an indexnode redirects us to a client that's
-             * disappeared, but the indexnode hasn't noticed yet */
-            rc = ENOENT;
-            break;
-
-        default:
-            rc = EIO;
-            break;
-    }
-
-    fetcher_trace("curl returned %d, error: %s\n", curl_rc,
-            (curl_rc == CURLE_OK) ? "n/a" : error_buffer);
-
-    if (curl_rc == CURLE_OK ||
-        curl_rc == CURLE_HTTP_RETURNED_ERROR)
-    {
-        curl_easy_getinfo(eh, CURLINFO_RESPONSE_CODE, &http_code);
-        fetcher_trace("http code %d\n", http_code);
-    }
-
-    curl_easy_getinfo(eh, CURLINFO_EFFECTIVE_URL, &redirect_target);
-    fetcher_trace("eventually redirected to: %s\n", redirect_target);
+    rc = process_curl_response( fetcher, curl_easy_perform( fetcher->eh ) );
 
 
-    if( header_cb_wrapper_ctxt ) free( header_cb_wrapper_ctxt );
-    if( body_cb_wrapper_ctxt   ) free( body_cb_wrapper_ctxt   );
-    curl_easy_setopt(eh, CURLOPT_RANGE, NULL);
-    curl_easy_cleanup(eh);
-    curl_slist_free_all(slist);
-    free(error_buffer);
-    free_const(url);
+    free( body_cb_wrapper_ctxt );
+    curl_easy_setopt(fetcher->eh, CURLOPT_RANGE, NULL);
 
 
     return rc;
