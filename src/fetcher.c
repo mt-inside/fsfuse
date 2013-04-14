@@ -11,6 +11,7 @@
  * transfers, be they of XML metadata files (e.g. dir listings), or actual data
  * (e.g. for read()).
  *
+ * FIXME do me next!!
  * TODO: make this a class with methods:
  *   new( host, port, path ) - does the setup part of fetch(), writes eh, error_buffer, etc to member vars
  *   delete( ) - does end of fetch() - the teardown

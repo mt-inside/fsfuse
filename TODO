@@ -1,5 +1,6 @@
 Listing doens't need any of its getters
-de's should own download threads. What does the pool do?
+de's should own download threads. NO! open() / close() sessions should own download threads (or downloaders as they're to become). They stuff the downloader in the user handle and read() gets it and adds chunks to the list.
+What does the pool do? Pool is now redundant because fetch() is going to spawn threads.
 
 TODO:
                config.o                \

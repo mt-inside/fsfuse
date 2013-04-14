@@ -88,3 +88,29 @@ All locks should be "external". I.e. everything is single threaded and assumes i
 
 Utils and stuff should not be random static init & destroy. They should all be offered as objects which the classes that use them explicitly depend on.
 Indeed, "utils" is a code smell. A collection of static functions that I can't name the function of.
+
+The (.Net) "tryget" style is preferred over the use of NULL returns. This is because
+a) They can be marginally easier to write
+b) They scale to more-than-one return value trivially (as values are returned in out parameters rather than by return)
+c) They also work for non-pointer types
+d) They allow for more than a Unit-typed description of the error (i.e. the whole range of int can be used)
+I.e. rather than:
+
+    foo_t *foo = get_foo( );
+    if( foo )
+    {
+        ...
+
+or:
+
+    foo_t *foo;
+    if( ( foo = get_foo( ) ) )
+    {
+        ...
+
+the preferred style is:
+
+    foo_t *foo;
+    if( tryget_foo( &foo ) )
+    {
+        ...

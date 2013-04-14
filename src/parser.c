@@ -14,16 +14,25 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
 #include <string.h>
 
 #include "parser.h"
 
-#include "fetcher.h"
 #include "fs2_constants.h"
 #include "string_buffer.h"
 
 
 TRACE_DEFINE(parser)
+
+
+struct _parser_t
+{
+    xmlParserCtxtPtr ctxt;
+};
 
 
 /* ========================================================================== */
@@ -49,44 +58,48 @@ void parser_finalise (void)
 }
 
 
-xmlParserCtxtPtr parser_new (void)
+parser_t *parser_new (void)
 {
-    xmlParserCtxtPtr ctxt;
+    parser_t *parser = malloc(sizeof(*parser));
 
 
-    ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
-    assert(ctxt);
+    parser->ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
 
 
-    return ctxt;
+    return parser;
 }
 
-void parser_delete (xmlParserCtxtPtr ctxt)
+void parser_delete (parser_t *parser)
 {
-    xmlFreeParserCtxt(ctxt);
+    xmlFreeParserCtxt(parser->ctxt);
+
+    free(parser);
 }
 
 
 int parser_consumer (void *ctxt, void *data, size_t len)
 {
     int rc;
-    xmlParserCtxtPtr parser_ctxt = (xmlParserCtxtPtr)ctxt;
+    parser_t *parser = (parser_t *)ctxt;
 
 
-    rc = xmlParseChunk(parser_ctxt, data, len, 0);
+    rc = xmlParseChunk(parser->ctxt, data, len, 0);
 
 
     return rc;
 }
 
-xmlDocPtr parser_done (xmlParserCtxtPtr ctxt)
+static xmlDocPtr get_doc (xmlParserCtxtPtr ctxt)
 {
     int rc;
     xmlDocPtr doc = NULL;
 
 
-    parser_trace("parser_done()\n");
-
+    /* Before we can get the (parsed) document, we indicate that the stream is
+     * at the end. These are the magic runes: esentially telling libxml2 to
+     * parse an empty packet, as one would get at the end of a TCP stream
+     * (parser_consumer() never gets called on the empty buffer because they
+     * fetcher doesn't give us one. */
     rc = xmlParseChunk(ctxt, NULL, 0, 1);
 
     if (!rc && ctxt->wellFormed)
@@ -98,7 +111,7 @@ xmlDocPtr parser_done (xmlParserCtxtPtr ctxt)
     return doc;
 }
 
-xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath)
+static xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath)
 {
     xmlXPathContextPtr xpathCtxt;
     xmlXPathObjectPtr xpathObj;
@@ -203,78 +216,37 @@ static listing_t *filelist_entry_parse (
 
 /* Parse a nodeset representing the A tags in an fs2-filelist,
  * building direntries */
-static int filelist_entries_parse (
+int parser_tryget_listing(
+    parser_t *parser,
     indexnode_t *in,
-    xmlNodeSetPtr nodes,
-    listing_list_t **lis_out
-)
-{
-    listing_t *li;
-    listing_list_t *lis = NULL;
-    int rc = 0, size, i;
-
-
-    size = (nodes) ? nodes->nodeNr : 0;
-
-    parser_trace("filelist_entries_parse(): enumerating %d nodes\n", size);
-    parser_trace_indent();
-
-    lis = listing_list_new(size);
-
-    /* Enumerate the A elements */
-    for (i = 0; i < size && !rc; i++)
-    {
-        li = filelist_entry_parse(in, (xmlElementPtr)nodes->nodeTab[i]);
-
-        listing_list_set_item(lis, i, li);
-        listing_delete(CALLER_INFO li);
-    }
-
-    *lis_out = lis;
-
-    parser_trace_dedent();
-
-
-    return rc;
-}
-
-int parser_fetch_listing (
-    indexnode_t *in,
-    const char * const url,
     listing_list_t **lis
 )
 {
-    int rc;
-    xmlParserCtxtPtr parser = parser_new();
-    xmlXPathObjectPtr xpathObj;
     xmlDocPtr doc;
+    xmlXPathObjectPtr xpathObj;
+    xmlNodeSetPtr nodes;
+    listing_t *li;
     string_buffer_t *sb = string_buffer_new();
+    int size, i;
 
 
-    assert(url); assert(*url);
-
-    parser_trace("parser_fetch_listing(url: %s)\n", url);
-    parser_trace_indent();
-
-    rc = fetch(
-        url,
-        NULL, NULL,
-        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-        0,
-        NULL
-    );
-
-    if (rc == 0 && lis)
+    doc = get_doc(parser->ctxt);
+    if (doc)
     {
-        /* The fetcher has returned, so that's all the document.
-         * Indicate to the parser that that's it */
-        doc = parser_done(parser);
-
         string_buffer_printf(sb, "//xhtml:div[@id='%s']/xhtml:a[@%s]", fs2_filelist_node_id, fs2_name_attribute_key);
         xpathObj = parser_xhtml_xpath(doc, string_buffer_peek(sb));
         if (xpathObj->type == XPATH_NODESET)
         {
-            rc = filelist_entries_parse(in, xpathObj->nodesetval, lis);
+            nodes = xpathObj->nodesetval;
+            size = (nodes) ? nodes->nodeNr : 0;
+
+            /* Enumerate the A elements */
+            for (i = 0; i < size; i++)
+            {
+                li = filelist_entry_parse(in, (xmlElementPtr)nodes->nodeTab[i]);
+
+                listing_list_set_item(*lis, i, li);
+            }
         }
 
         xmlXPathFreeObject(xpathObj);
@@ -282,99 +254,66 @@ int parser_fetch_listing (
         xmlFreeDoc(doc);
     }
 
-    parser_delete(parser);
 
-    parser_trace_dedent();
-
-
-    return rc;
+    return 0;
 }
 
-static void stats_general_parse (xmlNodeSetPtr nodes, unsigned long *files, unsigned long *bytes)
+int parser_tryget_stats(
+    parser_t *parser,
+    unsigned long *files,
+    unsigned long *bytes
+)
 {
+    xmlDocPtr doc;
+    xmlXPathObjectPtr xpathObj;
+    xmlNodeSetPtr nodes;
     xmlNodePtr curNod = NULL;
     int size, i;
     char *id, *value;
 
 
-    size = (nodes) ? nodes->nodeNr : 0;
-
-    parser_trace("stats_general_parse(): enumerating %d nodes\n", size);
-    trace_indent();
-
-    /* Enumerate the SPAN elements */
-    for (i = 0; i < size; i++)
+    doc = get_doc(parser->ctxt);
+    if (doc)
     {
-        curNod = (xmlNodePtr)nodes->nodeTab[i];
-
-        if (!strcmp((char *)curNod->name, "span"))
-        {
-            id = (char *)xmlGetProp(curNod, BAD_CAST "id");
-            if (!strcmp(id, "file-count"))
-            {
-                value = (char *)xmlGetProp(curNod, BAD_CAST "value");
-
-                *files = atoll(value);
-
-                free(value);
-            }
-            else if (!strcmp(id, "total-size"))
-            {
-                value = (char *)xmlGetProp(curNod, BAD_CAST "value");
-
-                *bytes = atoll(value);
-
-                free(value);
-            }
-            free(id);
-        }
-    }
-
-    trace_dedent();
-}
-
-int parser_tryfetch_stats (
-    const char *url,
-    unsigned long *files,
-    unsigned long *bytes
-)
-{
-    /* TODO obviously this is a bit fucked up... (fetch_listing() is the same) */
-    xmlParserCtxtPtr  parser = parser_new();
-    xmlXPathObjectPtr xpathObj;
-    xmlDocPtr         doc;
-    int rc = 1;
-
-
-    rc = fetch(
-        url,
-        NULL, NULL,
-        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
-        0,
-        NULL
-    );
-
-
-    if (!rc)
-    {
-        /* The fetcher has returned, so that's all the document.
-         * Indicate to the parser that that's it */
-        doc = parser_done(parser);
-
         xpathObj = parser_xhtml_xpath(doc, "//xhtml:div[@id='general']/xhtml:span[@id]");
         if (xpathObj->type == XPATH_NODESET)
         {
-            stats_general_parse(xpathObj->nodesetval, files, bytes);
+            nodes = xpathObj->nodesetval;
+            size = (nodes) ? nodes->nodeNr : 0;
 
-            rc = 0;
+            /* Enumerate the SPAN elements */
+            for (i = 0; i < size; i++)
+            {
+                curNod = (xmlNodePtr)nodes->nodeTab[i];
+
+                if (!strcmp((char *)curNod->name, "span"))
+                {
+                    id = (char *)xmlGetProp(curNod, BAD_CAST "id");
+                    if (!strcmp(id, "file-count"))
+                    {
+                        value = (char *)xmlGetProp(curNod, BAD_CAST "value");
+
+                        *files = atoll(value);
+
+                        free(value);
+                    }
+                    else if (!strcmp(id, "total-size"))
+                    {
+                        value = (char *)xmlGetProp(curNod, BAD_CAST "value");
+
+                        *bytes = atoll(value);
+
+                        free(value);
+                    }
+                    free(id);
+                }
+            }
         }
 
         xmlXPathFreeObject(xpathObj);
         xmlFreeDoc(doc);
     }
 
-    parser_delete(parser);
 
-
-    return rc;
+    return 0;
 }

@@ -7,12 +7,8 @@
 #ifndef _INCLUDED_PARSER_H
 #define _INCLUDED_PARSER_H
 
-#include <libxml/tree.h>
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
-#include <libxml/xpathInternals.h>
-
 #include "common.h"
+
 #include "listing.h"
 
 
@@ -22,24 +18,24 @@ TRACE_DECLARE(parser)
 #define parser_trace_dedent() TRACE_DEDENT(parser)
 
 
+typedef struct _parser_t parser_t;
+
+
 extern int parser_init (void);
 extern void parser_finalise (void);
 
-extern xmlParserCtxtPtr parser_new (void);
-extern void parser_delete (xmlParserCtxtPtr ctxt);
+extern parser_t *parser_new (void);
+extern void parser_delete (parser_t *parser);
 
 extern int parser_consumer (void *ctxt, void *data, size_t len);
-extern xmlDocPtr parser_done (xmlParserCtxtPtr ctxt);
 
-extern xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath);
-
-extern int parser_fetch_listing (
+extern int parser_tryget_listing(
+    parser_t *parser,
     indexnode_t *in,
-    const char * const url,
     listing_list_t **lis
 );
-extern int parser_tryfetch_stats (
-    const char *url,
+extern int parser_tryget_stats(
+    parser_t *parser,
     unsigned long *files,
     unsigned long *bytes
 );

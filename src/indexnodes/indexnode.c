@@ -186,25 +186,56 @@ int indexnode_still_valid( const indexnode_t *in )
     return ( time( NULL ) - in->last_seen ) < config_indexnode_timeout;
 }
 
-/* TODO: obviously parser_fetch_listing is nonsense */
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
 {
     const char *url = indexnode_make_url( in, strdup( "browse" ), path );
-    return parser_fetch_listing( in, url, lis );
+    parser_t *parser = parser_new( );
+    int rc;
+
+
+    rc = fetch(
+        url,
+        NULL, NULL,
+        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
+        0,
+        NULL
+    );
+
+    if (!rc)
+    {
+        rc = parser_tryget_listing( parser, in, lis );
+    }
+
+    parser_delete( parser );
+
+
+    return rc;
 }
 
 int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best )
 {
     listing_list_t *lis;
     const char *url = indexnode_make_url( in, strdup( "alternatives" ), hash );
-    int rc = 0;
+    parser_t *parser = parser_new( );
+    int rc;
 
 
-    if ( !parser_fetch_listing( in, url, &lis ) )
+    rc = fetch(
+        url,
+        NULL, NULL,
+        (fetcher_body_cb_t)&parser_consumer, (void *)parser,
+        0,
+        NULL
+    );
+
+    if (!rc)
     {
-        *li_best = peerstats_chose_alternative( lis );
-        listing_list_delete( CALLER_INFO lis );
-        rc = 1;
+        rc = parser_tryget_listing( parser, in, &lis );
+        if (!rc)
+        {
+            *li_best = peerstats_chose_alternative( lis );
+            listing_list_delete( CALLER_INFO lis );
+        }
     }
 
 
