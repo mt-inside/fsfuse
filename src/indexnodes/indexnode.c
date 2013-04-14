@@ -166,15 +166,6 @@ char *indexnode_tostring( indexnode_t *in )
     return string_buffer_commit( sb );
 }
 
-static const char *make_url(
-    const indexnode_t *in,
-    const char *path_prefix,
-    const char *resource
-)
-{
-    return proto_indexnode_make_url( BASE_CLASS(in), path_prefix, resource );
-}
-
 void indexnode_seen( indexnode_t *in )
 {
     in->last_seen = time( NULL );
@@ -187,7 +178,7 @@ int indexnode_still_valid( const indexnode_t *in )
 
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
 {
-    const char *url = make_url( in, strdup( "browse" ), path );
+    const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "browse" ), path );
     parser_t *parser = parser_new( );
     int rc;
 
@@ -214,7 +205,7 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t 
 int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best )
 {
     listing_list_t *lis;
-    const char *url = make_url( in, strdup( "alternatives" ), hash );
+    const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "alternatives" ), hash );
     parser_t *parser = parser_new( );
     int rc;
 
@@ -237,6 +228,8 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
         }
     }
 
+    parser_delete(parser);
+
 
     return rc;
 }
@@ -244,7 +237,7 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
 int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes )
 {
     parser_t *parser = parser_new( );
-    const char *url = make_url( in, strdup( "stats" ), strdup( "" ) );
+    const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "stats" ), strdup( "" ) );
     int rc;
 
 
@@ -261,7 +254,6 @@ int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long
         rc = parser_tryget_stats(parser, files, bytes);
     }
 
-    free_const(url);
     parser_delete(parser);
 
 

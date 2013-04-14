@@ -101,13 +101,13 @@ int proto_indexnode_get_info( proto_indexnode_t *pin,
                               const char **protocol,
                               const char **id )
 {
+    const char *url = proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) );
+    indexnode_info_t *info = malloc(sizeof(indexnode_info_t));
     int rc;
-    indexnode_info_t *info =
-        malloc(sizeof(indexnode_info_t));
 
 
     rc = fetch(
-        proto_indexnode_make_url( pin, strdup( "browse" ), strdup( "" ) ),
+        url,
         (fetcher_header_cb_t)&header_cb,
         info,
         NULL,

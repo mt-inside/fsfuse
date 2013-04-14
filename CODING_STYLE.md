@@ -78,6 +78,14 @@ Functions take ownership of any arguments passed into them.
 Thus if the caller wishes to retain a copy for itself it must strdup()/post()/etc before calling the function.
 To maintain this convention, if a method does not retain the object it's been given it should free() it.
 
+The exception is when the first argument is a "this" pointer.
+e.g. in:
+    static_utility( char *a, char *b );
+both a and b must be usurped.
+however in:
+    foo_method( foo_t *foo, char *a );
+only a must be usurped; foo need not be copied to be passed in (indeed a lot of classes aren't ref-counted / copyable).
+
 This has the nice effect that a lot of functions, those that just get objects from one place and pass them onto another, don't need to do any copying or deleting.
 
 Alas I think currently that most things take copies on the way in, e.g. indexnode_list_add(), listing and direntry ctors() etc.
