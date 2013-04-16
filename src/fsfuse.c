@@ -65,7 +65,7 @@ static char *progname = NULL;
 static mountpoint_t mountpoint;
 
 
-static void settings_get_config_file              (int argc, char *argv[]);
+static int settings_tryget_config_file            (int argc, char *argv[], const char **config_file_path);
 static start_action_t settings_parse_command_line (int argc, char *argv[]);
 static int my_fuse_main (void);
 static void fuse_args_set (struct fuse_args *fuse_args);
@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
 {
     int rc = EXIT_FAILURE;
     char **myargv = malloc(argc * sizeof(char *));
+    const char *config_file = strdup( "fsfuse.conf" );
     start_action_t sa;
 
 
@@ -99,13 +100,12 @@ int main(int argc, char *argv[])
      * settings from it, /before/ parsing the command line proper, over-writing
      * any config settings with higher-priority command line values */
     memcpy(myargv, argv, argc * sizeof(char *));
-    settings_get_config_file(argc, myargv);
+    settings_tryget_config_file(argc, myargv, &config_file);
     free(myargv);
 
 
     parser_init();
-    config_init();
-    config_read();
+    config_init( config_file );
 
 
     /* Parse cmdline args */
@@ -235,7 +235,9 @@ static int my_fuse_main (void)
     return rc;
 }
 
-static void settings_get_config_file (int argc, char *argv[])
+/* Performs a minimal parse of the command line args to get the config file
+ * location */
+static int settings_tryget_config_file (int argc, char *argv[], const char **config_file_path)
 {
     int c, option_index = 0;
     struct option long_options[] =
@@ -257,7 +259,8 @@ static void settings_get_config_file (int argc, char *argv[])
         {
             case 'c':
                 /* config file */
-                config_path_set(strdup(optarg));
+                *config_file_path = strdup(optarg);
+                return 1;
                 break;
 
             case '?':
@@ -267,6 +270,8 @@ static void settings_get_config_file (int argc, char *argv[])
                 assert(0);
         }
     }
+
+    return 0;
 }
 
 static start_action_t settings_parse_command_line (int argc, char *argv[])

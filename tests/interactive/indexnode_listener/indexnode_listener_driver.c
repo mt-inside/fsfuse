@@ -43,8 +43,7 @@ int main( int argc, char **argv )
 
 
     utils_init( );
-    config_init( );
-    config_read( );
+    config_init( "fsfuse.conf" );
     trace_init( );
     indexnode_trace_on( );
 

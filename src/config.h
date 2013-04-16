@@ -8,10 +8,5 @@
 #include "config_declare.h"
 
 
-extern int config_init (void);
+extern int config_init (const char *config_file_path);
 extern void config_finalise (void);
-
-extern int config_read (void);
-
-extern char *config_path_get (void);
-extern void config_path_set (char *config_path_new);

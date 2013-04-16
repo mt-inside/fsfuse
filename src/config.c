@@ -20,19 +20,21 @@
 #include <libxml/xpath.h>
 
 
-static char *config_path = NULL;
+static const char *config_path = NULL;
 
 
+static int config_read (const char *config_file_path);
 static void config_items_free (void);
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
 static char **xpath_get_array (const char *xpath, xmlXPathContextPtr xpathCtxt);
 static void string_collection_free (char **strcol);
 
 
-int config_init (void)
+int config_init (const char *config_file_path)
 {
-    if (!config_path) config_path = strdup("fsfuse.conf");
+    config_path = config_file_path;
 
+    config_read(config_path);
 
     return 0;
 }
@@ -41,11 +43,11 @@ void config_finalise (void)
 {
     config_items_free();
 
-    free(config_path);
+    free_const(config_path);
 }
 
 
-int config_read (void)
+static int config_read (const char *config_file_path)
 {
     config_item *item;
     char *val, **val_array;
@@ -54,7 +56,7 @@ int config_read (void)
 
 
     /* Read the config file */
-    doc = xmlParseFile(config_path_get());
+    doc = xmlParseFile(config_file_path);
 
     if (doc)
     {
@@ -117,7 +119,7 @@ int config_read (void)
     }
     else
     {
-        trace_warn("Unable to read / parse config file %s\n", config_path_get());
+        trace_warn("Unable to read / parse config file %s\n", config_file_path);
     }
 
 
@@ -231,15 +233,4 @@ static void string_collection_free (char **strcol)
     }
 
     free(strcol);
-}
-
-char *config_path_get (void)
-{
-    return config_path;
-}
-
-void config_path_set (char *config_path_new)
-{
-    if (config_path) free(config_path);
-    config_path = config_path_new;
 }
