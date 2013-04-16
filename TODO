@@ -8,12 +8,12 @@ TODO:
                direntry.o              \
                download_thread.o       \
                download_thread_pool.o  \
-               fetcher.o               \
+DONE               fetcher.o               \
                inode_map.o             \
                listing.o               \
                localei.o               \
                locks.o                 \
-               parser.o                \
+DONE            parser.o                \
                peerstats.o             \
 DONE               ref_count.o             \
 DONE               string_buffer.o         \

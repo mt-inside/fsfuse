@@ -134,6 +134,7 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
 }
 
 
+/* TODO: this looks a bit O(n^2) */
 static void split_list (
     listing_list_t *alts,
     char **favs,
