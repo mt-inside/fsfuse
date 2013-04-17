@@ -20,9 +20,6 @@
 #include <libxml/xpath.h>
 
 
-static const char *config_path = NULL;
-
-
 static int config_read (const char *config_file_path);
 static void config_items_free (void);
 static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt);
@@ -32,9 +29,7 @@ static void string_collection_free (char **strcol);
 
 int config_init (const char *config_file_path)
 {
-    config_path = config_file_path;
-
-    config_read(config_path);
+    config_read(config_file_path);
 
     return 0;
 }
@@ -42,8 +37,6 @@ int config_init (const char *config_file_path)
 void config_finalise (void)
 {
     config_items_free();
-
-    free_const(config_path);
 }
 
 
@@ -121,6 +114,8 @@ static int config_read (const char *config_file_path)
     {
         trace_warn("Unable to read / parse config file %s\n", config_file_path);
     }
+
+    free_const(config_file_path);
 
 
     return 0;
