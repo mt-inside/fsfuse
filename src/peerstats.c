@@ -10,12 +10,14 @@
  * Peer Statistics Module
  */
 
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-
 #include "common.h"
-#include "config.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "config_manager.h"
+#include "config_reader.h"
 #include "peerstats.h"
 #include "direntry.h"
 
@@ -48,6 +50,7 @@ void peerstats_finalise (void)
 
 listing_t *peerstats_chose_alternative (listing_list_t *alts)
 {
+    config_reader_t *config = config_get_reader();
     listing_list_t *fav_list, *normal_list, *block_list;
     listing_t *ret;
 #if DEBUG
@@ -63,7 +66,7 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
 
 
     split_list(alts,
-               config_peers_favourites, config_peers_blocked,
+               config_peers_favourites(config), config_peers_blocked(config),
                &fav_list, &normal_list, &block_list);
 
 
@@ -129,11 +132,14 @@ listing_t *peerstats_chose_alternative (listing_list_t *alts)
     listing_list_delete(CALLER_INFO normal_list);
     listing_list_delete(CALLER_INFO block_list );
 
+    config_reader_delete(config);
+
 
     return ret;
 }
 
 
+/* TODO: this looks a bit O(n^2) */
 static void split_list (
     listing_list_t *alts,
     char **favs,

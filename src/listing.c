@@ -20,7 +20,8 @@
 #include "listing.h"
 #include "listing_internal.h"
 
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "fs2_constants.h"
 #include "indexnode.h"
 #include "parser.h"
@@ -190,8 +191,9 @@ char *listing_get_client (listing_t *li)
 
 void listing_li2stat (listing_t *li, struct stat *st)
 {
-    int uid = config_attr_id_uid,
-        gid = config_attr_id_gid;
+    config_reader_t *config = config_get_reader();
+    int uid = config_attr_id_uid(config),
+        gid = config_attr_id_gid(config);
 
 
     memset((void *)st, 0, sizeof(struct stat));
@@ -204,7 +206,7 @@ void listing_li2stat (listing_t *li, struct stat *st)
     {
         /* Regular file */
         case listing_type_FILE:
-            st->st_mode = S_IFREG | config_attr_mode_file;
+            st->st_mode = S_IFREG | config_attr_mode_file(config);
 
             st->st_size = li->size;
             st->st_blksize = FSFUSE_BLKSIZE;
@@ -212,7 +214,7 @@ void listing_li2stat (listing_t *li, struct stat *st)
 
             break;
         case listing_type_DIRECTORY:
-            st->st_mode = S_IFDIR | config_attr_mode_dir;
+            st->st_mode = S_IFDIR | config_attr_mode_dir(config);
 
             /* indexnode supplies directory's tree size - not what a unix fs
              * wants */

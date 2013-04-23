@@ -17,7 +17,8 @@
 #include "indexnodes_statics_manager.h"
 
 #include "alarm_simple.h"
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "linked_list.h"
 #include "proto_indexnode.h"
 
@@ -91,14 +92,15 @@ static void ping_indexnode( void *ctxt )
 
 static void load_indexnodes_from_config (indexnodes_statics_manager_t *mgr)
 {
+    config_reader_t *config = config_get_reader();
     alarm_t *alarm;
     mgr_pin_pair_t *pair;
     const char *host, *port;
     int i = 0;
 
 
-    while ((host = config_indexnode_hosts[i]) &&
-           (port = config_indexnode_ports[i]))
+    while ((host = config_indexnode_hosts(config)[i]) &&
+           (port = config_indexnode_ports(config)[i]))
     {
         /* TODO: No need to strdup these when config is a real class with real
          * getters that return copies */
@@ -109,9 +111,11 @@ static void load_indexnodes_from_config (indexnodes_statics_manager_t *mgr)
         pair->mgr = mgr;
         pair->pin = pin;
 
-        alarm = alarm_new( config_indexnode_timeout / 2, ping_indexnode, pair );
+        alarm = alarm_new( config_indexnode_timeout(config) / 2, ping_indexnode, pair );
         LINKED_LIST_ADD(mgr->alarms, alarm);
 
         i++;
     }
+
+    config_reader_delete(config);
 }

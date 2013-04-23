@@ -4,6 +4,12 @@
  * Internal definitions for the configuration component.
  */
 
+#ifndef _INCLUDED_CONFIG_INTERNAL_H
+#define _INCLUDED_CONFIG_INTERNAL_H
+
+#include "config_declare.h"
+
+
 typedef enum
 {
     config_item_type_STRING,
@@ -14,10 +20,21 @@ typedef enum
 
 typedef struct
 {
-    void *symbol;
+    size_t offset;
     config_item_type_t type;
     char *xpath;
-    int runtime; /* Has this value been updated at runtime (i.e. will it need free()ing) */
-} config_item;
+} config_xml_info_item_t;
 
-extern config_item config_items[];
+struct _config_reader_t
+{
+    config_data_t **datas;
+    size_t datas_len;
+};
+
+
+extern config_xml_info_item_t config_xml_info[];
+
+
+extern config_data_t *config_defaults_get( void );
+
+#endif /* _INCLUDED_CONFIG_INTERNAL_H */

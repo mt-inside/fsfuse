@@ -24,7 +24,8 @@
 
 #include "fetcher.h"
 
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "fs2_constants.h"
 #include "indexnodes.h"
 #include "indexnodes_list.h"
@@ -83,6 +84,7 @@ void fetcher_finalise (void)
 
 fetcher_t *fetcher_new (const char *url)
 {
+    config_reader_t *config = config_get_reader();
     fetcher_t *fetcher = malloc(sizeof(*fetcher));
     string_buffer_t *alias = string_buffer_new();
 
@@ -106,7 +108,7 @@ fetcher_t *fetcher_new (const char *url)
     curl_easy_setopt(fetcher->eh, CURLOPT_USERAGENT, FSFUSE_NAME "-" FSFUSE_VERSION);
 
     string_buffer_append(alias, strdup(fs2_alias_header_key));
-    string_buffer_append(alias, strdup(config_alias));
+    string_buffer_append(alias, config_alias(config));
     fetcher->slist = NULL;
     fetcher->slist = curl_slist_append(fetcher->slist, string_buffer_peek(alias));
     string_buffer_delete(alias);
@@ -118,6 +120,8 @@ fetcher_t *fetcher_new (const char *url)
 
     /* Have libcurl abort on error (http >= 400) */
     curl_easy_setopt(fetcher->eh, CURLOPT_FAILONERROR, 1);
+
+    config_reader_delete(config);
 
 
     return fetcher;

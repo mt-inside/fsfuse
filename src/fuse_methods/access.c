@@ -14,14 +14,17 @@
 
 #include <errno.h>
 
-#include "trace.h"
-#include "config.h"
 #include "fuse_methods.h"
+
+#include "config_manager.h"
+#include "config_reader.h"
 #include "direntry.h"
+#include "trace.h"
 
 
 void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask)
 {
+    config_reader_t *config = config_get_reader();
     int rc = 0;
     direntry_t *de;
 
@@ -36,10 +39,10 @@ void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask)
         switch (direntry_get_type(de))
         {
             case listing_type_DIRECTORY:
-                if (mask & ~config_attr_mode_dir)  rc = EACCES;
+                if (mask & ~config_attr_mode_dir(config))  rc = EACCES;
                 break;
             case listing_type_FILE:
-                if (mask & ~config_attr_mode_file) rc = EACCES;
+                if (mask & ~config_attr_mode_file(config)) rc = EACCES;
                 break;
         }
 
@@ -50,5 +53,7 @@ void fsfuse_access (fuse_req_t req, fuse_ino_t ino, int mask)
 
 
     assert(!fuse_reply_err(req, rc));
+
+    config_reader_delete(config);
 }
 

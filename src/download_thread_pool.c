@@ -29,7 +29,6 @@
 
 #include "common.h"
 #include "locks.h"
-#include "config.h"
 #include "direntry.h"
 #include "download_thread_pool.h"
 #include "download_thread.h"
