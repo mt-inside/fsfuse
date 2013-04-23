@@ -22,8 +22,6 @@
  * - remove config-config.xml and instead have defaults.conf which is walked
  *   (must be a fn to get the xpath for the current node). Annotoate the nodes
  *   with anything else needed to build the code (just ctype?)
- * FIXME: reader functions just returning defulats from the bottom of the stack
- * for now - need the missing flag
  */
 
 config_reader_t *config_reader_new( config_data_t **datas, size_t datas_len )

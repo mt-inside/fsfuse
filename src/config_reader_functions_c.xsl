@@ -30,21 +30,31 @@
         <xsl:value-of select="$space"/>
         <xsl:text>config_</xsl:text>
         <xsl:value-of select="symbol"/>
-        <xsl:value-of select="$space"/>
-        <xsl:text>( config_reader_t *reader )</xsl:text>
-        <xsl:value-of select="$newline"/>
-        <xsl:text>{</xsl:text>
-        <xsl:value-of select="$newline"/>
-        <xsl:value-of select="$indent"/>
+        <xsl:text><![CDATA[ ( config_reader_t *reader )
+{
+    int i;
+    for( i = reader->datas_len - 1; i >= 0; i-- )
+    {
+        if( reader->datas[i]->]]></xsl:text>
+        <xsl:value-of select="symbol"/>
+        <xsl:text>_present</xsl:text>
+        <xsl:text><![CDATA[ )
+        {
+]]></xsl:text>
+        <xsl:value-of select="$indent"/><xsl:value-of select="$indent"/><xsl:value-of select="$indent"/>
         <xsl:text>return </xsl:text>
         <xsl:if test="type = 'string'"><xsl:text>strdup( </xsl:text></xsl:if>
-        <xsl:text>reader->datas[0]-></xsl:text>
+        <xsl:text>reader->datas[i]-></xsl:text>
         <xsl:value-of select="symbol"/>
         <xsl:if test="type = 'string'"><xsl:text> )</xsl:text></xsl:if>
         <xsl:value-of select="$sc"/>
-        <xsl:value-of select="$newline"/>
-        <xsl:text>}</xsl:text>
-        <xsl:value-of select="$newline"/>
+        <xsl:text><![CDATA[
+        }
+    }
+    assert( 0 );
+    return 0;
+}
+]]></xsl:text>
     </xsl:template>
 
 </xsl:stylesheet>

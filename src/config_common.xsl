@@ -40,6 +40,7 @@
  * WARNING: THIS FILE IS AUTO-GENERATED. DO NOT ALTER!
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
