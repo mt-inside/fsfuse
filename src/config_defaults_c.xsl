@@ -70,6 +70,15 @@
         <xsl:if test="type = 'string'"><xsl:text>&quot; )</xsl:text></xsl:if>
         <xsl:value-of select="$sc"/>
         <xsl:value-of select="$newline"/>
+
+        <!-- All config items are present in the defaults -->
+        <xsl:value-of select="$indent"/>
+        <xsl:text>defaults-></xsl:text>
+        <xsl:value-of select="symbol"/>
+        <xsl:text>_present</xsl:text>
+        <xsl:text> = 1</xsl:text>
+        <xsl:value-of select="$sc"/>
+        <xsl:value-of select="$newline"/>
     </xsl:template>
 
 </xsl:stylesheet>

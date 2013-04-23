@@ -110,6 +110,7 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
                     if (val)
                     {
                         *((char **)(data + item->offset)) = strdup(val);
+                        *((int *)(data + item->offset + sizeof(char *))) = 1;
                     }
 
                     break;
@@ -120,6 +121,7 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
                     if (val)
                     {
                         *((int *)(data + item->offset)) = strtoul(val, NULL, 0);
+                        *((int *)(data + item->offset + sizeof(int))) = 1;
                     }
 
                     break;
@@ -130,6 +132,7 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
                     if (val)
                     {
                         *((double *)(data + item->offset)) = strtod(val, NULL);
+                        *((int *)(data + item->offset + sizeof(double))) = 1;
                     }
 
                     break;
@@ -140,6 +143,7 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
                     if (val_array)
                     {
                         *((char ***)(data + item->offset)) = val_array;
+                        *((int *)(data + item->offset + sizeof(char **))) = 1;
                     }
 
                     break;

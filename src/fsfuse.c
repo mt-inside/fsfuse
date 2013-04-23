@@ -285,7 +285,9 @@ static int settings_tryget_config_file (int argc, char *argv[], const char **con
 static start_action_t settings_parse_command_line (int argc, char *argv[], config_manager_t *config_mgr)
 {
     start_action_t rc = start_action_MOUNT;
-    int proc_debug = -1, proc_fg = -1, proc_singlethread = -1;
+    int proc_debug,        proc_debug_set = 0,
+        proc_fg,           proc_fg_set = 0,
+        proc_singlethread, prog_singlethread_set = 0;
     int c, option_index = 0;
     struct option long_options[] =
     {
@@ -315,14 +317,17 @@ static start_action_t settings_parse_command_line (int argc, char *argv[], confi
 
             case 'd': /* debug */
                 proc_debug = 1;
+                proc_debug_set = 1;
                 /* fall through; d => f */
 
             case 'f': /* foreground */
                 proc_fg = 1;
+                proc_fg_set = 1;
                 break;
 
             case 's': /* single threaded */
                 proc_singlethread = 1;
+                proc_singlethread_set = 1;
                 break;
 
             case 't': /* trace */
@@ -367,7 +372,12 @@ static start_action_t settings_parse_command_line (int argc, char *argv[], confi
         }
     }
 
-    config_manager_add_from_cmdline( config_mgr, proc_debug, proc_fg, proc_singlethread );
+    config_manager_add_from_cmdline(
+        config_mgr,
+        proc_debug_set,        proc_debug,
+        proc_fg_set,           proc_fg,
+        proc_singlethread_set, proc_singlethread
+    );
 
     if (argc - optind >= 2)
     {

@@ -18,7 +18,12 @@ extern config_manager_t *config_singleton_get( void );
 extern void config_singleton_delete( config_manager_t *singleton );
 
 extern int config_manager_add_from_file( config_manager_t *mgr, const char *path );
-extern void config_manager_add_from_cmdline( config_manager_t *mgr, int debug, int singlethread, int fg );
+extern void config_manager_add_from_cmdline(
+    config_manager_t *mgr,
+    int debug_set,        int debug,
+    int singlethread_set, int singlethread,
+    int fg_set,           int fg
+);
 
 extern config_reader_t *config_get_reader( void );
 

@@ -100,14 +100,21 @@ int config_manager_add_from_file( config_manager_t *mgr, const char *path )
     return rc;
 }
 
-void config_manager_add_from_cmdline( config_manager_t *mgr, int debug, int singlethread, int fg )
+void config_manager_add_from_cmdline(
+    config_manager_t *mgr,
+    int debug_set,        int debug,
+    int singlethread_set, int singlethread,
+    int fg_set,           int fg
+)
 {
-    config_data_t *data = malloc(sizeof(*data));
+    config_data_t *data = calloc( 1, sizeof(*data) );
 
 
-    /* TODO: concept of "missing" */
+    data->proc_debug_present = debug_set;
     data->proc_debug = debug;
+    data->proc_singlethread_present = singlethread_set;
     data->proc_singlethread = singlethread;
+    data->proc_fg_present = fg_set;
     data->proc_fg = fg;
 
     pthread_mutex_lock( &lock );

@@ -53,6 +53,14 @@
         <xsl:value-of select="symbol"/>
         <xsl:value-of select="$sc"/>
         <xsl:value-of select="$newline"/>
+
+        <xsl:value-of select="$indent"/>
+        <xsl:text>int</xsl:text>
+        <xsl:value-of select="$space"/>
+        <xsl:value-of select="symbol"/>
+        <xsl:text>_present</xsl:text>
+        <xsl:value-of select="$sc"/>
+        <xsl:value-of select="$newline"/>
     </xsl:template>
 
 </xsl:stylesheet>

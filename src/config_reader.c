@@ -9,16 +9,11 @@
 /* TODO:
  * as many readers as you like. they don't hold state and don't change anything
  * one "data store" stack which
- * - can have data values "added" - stack up immutible version (e.g. defaults,
- *   from /etc, from ~, cmdline) which are scanned in order
- * - entries in data_t need to know if they're "present" or not - that config
- *   file or the cmd line may not have specified them, in which case move onto
- *   the next level
- *   - -1 arg to _from_cmdline means "not set?"
- *   - Think about char ** (have a del() fn, just add a copy() one?)
+ * - add datas from multiple files, e.g. /etc, ~
  * - think about the freeing of all of this stuff!
- * - this would allow the changable ones (like those read from disk) to be
- *   replaced in repsonse to SIGHUP but leave higher over-rides (like cmdline)
+ *   - Think about char ** (have a del() fn, just add a copy() one?)
+ * - respond to SIGHUP - re-load the mutable ones (they need marking some how,
+ *   and to remember their origin file)
  * - test this
  *   - don't add anything, check defaults
  *   - add manually, check over-rides
