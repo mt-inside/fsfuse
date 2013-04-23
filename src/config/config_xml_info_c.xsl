@@ -31,7 +31,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "config_internal.h"
+#include "config/config_internal.h"
 ]]></xsl:text>
     </xsl:variable>
 

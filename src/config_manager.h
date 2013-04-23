@@ -7,7 +7,6 @@
 #ifndef _INCLUDED_CONFIG_MANAGER_H
 #define _INCLUDED_CONFIG_MANAGER_H
 
-#include "config_declare.h"
 #include "config_reader.h"
 
 

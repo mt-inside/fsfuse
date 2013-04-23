@@ -25,14 +25,6 @@ default: fsfuse
 OS:=$(shell uname -s)
 
 
-CONFIG_SOURCES := config_declare.h \
-                  config_defaults.c \
-                  config_xml_info.c \
-                  config_reader_functions.h \
-                  config_reader_functions.c
-
-CONFIG_OBJECTS := $(patsubst %.c,%.o,$(filter %.c,$(CONFIG_SOURCES)))
-
 INCLUDES = -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
 
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror $(INCLUDES) -D_REENTRANT -DDEBUG=$(DEBUG) $(FEATURES)
@@ -76,7 +68,6 @@ endif
 # == Optional Features ==
 
 OBJECTS += $(MAIN_OBJECT)
-OBJECTS += $(CONFIG_OBJECTS)
 
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o
@@ -87,6 +78,7 @@ endif
 # == Sources ==
 
 include $(SRC_ROOT)/frag.mk
+include $(SRC_ROOT)/config/frag.mk
 include $(SRC_ROOT)/fuse_methods/frag.mk
 include $(SRC_ROOT)/indexnodes/frag.mk
 
@@ -106,11 +98,6 @@ endif
 
 
 # == Build Rules ==
-
-config_%.h: config_%_h.xsl config-config.xml
-	xsltproc $^ > $@
-config_%.c: config_%_c.xsl config-config.xml
-	xsltproc $^ > $@
 
 build_revision.c:
 	@echo "Making build_revision.c"
@@ -134,7 +121,7 @@ build_revision.c:
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
-fsfuse: $(CONFIG_SOURCES) objects build_revision.o
+fsfuse: $(AUTO_SOURCES) objects build_revision.o
 	@echo "Linking $@"
 	@$(CC) -o $@ $(OBJECTS) build_revision.o $(LDFLAGS)
 
@@ -143,7 +130,7 @@ depend: $(DEPENDS)
 objects: $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIG_SOURCES) build_revision.c build_revision.o gmon.out
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(AUTO_SOURCES) build_revision.c build_revision.o gmon.out
 
 count:
 	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l

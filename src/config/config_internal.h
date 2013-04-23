@@ -8,6 +8,7 @@
 #define _INCLUDED_CONFIG_INTERNAL_H
 
 #include "config_declare.h"
+#include "config_reader.h"
 
 
 typedef enum
@@ -36,5 +37,10 @@ extern config_xml_info_item_t config_xml_info[];
 
 
 extern config_data_t *config_defaults_get( void );
+
+/* NOTE: these should be short-lived as they bind in the data so
+ * they won't update when there's a SIGHUP */
+extern config_reader_t *config_reader_new( config_data_t **datas, size_t datas_len );
+
 
 #endif /* _INCLUDED_CONFIG_INTERNAL_H */
