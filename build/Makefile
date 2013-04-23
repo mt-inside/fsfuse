@@ -25,8 +25,13 @@ default: fsfuse
 OS:=$(shell uname -s)
 
 
-CONFIGS := config_declare.h \
-           config_define.c
+CONFIG_SOURCES := config_declare.h \
+                  config_defaults.c \
+                  config_xml_info.c \
+                  config_reader_functions.h \
+                  config_reader_functions.c
+
+CONFIG_OBJECTS := $(patsubst %.c,%.o,$(filter %.c,$(CONFIG_SOURCES)))
 
 INCLUDES = -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
 
@@ -71,6 +76,7 @@ endif
 # == Optional Features ==
 
 OBJECTS += $(MAIN_OBJECT)
+OBJECTS += $(CONFIG_OBJECTS)
 
 ifeq ($(DIRENTRY_CACHE),1)
     OBJECTS += direntry_cache.o
@@ -91,7 +97,7 @@ include $(SRC_ROOT)/indexnodes/frag.mk
 
 #This variable must be set unconditionally, otherwise the .d files will never
 #be cleaned
-DEPENDS = $(patsubst %.o,%.d,$(OBJECTS))
+DEPENDS = $(OBJECTS:.o=.d)
 ifeq "$(findstring clean,$(MAKECMDGOALS))" ""
 #this will cause an attempt to build all included files (although it will still
 #moan they don't exist first, just before building them, if given the chance)
@@ -101,10 +107,10 @@ endif
 
 # == Build Rules ==
 
-config_declare.h: config.xsl config-config.xml
-	xsltproc --stringparam filetype h $^ > $@
-config_define.c:  config.xsl config-config.xml
-	xsltproc --stringparam filetype c $^ > $@
+config_%.h: config_%_h.xsl config-config.xml
+	xsltproc $^ > $@
+config_%.c: config_%_c.xsl config-config.xml
+	xsltproc $^ > $@
 
 build_revision.c:
 	@echo "Making build_revision.c"
@@ -128,7 +134,7 @@ build_revision.c:
 	@echo "Dependencies $< -> $@"
 	@$(CC) -MM -MG $(CFLAGS) -o $@ $<
 
-fsfuse: $(CONFIGS) objects build_revision.o
+fsfuse: $(CONFIG_SOURCES) objects build_revision.o
 	@echo "Linking $@"
 	@$(CC) -o $@ $(OBJECTS) build_revision.o $(LDFLAGS)
 
@@ -137,7 +143,7 @@ depend: $(DEPENDS)
 objects: $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIGS) build_revision.c build_revision.o gmon.out
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(CONFIG_SOURCES) build_revision.c build_revision.o gmon.out
 
 count:
 	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l

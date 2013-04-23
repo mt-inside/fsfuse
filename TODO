@@ -1,3 +1,4 @@
+constants should have functions like config so that strings can be dup'd
 Listing doens't need any of its getters
 de's should own download threads. NO! open() / close() sessions should own download threads (or downloaders as they're to become). They stuff the downloader in the user handle and read() gets it and adds chunks to the list.
 What does the pool do? Pool is now redundant because fetch() is going to spawn threads.
@@ -23,6 +24,20 @@ DO FIRST to drive API of everything else               fsfuse_methods/*
 - you can stash de's etc away in some functions and get them in others. There's
   a lot of fuse API semantics to take advantage of
 IN PROGRESS               indexnodes/*
+
+Testing strategy:
+- run tests in output-dumping mode to make baselines
+- check baselines in
+- tests then work by comparing output to baseline
+- if they fail, new baselines get dumped, look at difference in baselines, fix
+  test or product, check in new baseline if necessary
+- Same with test input
+  - have stubs that just replay for a given input (e.g. pretending to be an
+    indexnode giving a listing for a URL)
+  - do the thing manually, capture output, bake into stub
+  - when tests fail re-run above and diff canned result
+  - either product needs new behavoiur (and thus new tests) or indexnode is
+    broken
 
 listing, direntry, their lists, cache etc should go into a "nativefs" module
 statfs:

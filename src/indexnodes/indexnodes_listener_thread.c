@@ -25,13 +25,14 @@
 
 #include "indexnodes_listener_thread.h"
 
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "string_buffer.h"
 
 
 static void print_network_interfaces (void);
-static int get_ipv6_socket (void);
-static int get_ipv4_socket (void);
+static int get_ipv6_socket (int port);
+static int get_ipv4_socket (int port);
 static void listener_thread_event_loop (int s4, int s6, int control_fd, new_indexnode_event_t packet_received_cb, void *packet_received_ctxt);
 
 
@@ -54,6 +55,7 @@ static void listener_thread_event_loop (int s4, int s6, int control_fd, new_inde
  */
 void *indexnodes_listen_main(void *args)
 {
+    config_reader_t *config = config_get_reader();
     int s4, s6;
     listener_thread_args_t *info = args;
 
@@ -61,14 +63,16 @@ void *indexnodes_listen_main(void *args)
     print_network_interfaces();
 
     /* Order important */
-    s6 = get_ipv6_socket();
-    s4 = get_ipv4_socket();
+    s6 = get_ipv6_socket(config_indexnode_advert_port(config));
+    s4 = get_ipv4_socket(config_indexnode_advert_port(config));
 
     listener_thread_event_loop(s4, s6, info->control_fd, info->packet_received_cb, info->packet_received_ctxt);
 
 
     if (s4 != -1) close(s4);
     if (s6 != -1) close(s6);
+
+    config_reader_delete(config);
 
     return NULL;
 }
@@ -156,7 +160,7 @@ static int get_socket (struct sockaddr *sa, socklen_t socklen_in, int domain)
     return rc_ok ? s : -1;
 }
 
-static int get_ipv4_socket (void)
+static int get_ipv4_socket (int port)
 {
     int s;
     struct sockaddr_in sa;
@@ -167,7 +171,7 @@ static int get_ipv4_socket (void)
     memset(&sa, 0, socklen);
 
     sa.sin_family      = domain;
-    sa.sin_port        = htons(config_indexnode_advert_port);
+    sa.sin_port        = htons(port);
     sa.sin_addr.s_addr = INADDR_ANY;
 
     s = get_socket((struct sockaddr *)&sa, socklen, domain);
@@ -180,7 +184,7 @@ static int get_ipv4_socket (void)
     return s;
 }
 
-static int get_ipv6_socket (void)
+static int get_ipv6_socket (int port)
 {
     int s;
     struct sockaddr_in6 sa;
@@ -191,7 +195,7 @@ static int get_ipv6_socket (void)
     memset(&sa, 0, socklen);
 
     sa.sin6_family      = domain;
-    sa.sin6_port        = htons(config_indexnode_advert_port);
+    sa.sin6_port        = htons(port);
     sa.sin6_addr        = in6addr_any;
 
     s = get_socket((struct sockaddr *)&sa, socklen, domain);

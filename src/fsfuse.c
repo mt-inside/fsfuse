@@ -29,7 +29,8 @@
 #include <libxml/xmlversion.h>
 
 #include "buildnumber.h"
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "direntry.h"
 #if FEATURE_DIRENTRY_CACHE
 #include "direntry_cache.h"
@@ -66,9 +67,9 @@ static mountpoint_t mountpoint;
 
 
 static int settings_tryget_config_file            (int argc, char *argv[], const char **config_file_path);
-static start_action_t settings_parse_command_line (int argc, char *argv[]);
+static start_action_t settings_parse_command_line (int argc, char *argv[], config_manager_t *config_mgr);
 static int my_fuse_main (void);
-static void fuse_args_set (struct fuse_args *fuse_args);
+static void fuse_args_set (struct fuse_args *fuse_args, config_reader_t *config);
 static void fsfuse_splash (void);
 static void fsfuse_versions (void);
 static void fsfuse_usage (void);
@@ -78,7 +79,8 @@ int main(int argc, char *argv[])
 {
     int rc = EXIT_FAILURE;
     char **myargv = malloc(argc * sizeof(char *));
-    const char *config_file = strdup( "fsfuse.conf" );
+    config_manager_t *config_mgr;
+    const char *config_file = "fsfuse.conf";
     start_action_t sa;
 
 
@@ -95,6 +97,8 @@ int main(int argc, char *argv[])
     }
 
 
+    config_mgr = config_singleton_get( );
+
     /* Perfunctory parse of the command line just to find the name of the config
      * file, if specified. This has to be done first, so we can then load
      * settings from it, /before/ parsing the command line proper, over-writing
@@ -105,7 +109,10 @@ int main(int argc, char *argv[])
 
 
     parser_init();
-    config_init( config_file );
+    /* TODO: config files should be called fsfuserc
+     * TODO: tryadd multiple files from etc, ~
+     */
+    config_manager_add_from_file( config_mgr, strdup( config_file ) );
 
 
     /* Parse cmdline args */
@@ -119,7 +126,7 @@ int main(int argc, char *argv[])
      * as it all gets realloc()d and free()d a lot. Giving it NULL works too.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
-    sa = settings_parse_command_line(argc, argv);
+    sa = settings_parse_command_line(argc, argv, config_mgr);
 
     switch (sa)
     {
@@ -180,7 +187,7 @@ int main(int argc, char *argv[])
     trace_finalise();
 
 pre_init_bail:
-    config_finalise();
+    config_singleton_delete( config_mgr );
     parser_finalise();
     if (mountpoint.real) free(mountpoint.real);
     if (mountpoint.error) free(mountpoint.error);
@@ -196,9 +203,10 @@ static int my_fuse_main (void)
     struct fuse_session *se;
     struct fuse_args fuse_args;
     fsfuse_ctxt_t fsfuse_ctxt;
+    config_reader_t *config = config_get_reader();
 
 
-    fuse_args_set(&fuse_args);
+    fuse_args_set(&fuse_args, config);
 
 
     /* Hand over to fuse */
@@ -209,10 +217,10 @@ static int my_fuse_main (void)
             /* Setup */
             fuse_set_signal_handlers(se);
             fuse_session_add_chan(se, ch);
-            fuse_daemonize(config_proc_fg);
+            fuse_daemonize(config_proc_fg(config));
 
             /* Go! */
-            if (config_proc_singlethread)
+            if (config_proc_singlethread(config))
             {
                 rc = fuse_session_loop(se);
             }
@@ -274,9 +282,10 @@ static int settings_tryget_config_file (int argc, char *argv[], const char **con
     return 0;
 }
 
-static start_action_t settings_parse_command_line (int argc, char *argv[])
+static start_action_t settings_parse_command_line (int argc, char *argv[], config_manager_t *config_mgr)
 {
     start_action_t rc = start_action_MOUNT;
+    int proc_debug = -1, proc_fg = -1, proc_singlethread = -1;
     int c, option_index = 0;
     struct option long_options[] =
     {
@@ -301,27 +310,22 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 
         switch (c)
         {
-            case 'c':
-                /* config file - dealt with in settings_get_config_file() */
+            case 'c': /* config file - dealt with in settings_get_config_file() */
                 break;
 
-            case 'd':
-                /* debug */
-                config_proc_debug = 1;
+            case 'd': /* debug */
+                proc_debug = 1;
                 /* fall through; d => f */
 
-            case 'f':
-                /* foreground */
-                config_proc_fg = 1;
+            case 'f': /* foreground */
+                proc_fg = 1;
                 break;
 
-            case 's':
-                /* single threaded */
-                config_proc_singlethread = 1;
+            case 's': /* single threaded */
+                proc_singlethread = 1;
                 break;
 
-            case 't':
-                /* trace */
+            case 't': /* trace */
 #if DEBUG
 #define TRACE_ARG(aREA)                          \
                 if (!strcmp(optarg, #aREA))      \
@@ -355,14 +359,15 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
                 rc = start_action_USAGE;
                 break;
 
-            case 'o':
-                /* generated by mount - ignore for now */
+            case 'o': /* generated by mount - ignore for now */
                 break;
 
             default:
                 assert(0);
         }
     }
+
+    config_manager_add_from_cmdline( config_mgr, proc_debug, proc_fg, proc_singlethread );
 
     if (argc - optind >= 2)
     {
@@ -394,7 +399,7 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
     return rc;
 }
 
-static void fuse_args_set (struct fuse_args *fuse_args)
+static void fuse_args_set (struct fuse_args *fuse_args, config_reader_t *config)
 {
     string_buffer_t *my_arg = string_buffer_new();
 
@@ -410,7 +415,7 @@ static void fuse_args_set (struct fuse_args *fuse_args)
      * Apparently, default options are "nodev,nosuid". Others need to be added.
      * It looks like fuse adds "user=<foo>".
      */
-    if (config_proc_debug)
+    if (config_proc_debug(config))
     {
         string_buffer_printf(my_arg, "-d");
         fuse_opt_add_arg(fuse_args, string_buffer_peek(my_arg));

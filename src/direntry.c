@@ -22,7 +22,6 @@
 #include "direntry.h"
 #include "listing_internal.h"
 
-#include "config.h"
 #include "fetcher.h"
 #include "fs2_constants.h"
 #include "inode_map.h"

@@ -33,7 +33,8 @@
 
 #include "download_thread.h"
 
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "direntry.h"
 #include "fetcher.h"
 #include "locks.h"
@@ -246,16 +247,17 @@ static chunk_t *chunk_get_next (thread_t *thread)
     int rc = 0;
     struct timeval tv;
     struct timespec ts;
+    config_reader_t *config = config_get_reader();
 
 
     /* wait for a chunk on the list */
     dl_thr_trace("chunk_get_next() waiting %u seconds for new chunk...\n",
-              config_timeout_chunk);
+              config_timeout_chunk(config));
     dl_thr_trace_indent();
 
 
     gettimeofday(&tv, NULL);
-    ts.tv_sec = tv.tv_sec + config_timeout_chunk;
+    ts.tv_sec = tv.tv_sec + config_timeout_chunk(config);
     ts.tv_nsec = (tv.tv_usec + 1) * 1000;
 
     pthread_mutex_lock(&thread->chunk_list_mutex);
@@ -299,6 +301,8 @@ static chunk_t *chunk_get_next (thread_t *thread)
         dl_thr_trace("pthread_cond_timedwait(): error\n");
         assert(0);
     }
+
+    config_reader_delete(config);
 
     dl_thr_trace_dedent();
 

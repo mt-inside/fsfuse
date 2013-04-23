@@ -25,11 +25,12 @@
 #include "indexnode_internal.h"
 #include "proto_indexnode.h"
 
-#include "ref_count.h"
-#include "config.h"
+#include "config_manager.h"
+#include "config_reader.h"
 #include "fetcher.h"
 #include "parser.h"
 #include "peerstats.h"
+#include "ref_count.h"
 #include "string_buffer.h"
 #include "utils.h"
 
@@ -173,7 +174,12 @@ void indexnode_seen( indexnode_t *in )
 
 int indexnode_still_valid( const indexnode_t *in )
 {
-    return ( time( NULL ) - in->last_seen ) < config_indexnode_timeout;
+    config_reader_t *config = config_get_reader( );
+    int ret = ( time( NULL ) - in->last_seen ) < config_indexnode_timeout(config);
+
+    config_reader_delete( config );
+
+    return ret;
 }
 
 int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )

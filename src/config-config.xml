@@ -46,13 +46,13 @@
     <item>
         <symbol>indexnode_hosts</symbol>
         <type>string_collection</type>
-        <default>{ NULL }</default>
+        <default>calloc( 1, sizeof(char*) )</default>
         <xpath>/config/indexnode/host/text()</xpath>
     </item>
     <item>
         <symbol>indexnode_ports</symbol>
         <type>string_collection</type>
-        <default>{ NULL }</default>
+        <default>calloc( 1, sizeof(char*) )</default>
         <xpath>/config/indexnode/port/text()</xpath>
     </item>
     <item>
@@ -124,13 +124,13 @@
     <item>
         <symbol>peers_favourites</symbol>
         <type>string_collection</type>
-        <default>{ NULL }</default>
+        <default>calloc( 1, sizeof(char*) )</default>
         <xpath>/config/peers/favourites/favourite/text()</xpath>
     </item>
     <item>
         <symbol>peers_blocked</symbol>
         <type>string_collection</type>
-        <default>{ NULL }</default>
+        <default>calloc( 1, sizeof(char*) )</default>
         <xpath>/config/peers/blocked/block/text()</xpath>
     </item>
 </items>
