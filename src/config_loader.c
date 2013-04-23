@@ -1,5 +1,12 @@
-
-/* TODO: paring (or at least libxml2 interaction should be in parser.h */
+/*
+ * Copyright (C) 2008-2013 Matthew Turner.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+/* TODO: parsing (or at least libxml2 interaction) should be in parser.h */
 
 #include "common.h"
 
