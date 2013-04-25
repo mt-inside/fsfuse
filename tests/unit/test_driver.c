@@ -26,9 +26,6 @@ int main (int argc, char **argv)
     int num_failed;
 
 
-    NOT_USED(argc);
-    NOT_USED(argv);
-
     utils_init( );
     trace_init( );
 
@@ -39,6 +36,8 @@ int main (int argc, char **argv)
     srunner_add_suite( r, proto_indexnode_tests( ) );
     srunner_add_suite( r, ref_count_tests( ) );
     srunner_add_suite( r, string_buffer_tests( ) );
+
+    if( argc == 2 && !strcmp( argv[1], "-n" ) ) srunner_set_fork_status( r, CK_NOFORK );
 
     srunner_run_all( r, CK_NORMAL );
 
