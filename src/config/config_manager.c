@@ -44,7 +44,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static void data_push( config_manager_t *mgr, config_data_t *data );
 
 
-config_manager_t *config_singleton_get( void )
+static config_manager_t *config_singleton_get( void )
 {
     pthread_mutex_lock( &lock );
 
@@ -85,6 +85,7 @@ static void data_push( config_manager_t *mgr, config_data_t *data )
 
 int config_manager_add_from_file( const char *path )
 {
+    config_manager_t *mgr = config_singleton_get( );
     config_data_t *data;
     int rc = 1;
 
@@ -92,12 +93,13 @@ int config_manager_add_from_file( const char *path )
     if ( config_loader_tryread_from_file( path, &data ) )
     {
         pthread_mutex_lock( &lock );
-        assert( singleton );
-        data_push( singleton, data );
+        data_push( mgr, data );
         pthread_mutex_unlock( &lock );
 
         rc = 0;
     }
+
+
     return rc;
 }
 
@@ -107,6 +109,7 @@ void config_manager_add_from_cmdline(
     int fg_set,           int fg
 )
 {
+    config_manager_t *mgr = config_singleton_get( );
     config_data_t *data = calloc( 1, sizeof(*data) ); /* Set all "present" fields to 0 */
 
 
@@ -118,24 +121,19 @@ void config_manager_add_from_cmdline(
     data->proc_fg = fg;
 
     pthread_mutex_lock( &lock );
-    assert( singleton );
-    data_push( singleton, data );
+    data_push( mgr, data );
     pthread_mutex_unlock( &lock );
 }
 
 
 config_reader_t *config_get_reader( void )
 {
+    config_manager_t *mgr = config_singleton_get( );
     config_reader_t *reader = NULL;
 
 
     pthread_mutex_lock( &lock );
-
-    if( singleton )
-    {
-        reader = config_reader_new( singleton->data_stack, singleton->data_stack_len );
-    }
-
+    reader = config_reader_new( mgr->data_stack, mgr->data_stack_len );
     pthread_mutex_unlock( &lock );
 
 

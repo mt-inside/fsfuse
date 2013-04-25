@@ -13,7 +13,6 @@
 typedef struct _config_manager_t config_manager_t;
 
 
-extern config_manager_t *config_singleton_get( void );
 extern void config_singleton_delete( void );
 
 extern int config_manager_add_from_file( const char *path );

@@ -67,7 +67,7 @@ static mountpoint_t mountpoint;
 
 
 static int settings_tryget_config_file            (int argc, char *argv[], const char **config_file_path);
-static start_action_t settings_parse_command_line (int argc, char *argv[], config_manager_t *config_mgr);
+static start_action_t settings_parse_command_line (int argc, char *argv[]);
 static int my_fuse_main (void);
 static void fuse_args_set (struct fuse_args *fuse_args, config_reader_t *config);
 static void fsfuse_splash (void);
@@ -79,8 +79,7 @@ int main(int argc, char *argv[])
 {
     int rc = EXIT_FAILURE;
     char **myargv = malloc(argc * sizeof(char *));
-    config_manager_t *config_mgr;
-    const char *config_file = "fsfuse.conf";
+    const char *config_file;
     start_action_t sa;
 
 
@@ -97,22 +96,22 @@ int main(int argc, char *argv[])
     }
 
 
-    config_mgr = config_singleton_get( );
+    parser_init();
+    /* These stack; later files over-ride earlier ones. */
+    config_manager_add_from_file( strdup( "/etc/fsfuserc" ) );
+    config_manager_add_from_file( strdup( "~/.fsfuserc" ) );
+    config_manager_add_from_file( strdup( "./fsfuserc" ) );
 
     /* Perfunctory parse of the command line just to find the name of the config
      * file, if specified. This has to be done first, so we can then load
      * settings from it, /before/ parsing the command line proper, over-writing
      * any config settings with higher-priority command line values */
     memcpy(myargv, argv, argc * sizeof(char *));
-    settings_tryget_config_file(argc, myargv, &config_file);
+    if (settings_tryget_config_file(argc, myargv, &config_file))
+    {
+        config_manager_add_from_file( strdup( config_file ) );
+    }
     free(myargv);
-
-
-    parser_init();
-    /* TODO: config files should be called fsfuserc
-     * TODO: tryadd multiple files from etc, ~
-     */
-    config_manager_add_from_file( config_mgr, strdup( config_file ) );
 
 
     /* Parse cmdline args */
@@ -126,7 +125,7 @@ int main(int argc, char *argv[])
      * as it all gets realloc()d and free()d a lot. Giving it NULL works too.
      * In response, we copy argv[0] over to fuse's array (in case it does
      * anything with it) and fill the rest with the args we want it to see */
-    sa = settings_parse_command_line(argc, argv, config_mgr);
+    sa = settings_parse_command_line(argc, argv);
 
     switch (sa)
     {
@@ -187,7 +186,7 @@ int main(int argc, char *argv[])
     trace_finalise();
 
 pre_init_bail:
-    config_singleton_delete( config_mgr );
+    config_singleton_delete( );
     parser_finalise();
     if (mountpoint.real) free(mountpoint.real);
     if (mountpoint.error) free(mountpoint.error);
@@ -282,12 +281,12 @@ static int settings_tryget_config_file (int argc, char *argv[], const char **con
     return 0;
 }
 
-static start_action_t settings_parse_command_line (int argc, char *argv[], config_manager_t *config_mgr)
+static start_action_t settings_parse_command_line (int argc, char *argv[])
 {
     start_action_t rc = start_action_MOUNT;
     int proc_debug,        proc_debug_set = 0,
         proc_fg,           proc_fg_set = 0,
-        proc_singlethread, prog_singlethread_set = 0;
+        proc_singlethread, proc_singlethread_set = 0;
     int c, option_index = 0;
     struct option long_options[] =
     {
@@ -373,7 +372,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[], confi
     }
 
     config_manager_add_from_cmdline(
-        config_mgr,
         proc_debug_set,        proc_debug,
         proc_fg_set,           proc_fg,
         proc_singlethread_set, proc_singlethread

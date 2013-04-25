@@ -37,9 +37,6 @@ START_TEST( config_defaults_are_sane )
 
 
     /* Setup */
-    config_manager_t *mgr = config_singleton_get( );
-    fail_unless( mgr != NULL, "config manager should be non-null" );
-
     config_reader_t *config = config_get_reader( );
     fail_unless( config != NULL, "config reader should be non-null" );
 
@@ -69,9 +66,6 @@ START_TEST( config_can_override_from_cmdline )
 
 
     /* Setup */
-    config_manager_t *mgr = config_singleton_get( );
-    fail_unless( mgr != NULL, "config manager should be non-null" );
-
     config = config_get_reader( );
     fail_unless( config != NULL, "config reader should be non-null" );
 
@@ -111,9 +105,6 @@ START_TEST( config_can_override_from_file )
 
 
     /* Setup */
-    config_manager_t *mgr = config_singleton_get( );
-    fail_unless( mgr != NULL, "config manager should be non-null" );
-
     config = config_get_reader( );
     fail_unless( config != NULL, "config reader should be non-null" );
 
@@ -167,9 +158,6 @@ START_TEST( config_can_override_from_several )
 
 
     /* Setup */
-    config_manager_t *mgr = config_singleton_get( );
-    fail_unless( mgr != NULL, "config manager should be non-null" );
-
     config = config_get_reader( );
     fail_unless( config != NULL, "config reader should be non-null" );
 
