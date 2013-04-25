@@ -61,7 +61,7 @@ config_manager_t *config_singleton_get( void )
     return singleton;
 }
 
-void config_singleton_delete( config_manager_t *singleton )
+void config_singleton_delete( void )
 {
     pthread_mutex_lock( &lock );
 
@@ -83,7 +83,7 @@ static void data_push( config_manager_t *mgr, config_data_t *data )
     mgr->data_stack[ mgr->data_stack_len - 1 ] = data;
 }
 
-int config_manager_add_from_file( config_manager_t *mgr, const char *path )
+int config_manager_add_from_file( const char *path )
 {
     config_data_t *data;
     int rc = 1;
@@ -92,7 +92,8 @@ int config_manager_add_from_file( config_manager_t *mgr, const char *path )
     if ( config_loader_tryread_from_file( path, &data ) )
     {
         pthread_mutex_lock( &lock );
-        data_push( mgr, data );
+        assert( singleton );
+        data_push( singleton, data );
         pthread_mutex_unlock( &lock );
 
         rc = 0;
@@ -101,13 +102,12 @@ int config_manager_add_from_file( config_manager_t *mgr, const char *path )
 }
 
 void config_manager_add_from_cmdline(
-    config_manager_t *mgr,
     int debug_set,        int debug,
     int singlethread_set, int singlethread,
     int fg_set,           int fg
 )
 {
-    config_data_t *data = calloc( 1, sizeof(*data) );
+    config_data_t *data = calloc( 1, sizeof(*data) ); /* Set all "present" fields to 0 */
 
 
     data->proc_debug_present = debug_set;
@@ -118,7 +118,8 @@ void config_manager_add_from_cmdline(
     data->proc_fg = fg;
 
     pthread_mutex_lock( &lock );
-    data_push( mgr, data );
+    assert( singleton );
+    data_push( singleton, data );
     pthread_mutex_unlock( &lock );
 }
 

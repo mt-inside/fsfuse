@@ -10,6 +10,8 @@
  * Common utilities.
  */
 
+#include "common.h"
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,6 +127,9 @@ char *path_combine (const char *a, const char *b)
     assert(a_len + b_len == r_len);
     strcpy(r + a_len, b);
     r[r_len] = '\0';
+
+    free_const(a);
+    free_const(b);
 
 
     return r;

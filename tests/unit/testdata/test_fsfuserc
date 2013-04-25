@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+
+    Example fsfuse config file.
+
+    This file sets all of the possible config values to their defaults, so as to
+    document both. Its use should thus have no effect.
+ -->
+
+<config version="1.0">
+    <alias>test alias</alias>
+    <indexnode>
+        <autodetect>
+            <advert_port>55555</advert_port>
+        </autodetect>
+        <host>test host 1</host>
+        <host>test host 2</host>
+    </indexnode>
+</config>

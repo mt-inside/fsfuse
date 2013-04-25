@@ -33,6 +33,7 @@ int main (int argc, char **argv)
     trace_init( );
 
     SRunner *r = srunner_create( NULL );
+    srunner_add_suite( r, config_tests( ) );
     srunner_add_suite( r, indexnode_tests( ) );
     srunner_add_suite( r, indexnodes_list_tests( ) );
     srunner_add_suite( r, proto_indexnode_tests( ) );
@@ -57,4 +58,10 @@ int main (int argc, char **argv)
     //http_test();
     //uri_test();
     //utils_test();
+}
+
+extern const char *const testdata_path;
+char *test_isolate_file( char *name )
+{
+    return path_combine( strdup( testdata_path ), name );
 }

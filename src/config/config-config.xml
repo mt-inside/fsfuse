@@ -80,10 +80,10 @@
         <xpath>/config/node-attrs/id/gid/text()</xpath>
     </item>
     <item>
-        <symbol>proc_fg</symbol>
+        <symbol>proc_debug</symbol>
         <type>integer</type>
         <default>0</default>
-        <xpath>/config/process/foreground/text()</xpath>
+        <xpath>/config/process/debug/text()</xpath>
     </item>
     <item>
         <symbol>proc_singlethread</symbol>
@@ -92,10 +92,10 @@
         <xpath>/config/process/single-thread/text()</xpath>
     </item>
     <item>
-        <symbol>proc_debug</symbol>
+        <symbol>proc_fg</symbol>
         <type>integer</type>
         <default>0</default>
-        <xpath>/config/process/debug/text()</xpath>
+        <xpath>/config/process/foreground/text()</xpath>
     </item>
     <item>
         <symbol>tuning_direntry_cache_max_load</symbol>

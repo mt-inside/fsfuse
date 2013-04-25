@@ -19,8 +19,10 @@ MAIN_OBJECT ?= fsfuse.o
 
 # == Basics ==
 
-default: fsfuse
-.PHONY: default depend objects clean count build_revision.c
+.DEFAULT_GOAL := fsfuse
+#doesn't seem to do anything
+.DEFAULT: fsfuse
+.PHONY: depend objects clean count build_revision.c
 
 OS:=$(shell uname -s)
 
@@ -130,7 +132,7 @@ depend: $(DEPENDS)
 objects: $(OBJECTS)
 
 clean:
-	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(AUTO_SOURCES) build_revision.c build_revision.o gmon.out
+	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(AUTO_SOURCES) build_revision.c build_revision.o testdata_path.c testdata_path.o gmon.out
 
 count:
 	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l

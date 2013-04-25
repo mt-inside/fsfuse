@@ -91,7 +91,7 @@ static char *xpath_get (const char *xpath, xmlXPathContextPtr xpathCtxt)
 
 int config_loader_tryread_from_file (const char *config_file_path, config_data_t **data_out)
 {
-    config_data_t *data = malloc(sizeof(*data));
+    config_data_t *data = calloc(1, sizeof(*data)); /* sets all "present" fields to 0 */
     config_xml_info_item_t *item;
     char *val, **val_array;
     xmlDocPtr doc;
@@ -107,7 +107,7 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
         rc = 1;
         xpathCtxt = xmlXPathNewContext(doc);
 
-        for (item = config_xml_info; item->offset; item++)
+        for (item = config_xml_info; item->xpath; item++)
         {
             switch (item->type)
             {
@@ -116,8 +116,8 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
 
                     if (val)
                     {
-                        *((char **)(data + item->offset)) = strdup(val);
-                        *((int *)(data + item->offset + sizeof(char *))) = 1;
+                        *((char **)((char *)data + item->offset)) = strdup(val);
+                        *((int *)((char *)data + item->offset + sizeof(char *))) = 1;
                     }
 
                     break;
@@ -127,8 +127,8 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
 
                     if (val)
                     {
-                        *((int *)(data + item->offset)) = strtoul(val, NULL, 0);
-                        *((int *)(data + item->offset + sizeof(int))) = 1;
+                        *((int *)((char *)data + item->offset)) = strtoul(val, NULL, 0);
+                        *((int *)((char *)data + item->offset + sizeof(int))) = 1;
                     }
 
                     break;
@@ -138,8 +138,8 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
 
                     if (val)
                     {
-                        *((double *)(data + item->offset)) = strtod(val, NULL);
-                        *((int *)(data + item->offset + sizeof(double))) = 1;
+                        *((double *)((char *)data + item->offset)) = strtod(val, NULL);
+                        *((int *)((char *)data + item->offset + sizeof(double))) = 1;
                     }
 
                     break;
@@ -149,8 +149,8 @@ int config_loader_tryread_from_file (const char *config_file_path, config_data_t
 
                     if (val_array)
                     {
-                        *((char ***)(data + item->offset)) = val_array;
-                        *((int *)(data + item->offset + sizeof(char **))) = 1;
+                        *((char ***)((char *)data + item->offset)) = val_array;
+                        *((int *)((char *)data + item->offset + sizeof(char **))) = 1;
                     }
 
                     break;

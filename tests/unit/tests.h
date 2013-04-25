@@ -7,11 +7,14 @@
 #include <check.h>
 
 
+extern Suite *config_tests( void );
 extern Suite *indexnode_tests( void );
 extern Suite *indexnodes_list_tests( void );
 extern Suite *proto_indexnode_tests( void );
 extern Suite *ref_count_tests( void );
 extern Suite *string_buffer_tests( void );
+
+extern char *test_isolate_file( char *name );
 
 //extern void http_test( void );
 //extern void uri_test( void );
