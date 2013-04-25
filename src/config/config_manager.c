@@ -8,13 +8,6 @@
  *
  *
  * XML file based configuration component with a simple API.
- * TODO: this isn't _reader, nor is it _data (singleton), but it is "loader" or
- * something. Knowledge of /what/ to load, e.g. paths and their order, should be
- * in fsfuse.c
- * Put config stuff in its own dir
- * respond to SIGHUP
- * - need to know which were loaded at runtime and from where so they can be a)
- *   re-loaded and b) freed
  *
  * TODO: dis should be an actor
  */
@@ -63,11 +56,30 @@ static config_manager_t *config_singleton_get( void )
 
 void config_singleton_delete( void )
 {
+    config_xml_info_item_t *item;
+    int i;
+
+
     pthread_mutex_lock( &lock );
 
+    /* Nasty temporal coupling. should be a get()/new() function */
     assert( singleton );
 
-    /* TODO: go through all the (run time) data_ts and free dem */
+    /* TODO: auto-generate me, at least the inner loop (in reader_functions.c)
+     * */
+    for (item = config_xml_info; item->xpath; item++)
+    {
+        if (item->type == config_item_type_STRING)
+        {
+            for( i = singleton->data_stack_len - 1; i >= 0; i-- )
+            {
+                if (*((int *)((char *)singleton->data_stack[i] + item->offset + sizeof(char *))) == 1)
+                {
+                    free(*((char **)((char *)singleton->data_stack[i] + item->offset)));
+                }
+            }
+        }
+    }
 
     free( singleton );
     singleton = NULL;
