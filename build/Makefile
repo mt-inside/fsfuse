@@ -102,10 +102,10 @@ endif
 # == Build Rules ==
 
 build_revision.c:
-	@echo "Making build_revision.c"
-	$(shell /bin/echo -n 'const char * const build_revision = "'  > build_revision.c)
-	$(shell /bin/echo -n `git show --pretty=format:'%h' HEAD | head -n1` >> build_revision.c)
-	$(shell /bin/echo    '";'                             >> build_revision.c)
+	@echo "Making $@"
+	$(shell /bin/echo -n 'const char * const build_revision = "'          > $@)
+	$(shell /bin/echo -n `git show --pretty=format:'%h' HEAD | head -n1` >> $@)
+	$(shell /bin/echo    '";'                                            >> $@)
 
 %.i: %.c
 	@echo "Preprocessing $< -> $@"
