@@ -14,13 +14,10 @@ vpath %.xsl $(SRC_HERE)
 # fsfuse.o isn't listed because it isn't always wanted.
 SRC_OBJECTS :=                         \
                alarm_simple.o          \
-               direntry.o              \
                download_thread.o       \
                download_thread_pool.o  \
                fetcher.o               \
                fs2_constants.o         \
-               inode_map.o             \
-               listing.o               \
                localei.o               \
                locks.o                 \
                parser.o                \
