@@ -4,8 +4,8 @@ de's should own download threads. NO! open() / close() sessions should own downl
 What does the pool do? Pool is now redundant because fetch() is going to spawn threads.
 
 TODO:
-               config.o                \
-               config_define.o         \
+DONE               config.o                \
+DONE               config_define.o         \
                direntry.o              \
                download_thread.o       \
                download_thread_pool.o  \
@@ -23,7 +23,6 @@ DONE               string_buffer.o         \
 DO FIRST to drive API of everything else               fsfuse_methods/*
 - you can stash de's etc away in some functions and get them in others. There's
   a lot of fuse API semantics to take advantage of
-IN PROGRESS               indexnodes/*
 
 Testing strategy:
 - run tests in output-dumping mode to make baselines
