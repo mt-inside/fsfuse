@@ -9,9 +9,6 @@
 
 #include "common.h"
 
-#include "indexnodes.h"
-#include "listing.h"
-
 
 TRACE_DECLARE(fetcher)
 #define fetcher_trace(...) TRACE(fetcher,__VA_ARGS__)
