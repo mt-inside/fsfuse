@@ -59,6 +59,14 @@ static void chunk_done (void *read_ctxt, int rc, size_t size);
  * because userspace could have made that request for whatever reason (e.g. to
  * measure latency) and they have morally "interacted" with the file, so we
  * should see if it still exists and return error if it doesn't.
+ *
+ * TODO: this can just get de from the fi, as open() will have filled it in. No
+ * need to check that's it's a file or permissions or anything, but it (or its
+ * whole indexnode) might not exist any more.
+ * Open files should own download threads (should be spun up* in open()) that
+ * get stashed in fi. fi->thread then gets told (not asked) to get a chunk. The
+ * continuation is still chunk_done(), which can either return enoent, or a
+ * buffer
  */
 void fsfuse_read (fuse_req_t req,
                   fuse_ino_t ino,
@@ -66,52 +74,37 @@ void fsfuse_read (fuse_req_t req,
                   off_t off,
                   struct fuse_file_info *fi)
 {
-    int rc; /* +ve: number of bytes read
-               -ve: -ERRNO */
-    direntry_t *de;
+    direntry_t *de = (direntry_t *)fi->fh;
+    read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
+    void *buf;
 
-
-    NOT_USED(fi);
 
     method_trace("fsfuse_read(ino %lu, size %zd, off %ju)\n", ino, size, off);
     method_trace_indent();
 
 
-    rc = direntry_get_by_inode(ino, &de);
-
-    if (!rc)
+    /* Userspace, and therefore fuse, can ask for any range of bytes,
+     * regardless of the file length. E.g. ext2 just gets over it. If:
+     *   start > length: return 0 bytes
+     *   end   > length: return length - start bytes.
+     */
+    if (off >= direntry_get_size(de))
     {
-        read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
-        void *buf;
-
-
-        /* Userspace, and therefore fuse, can ask for any range of bytes,
-         * regardless of the file length. E.g. ext2 just gets over it. If:
-         *   start > length: return 0 bytes
-         *   end   > length: return length - start bytes.
-         */
-        if (off >= direntry_get_size(de))
-        {
-            size = 0;
-        }
-        else if ((unsigned)(off + size) >= direntry_get_size(de))
-        {
-            size = direntry_get_size(de) - off;
-        }
-
-        buf = malloc(size);
-
-        read_ctxt->req  = req;
-        read_ctxt->de   = de;
-        read_ctxt->size = size;
-        read_ctxt->buf  = buf;
-
-        download_thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
+        size = 0;
     }
-    else
+    else if ((unsigned)(off + size) >= direntry_get_size(de))
     {
-        fuse_reply_err(req, rc);
+        size = direntry_get_size(de) - off;
     }
+
+    buf = malloc(size);
+
+    read_ctxt->req  = req;
+    read_ctxt->de   = de;
+    read_ctxt->size = size;
+    read_ctxt->buf  = buf;
+
+    download_thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
 
     method_trace_dedent();
 }

@@ -26,27 +26,19 @@
  */
 void fsfuse_releasedir (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-    int rc;
-    direntry_t *de;
+    direntry_t *de = (direntry_t *)fi->fh;
 
-
-    NOT_USED(fi);
 
     method_trace("fsfuse_releasedir(ino %lu)\n", ino);
     method_trace_indent();
 
-    rc = direntry_get_by_inode(ino, &de);
-
-    if (!rc)
-    {
-        /* Delete our copy, and the one taken by opendir() */
-        direntry_delete(CALLER_INFO de);
-        direntry_delete(CALLER_INFO de);
-    }
+    /* Delete our copy, and the one taken by opendir() */
+    direntry_delete(CALLER_INFO de);
+    direntry_delete(CALLER_INFO de);
 
     method_trace_dedent();
 
 
     /* Any error codes passed in here are not passed on to userspace. */
-    assert(!fuse_reply_err(req, rc));
+    assert(!fuse_reply_err(req, 0));
 }

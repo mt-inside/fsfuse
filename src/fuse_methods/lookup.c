@@ -19,6 +19,10 @@
 #include "trace.h"
 
 
+/* TODO: is it a requirement for lookup to fill in the struct stat in
+ * fuse_entry? This seems to duplicate the work in access(), open(), getattr()
+ * etc. It would be neater if lookup were just for generating inode numbers.
+ */
 void fsfuse_lookup (fuse_req_t req,
                     fuse_ino_t parent,
                     const char *name)

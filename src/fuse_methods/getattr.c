@@ -23,29 +23,16 @@
 void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
     int rc;
-    direntry_t *de;
+    direntry_t *de = (direntry_t *)fi->fh;
     struct stat stats;
 
-
-    NOT_USED(fi);
 
     method_trace("fsfuse_getattr(ino %ld)\n", ino);
     method_trace_indent();
 
-    rc = direntry_get_by_inode(ino, &de);
-
-    if (!rc)
-    {
-        assert(de);
-
-        memset(&stats, 0, sizeof(stats));
-        direntry_de2stat(de, &stats);
-        direntry_delete(CALLER_INFO de);
-    }
-    else
-    {
-        assert(!de);
-    }
+    memset(&stats, 0, sizeof(stats));
+    direntry_de2stat(de, &stats);
+    direntry_delete(CALLER_INFO de);
 
     method_trace_dedent();
 

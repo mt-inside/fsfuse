@@ -61,75 +61,58 @@ static void dirbuf_add (
  */
 void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
-    int rc = 0;
-    direntry_t *de, *parent, *child, *old_child;
+    direntry_t *de = (direntry_t *)fi->fh,
+               *parent, *child, *old_child;
     char *buf = NULL; size_t bufsize = 0;
 
 
     NOT_USED(size);
     NOT_USED(off);
-    NOT_USED(fi);
 
     method_trace("fsfuse_readir(ino %lu, size %zu, offset %lu)\n", ino, size, off);
     method_trace_indent();
 
 
-    rc = direntry_get_by_inode(ino, &de);
-    if (!rc)
+    dirbuf_add(req, &buf, &bufsize, de, ".");
+
+    /* TODO: we always used to use NULL struct stat for "." and ".." and got
+     * away with it fine. We could consider carrying on doing that here, as
+     * fetching them could be a pita. Nativefs should just hide this though -
+     * you ask it for the parenty of a de and it either fetches it or hands it
+     * to you from the cache. */
+    parent = direntry_get_parent(de);
+
+    if (parent)
     {
-        if (direntry_get_type(de) != listing_type_DIRECTORY) rc = ENOTDIR;
+        dirbuf_add(req, &buf, &bufsize, parent, "..");
+        direntry_delete(CALLER_INFO parent);
+    }
+    else
+    {
+        dirbuf_add(req, &buf, &bufsize, de, "..");
+    }
 
-        if (!rc)
-        {
-            dirbuf_add(req, &buf, &bufsize, de, ".");
+    direntry_ensure_children(de);
+    child = direntry_get_first_child(de);
+    while (child)
+    {
+        dirbuf_add(req, &buf, &bufsize, child, NULL);
 
-            /* NB: we always used to use NULL struct stat for "." and ".." and got
-             * away with it fine. We could consider carrying on doing that here, as
-             * fetching them could be a pita */
-            parent = direntry_get_parent(de);
-
-            if (parent)
-            {
-                dirbuf_add(req, &buf, &bufsize, parent, "..");
-                direntry_delete(CALLER_INFO parent);
-            }
-            else
-            {
-                dirbuf_add(req, &buf, &bufsize, de, "..");
-            }
-
-            direntry_ensure_children(de);
-            child = direntry_get_first_child(de);
-            while (child)
-            {
-                dirbuf_add(req, &buf, &bufsize, child, NULL);
-
-                old_child = child;
-                child = direntry_get_next_sibling(child);
-                direntry_delete(CALLER_INFO old_child);
-            }
-        }
-
-        direntry_delete(CALLER_INFO de);
+        old_child = child;
+        child = direntry_get_next_sibling(child);
+        direntry_delete(CALLER_INFO old_child);
     }
 
     method_trace_dedent();
 
 
-    if (!rc)
+    if ((unsigned)off < bufsize)
     {
-        if ((unsigned)off < bufsize)
-        {
-            assert(!fuse_reply_buf(req, buf + off, MIN(bufsize - off, size)));
-        }
-        else
-        {
-            assert(!fuse_reply_buf(req, NULL, 0));
-        }
+        assert(!fuse_reply_buf(req, buf + off, MIN(bufsize - off, size)));
     }
     else
     {
-        assert(!fuse_reply_err(req, rc));
+        assert(!fuse_reply_buf(req, NULL, 0));
     }
 
     free(buf);
