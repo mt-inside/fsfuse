@@ -21,6 +21,10 @@
 
 /* TODO: I don't think lookup should get direntires. What's it acutally for? I
  * think in lookup we should just be generating inode numbers. */
+/* TODO: lookup count goes up for every fuse_reply_entry - this is only called
+ * by lookup(). */
+/* NB: Not guaranteed to get forget() for inodes still around at unmount.
+ * TODO: finalise() should kill any remaining inodes / listings/ direntries */
 void fsfuse_forget (fuse_req_t req,
                     fuse_ino_t ino,
                     unsigned long nlookup)

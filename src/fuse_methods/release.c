@@ -22,6 +22,14 @@
 /* Called exactly once per open fd - when the last instance of that fd is
  * close()ed / munmap()ped. Thus there will be one release() per open().
  */
+/* TODO: what implications does this have for lifetimes of stuff? Does anything
+ * need _delete()ing?
+ * TODO: When we move to direntries (thus return the same inode/object every
+ * time), they should probably have an open() count, at least for
+ * interest/assertions
+ * - need to make the decision whether de's own download threads (in which case
+ *   the open() count will ref-count them) or whether open()s own download
+ *   threads. */
 void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
     direntry_t *de = (direntry_t *)fi->fh;

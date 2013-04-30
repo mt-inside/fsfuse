@@ -20,6 +20,8 @@
 
 /* Called once per close() of a file descriptor. There may be more than one
  * close() per fd open()ed, as fds are duplicated by dup(), fork(), etc */
+/* TODO: what implications does this have for lifetimes of stuff? Does anything
+ * need _delete()ing? */
 void fsfuse_flush (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
     NOT_USED(ino);
