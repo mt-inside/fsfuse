@@ -23,6 +23,7 @@
 #include "parser.h"
 
 #include "fs2_constants.h"
+#include "listing_list.h"
 #include "string_buffer.h"
 
 

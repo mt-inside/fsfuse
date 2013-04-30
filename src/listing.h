@@ -1,8 +1,9 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner. Distributed under the GPL v3.
+ * Copyright (C) 2008-2013 Matthew Turner. Distributed under the GPL v3.
  *
- * API for dealing with "listings", which are descriptions of all the nodes in a
- * directory.
+ * Listing class.
+ * A listing describes an entry in a directory. It describes only the attributes
+ * of that node and knows nothing of its position in the tree.
  */
 
 #ifndef _INCLUDED_LISTING_H
@@ -23,7 +24,6 @@ TRACE_DECLARE(listing)
 
 
 typedef struct _listing_t listing_t;
-typedef struct _listing_list_t listing_list_t;
 
 
 typedef enum
@@ -62,16 +62,5 @@ extern void            listing_li2stat           (listing_t *li,
                                                   struct stat *st);
 
 extern int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_best );
-
-
-extern listing_list_t *listing_list_new (unsigned count);
-extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
-extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
-
-/* Yeah, why does this look like a list, not an enumerable? I.e. why does it
- * have indexes. Probably want to dedup with indexnode_list or something */
-extern unsigned listing_list_get_count (listing_list_t *lis);
-extern void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li);
-extern listing_t *listing_list_get_item (listing_list_t *lis, unsigned item);
 
 #endif /* _INCLUDED_LISTING_H */

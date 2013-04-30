@@ -18,8 +18,9 @@
 
 #include "config_manager.h"
 #include "config_reader.h"
-#include "peerstats.h"
 #include "direntry.h"
+#include "listing_list.h"
+#include "peerstats.h"
 
 
 TRACE_DEFINE(peerstats)
