@@ -11,7 +11,6 @@ SRC_ROOT := $(ROOT)/src
 CC := gcc
 #CC := clang
 
-DIRENTRY_CACHE ?= 0
 DEBUG ?= 1
 
 MAIN_OBJECT ?= fsfuse.o
@@ -70,11 +69,6 @@ endif
 # == Optional Features ==
 
 OBJECTS += $(MAIN_OBJECT)
-
-ifeq ($(DIRENTRY_CACHE),1)
-    OBJECTS += direntry_cache.o
-    FEATURES += -DFEATURE_DIRENTRY_CACHE=1
-endif
 
 
 # == Sources ==

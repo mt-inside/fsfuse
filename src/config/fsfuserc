@@ -39,14 +39,6 @@
         <single-thread>0</single-thread>
         <foreground>0</foreground>
     </process>
-    <tuning>
-        <direntry_cache>
-            <load>
-                <max>1.0</max>
-                <min>0.25</min>
-            </load>
-        </direntry_cache>
-    </tuning>
     <options>
         <cache>1</cache>
         <cache_negative>1</cache_negative>

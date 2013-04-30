@@ -32,9 +32,6 @@
 #include "config_manager.h"
 #include "config_reader.h"
 #include "direntry.h"
-#if FEATURE_DIRENTRY_CACHE
-#include "direntry_cache.h"
-#endif
 #include "download_thread_pool.h"
 #include "fetcher.h"
 #include "indexnodes.h"
@@ -159,9 +156,6 @@ int main(int argc, char *argv[])
         locale_init()               ||
         fetcher_init()              ||
         direntry_init()             ||
-#if FEATURE_DIRENTRY_CACHE
-        direntry_cache_init()       ||
-#endif
         download_thread_pool_init()    )
     {
         trace_error("initialisation failed\n");
@@ -174,9 +168,6 @@ int main(int argc, char *argv[])
 
     /* finalisations */
     download_thread_pool_finalise();
-#if FEATURE_DIRENTRY_CACHE
-    direntry_cache_finalise();
-#endif
     direntry_finalise();
     fetcher_finalise();
     locale_finalise();
@@ -339,9 +330,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 #endif
 
                 TRACE_ARG(direntry)
-#if FEATURE_DIRENTRY_CACHE
-                TRACE_ARG(direntry_cache)
-#endif
                 TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)

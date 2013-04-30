@@ -98,18 +98,6 @@
         <xpath>/config/process/foreground/text()</xpath>
     </item>
     <item>
-        <symbol>tuning_direntry_cache_max_load</symbol>
-        <type>float</type>
-        <default>1.0</default>
-        <xpath>/config/tuning/direntry_cache/load/max/text()</xpath>
-    </item>
-    <item>
-        <symbol>tuning_direntry_cache_min_load</symbol>
-        <type>float</type>
-        <default>0.25</default>
-        <xpath>/config/tuning/direntry_cache/load/min/text()</xpath>
-    </item>
-    <item>
         <symbol>option_cache</symbol>
         <type>integer</type>
         <default>1</default>
