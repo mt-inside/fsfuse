@@ -18,10 +18,6 @@ TRACE_DECLARE(peerstats)
 #define peerstats_trace_dedent() TRACE_DEDENT(peerstats)
 
 
-extern int peerstats_init (void);
-extern void peerstats_finalise (void);
-
 extern listing_t *peerstats_chose_alternative (listing_list_t *lis);
-
 
 #endif /* _INCLUDED_PEERSTATS_H */

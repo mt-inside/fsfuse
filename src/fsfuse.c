@@ -162,7 +162,6 @@ int main(int argc, char *argv[])
 #if FEATURE_DIRENTRY_CACHE
         direntry_cache_init()       ||
 #endif
-        peerstats_init()            ||
         download_thread_pool_init()    )
     {
         trace_error("initialisation failed\n");
@@ -175,7 +174,6 @@ int main(int argc, char *argv[])
 
     /* finalisations */
     download_thread_pool_finalise();
-    peerstats_finalise();
 #if FEATURE_DIRENTRY_CACHE
     direntry_cache_finalise();
 #endif

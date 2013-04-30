@@ -36,19 +36,6 @@ static void split_list (
 );
 
 
-int peerstats_init (void)
-{
-    /* do nothing */
-
-    return 0;
-}
-
-void peerstats_finalise (void)
-{
-    /* do nothing */
-}
-
-
 listing_t *peerstats_chose_alternative (listing_list_t *alts)
 {
     config_reader_t *config = config_get_reader();
