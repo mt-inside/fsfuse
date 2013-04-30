@@ -8,6 +8,7 @@
 #define _INCLUDED_PEERSTATS_H
 
 #include "listing.h"
+#include "listing_list.h"
 #include "trace.h"
 
 

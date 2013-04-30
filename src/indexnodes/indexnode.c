@@ -28,8 +28,8 @@
 #include "config_manager.h"
 #include "config_reader.h"
 #include "fetcher.h"
+#include "listing_list.h"
 #include "parser.h"
-#include "peerstats.h"
 #include "ref_count.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -182,7 +182,7 @@ int indexnode_still_valid( const indexnode_t *in )
     return ret;
 }
 
-int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis )
+int indexnode_tryget_listing( indexnode_t *in, const char *path, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt )
 {
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "browse" ), path );
     fetcher_t *fetcher = fetcher_new( url );
@@ -199,7 +199,7 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t 
 
     if (!rc)
     {
-        rc = parser_tryget_listing( parser, in, lis );
+        rc = parser_tryget_listing( parser, entry_cb, entry_ctxt );
     }
 
     parser_delete( parser );
@@ -209,9 +209,8 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t 
     return rc;
 }
 
-int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best )
+int indexnode_tryget_alternatives( indexnode_t *in, char *hash, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt )
 {
-    listing_list_t *lis;
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "alternatives" ), hash );
     fetcher_t *fetcher = fetcher_new( url );
     parser_t *parser = parser_new( );
@@ -227,12 +226,7 @@ int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **
 
     if (!rc)
     {
-        rc = parser_tryget_listing( parser, in, &lis );
-        if (!rc)
-        {
-            *li_best = peerstats_chose_alternative( lis );
-            listing_list_delete( CALLER_INFO lis );
-        }
+        rc = parser_tryget_listing( parser, entry_cb, entry_ctxt );
     }
 
     parser_delete(parser);

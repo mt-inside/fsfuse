@@ -18,12 +18,15 @@
 
 #include "listing.h"
 #include "listing_internal.h"
+/* TODO: this type shouldn't know about lists of itself */
+#include "listing_list.h"
 
 #include "config_manager.h"
 #include "config_reader.h"
 #include "fs2_constants.h"
 #include "indexnode.h"
 #include "parser.h"
+#include "peerstats.h"
 #include "ref_count.h"
 #include "utils.h"
 
@@ -216,11 +219,54 @@ void listing_li2stat (listing_t *li, struct stat *st)
     }
 }
 
+typedef struct
+{
+    indexnode_t *in;
+    listing_list_t *lis;
+    unsigned i;
+} entry_found_ctxt_t;
+
+static void entry_found(
+    void *ctxt_void,
+    const char *hash,
+    const char *name,
+    const char *type,
+    off_t size,
+    unsigned long link_count,
+    const char *href,
+    const char *client
+)
+{
+    entry_found_ctxt_t *ctxt = (entry_found_ctxt_t *)ctxt_void;
+    listing_t *li;
+
+
+    li = listing_new( CALLER_INFO indexnode_post( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
+    listing_list_resize( ctxt->lis, ctxt->i + 1 ); //FIXME!
+    listing_list_set_item( ctxt->lis, ctxt->i++, li );
+}
+
 int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_best )
 {
-    return indexnode_tryget_best_alternative(
+    entry_found_ctxt_t *ctxt = malloc( sizeof(*ctxt) );
+    int rc;
+
+
+    ctxt->in = indexnode_post( CALLER_INFO li_reference->in );
+    ctxt->lis = listing_list_new( 0 );
+    ctxt->i = 0;
+
+    rc = indexnode_tryget_alternatives(
         indexnode_post( CALLER_INFO li_reference->in ),
         listing_get_hash( li_reference ),
-        li_best
+        entry_found,
+        ctxt
     );
+
+
+    *li_best = peerstats_chose_alternative( ctxt->lis );
+    listing_list_delete( CALLER_INFO ctxt->lis );
+
+
+    return rc;
 }

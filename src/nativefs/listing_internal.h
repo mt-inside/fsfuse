@@ -31,6 +31,17 @@ struct _listing_t
 };
 
 
+extern listing_t *listing_new (
+    CALLER_DECL
+    indexnode_t *in,
+    const char *hash,
+    const char *name,
+    const char *type,
+    off_t size,
+    unsigned long link_count,
+    const char *href,
+    const char *client
+);
 void listing_teardown (listing_t *li);
 
 #endif /* _INCLUDED_LISTING_INTERNAL_H */

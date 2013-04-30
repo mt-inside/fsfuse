@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-#include "listing.h"
+#include "nativefs.h"
 
 
 TRACE_DECLARE(parser)
@@ -31,8 +31,8 @@ extern int parser_consumer (void *ctxt, void *data, size_t len);
 
 extern int parser_tryget_listing(
     parser_t *parser,
-    indexnode_t *in,
-    listing_list_t **lis
+    nativefs_entry_found_cb_t entry_cb,
+    void *entry_ctxt
 );
 extern int parser_tryget_stats(
     parser_t *parser,

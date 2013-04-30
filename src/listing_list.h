@@ -10,13 +10,13 @@
 
 #include "common.h"
 
+#include "listing.h"
 
 
 typedef struct _listing_list_t listing_list_t;
 
-#include "listing.h"
-
 extern listing_list_t *listing_list_new (unsigned count);
+
 extern listing_list_t *listing_list_resize (listing_list_t *lis, unsigned new_count);
 extern void listing_list_delete (CALLER_DECL listing_list_t *lis);
 

@@ -25,7 +25,6 @@ TRACE_DECLARE(listing)
 
 typedef struct _listing_t listing_t;
 
-
 typedef enum
 {
     listing_type_FILE,
@@ -33,19 +32,6 @@ typedef enum
 } listing_type_t;
 
 
-#include "indexnode.h"
-
-extern listing_t *listing_new (
-    CALLER_DECL
-    indexnode_t *in,
-    const char *hash,
-    const char *name,
-    const char *type,
-    off_t size,
-    unsigned long link_count,
-    const char *href,
-    const char *client
-);
 extern listing_t *listing_post (CALLER_DECL listing_t *li);
 extern void listing_delete (CALLER_DECL listing_t *li);
 

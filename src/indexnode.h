@@ -7,6 +7,7 @@
 #ifndef _INCLUDED_INDEXNODE_H
 #define _INCLUDED_INDEXNODE_H
 
+#include "nativefs.h"
 #include "trace.h"
 
 TRACE_DECLARE(indexnode)
@@ -33,10 +34,8 @@ extern int indexnode_equals( indexnode_t *in, const char *id );
 
 extern char *indexnode_tostring( indexnode_t *in );
 
-#include "listing_list.h"
-extern int indexnode_tryget_listing( indexnode_t *in, const char *path, listing_list_t **lis );
-#include "listing.h"
-extern int indexnode_tryget_best_alternative( indexnode_t *in, char *hash, listing_t **li_best );
+extern int indexnode_tryget_listing( indexnode_t *in, const char *path, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt );
+extern int indexnode_tryget_alternatives( indexnode_t *in, char *hash, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt );
 extern int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes );
 
 #endif /* _INCLUDED_INDEXNODE_H */

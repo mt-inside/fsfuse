@@ -21,6 +21,7 @@
 
 #include "direntry.h"
 #include "listing_internal.h"
+#include "listing_list.h"
 
 #include "fetcher.h"
 #include "fs2_constants.h"
@@ -101,14 +102,42 @@ static char *direntry_get_path (direntry_t *de)
     return string_buffer_commit(path);
 }
 
+
+typedef struct
+{
+    indexnode_t *in;
+    listing_list_t *lis;
+    unsigned i;
+} entry_found_ctxt_t;
+
+static void entry_found(
+    void *ctxt_void,
+    const char *hash,
+    const char *name,
+    const char *type,
+    off_t size,
+    unsigned long link_count,
+    const char *href,
+    const char *client
+)
+{
+    entry_found_ctxt_t *ctxt = (entry_found_ctxt_t *)ctxt_void;
+    listing_t *li;
+
+
+    li = listing_new( CALLER_INFO indexnode_post( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
+    listing_list_resize( ctxt->lis, ctxt->i + 1 ); //FIXME!
+    listing_list_set_item( ctxt->lis, ctxt->i++, li );
+}
+
 int direntry_ensure_children (
     direntry_t *de
 )
 {
     int rc = EIO;
     const char *path;
-    listing_list_t *lis = NULL;
     direntry_t *dirents = NULL;
+    entry_found_ctxt_t *ctxt;
 
 
     if (!de->looked_for_children)
@@ -116,13 +145,18 @@ int direntry_ensure_children (
         path = direntry_get_path(de);
         direntry_trace("direntry_get_children(%s)\n", path);
 
+        ctxt = malloc( sizeof(*ctxt) );
+        ctxt->in = BASE_CLASS(de)->in;
+        ctxt->lis = listing_list_new( 0 );
+        ctxt->i = 0;
+
         /* skip the leading '/' from the path that fuse gives us */
-        if (indexnode_tryget_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), path + 1, &lis))
+        if (indexnode_tryget_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), path + 1, &entry_found, ctxt))
         {
-            dirents = direntries_from_listing_list (lis, de);
+            dirents = direntries_from_listing_list (ctxt->lis, de);
             rc = 0;
 
-            listing_list_delete(CALLER_INFO lis);
+            listing_list_delete(CALLER_INFO ctxt->lis);
         }
 
         de->children = dirents;

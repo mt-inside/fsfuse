@@ -23,7 +23,6 @@
 #include "parser.h"
 
 #include "fs2_constants.h"
-#include "listing_list.h"
 #include "string_buffer.h"
 
 
@@ -134,15 +133,14 @@ static xmlXPathObjectPtr parser_xhtml_xpath (xmlDocPtr doc, const char *xpath)
     return xpathObj;
 }
 
-static listing_t *filelist_entry_parse (
-    indexnode_t *in,
-    xmlElementPtr node
+static void filelist_entry_parse (
+    xmlElementPtr node,
+    nativefs_entry_found_cb_t entry_cb,
+    void *entry_ctxt
 )
 {
     xmlAttributePtr curAttr = NULL;
-    listing_t *li = NULL;
-    const char *key, *value,
-               *name, *hash, *type, *href, *client;
+    const char *key, *value, *name, *hash, *type, *href, *client;
     off_t size; unsigned long link_count;
 
 
@@ -151,86 +149,79 @@ static listing_t *filelist_entry_parse (
     parser_trace("filelist_entry_parse(element content==%s)\n", node->children->content);
     parser_trace_indent();
 
-    if (node->type != XML_ELEMENT_NODE ||
-        strcmp((char *)node->name, "a"))
+    if (node->type == XML_ELEMENT_NODE &&
+        !strcmp((char *)node->name, "a"))
     {
-        return NULL;
-    }
-
-    /* Enumerate the element's attributes */
-    curAttr = (xmlAttributePtr)node->attributes;
-    while (curAttr)
-    {
-        if (curAttr->type == XML_ATTRIBUTE_NODE &&
-            curAttr->children &&
-            curAttr->children->type == XML_TEXT_NODE &&
-            !curAttr->children->next)
+        /* Enumerate the element's attributes */
+        curAttr = (xmlAttributePtr)node->attributes;
+        while (curAttr)
         {
-            key = (const char *)curAttr->name;
-            value = (const char *)curAttr->children->content;
+            if (curAttr->type == XML_ATTRIBUTE_NODE &&
+                curAttr->children &&
+                curAttr->children->type == XML_TEXT_NODE &&
+                !curAttr->children->next)
+            {
+                key = (const char *)curAttr->name;
+                value = (const char *)curAttr->children->content;
 
-            if (!strcmp(key, fs2_name_attribute_key))
-            {
-                name = strdup(value);
+                if (!strcmp(key, fs2_name_attribute_key))
+                {
+                    name = strdup(value);
+                }
+                else if (!strcmp(key, fs2_hash_attribute_key))
+                {
+                    hash = strdup(value);
+                }
+                else if (!strcmp(key, fs2_type_attribute_key))
+                {
+                    type = strdup(value);
+                }
+                else if (!strcmp(key, fs2_size_attribute_key))
+                {
+                    size = atoll(value);
+                }
+                else if (!strcmp(key, fs2_linkcount_attribute_key) ||
+                         !strcmp(key, fs2_alternativescount_attribute_key))
+                {
+                    link_count = atol(value);
+                }
+                else if (!strcmp(key, fs2_href_attribute_key))
+                {
+                    href = strdup(value);
+                }
+                else if (!strcmp(key, fs2_clientalias_attribute_key))
+                {
+                    client = strdup(value);
+                }
+                else if (!strcmp(key, fs2_path_attribute_key))
+                {
+                    /* ignore what the indexnode says the path is for now */
+                }
+                else
+                {
+                    parser_trace("Unknown attribute %s == %s\n", key, value);
+                }
             }
-            else if (!strcmp(key, fs2_hash_attribute_key))
-            {
-                hash = strdup(value);
-            }
-            else if (!strcmp(key, fs2_type_attribute_key))
-            {
-                type = strdup(value);
-            }
-            else if (!strcmp(key, fs2_size_attribute_key))
-            {
-                size = atoll(value);
-            }
-            else if (!strcmp(key, fs2_linkcount_attribute_key) ||
-                     !strcmp(key, fs2_alternativescount_attribute_key))
-            {
-                link_count = atol(value);
-            }
-            else if (!strcmp(key, fs2_href_attribute_key))
-            {
-                href = strdup(value);
-            }
-            else if (!strcmp(key, fs2_clientalias_attribute_key))
-            {
-                client = strdup(value);
-            }
-            else if (!strcmp(key, fs2_path_attribute_key))
-            {
-                /* ignore what the indexnode says the path is for now */
-            }
-            else
-            {
-                listing_trace("Unknown attribute %s == %s\n", key, value);
-            }
+
+            curAttr = (xmlAttributePtr)curAttr->next;
         }
 
-        curAttr = (xmlAttributePtr)curAttr->next;
+        entry_cb( entry_ctxt, hash, name, type, size, link_count, href, client );
     }
 
-    li = listing_new( CALLER_INFO in, hash, name, type, size, link_count, href, client );
 
     parser_trace_dedent();
-
-
-    return li;
 }
 
-/* Parse a nodeset representing the A tags in an fs2-filelist,
- * building direntries */
 int parser_tryget_listing(
     parser_t *parser,
-    indexnode_t *in,
-    listing_list_t **lis
+    nativefs_entry_found_cb_t entry_cb,
+    void *entry_ctxt
 )
 {
     xmlDocPtr doc;
     xmlXPathObjectPtr xpathObj;
     xmlNodeSetPtr nodes;
-    listing_t *li;
     string_buffer_t *sb = string_buffer_new();
     int size, i;
 
@@ -248,9 +239,7 @@ int parser_tryget_listing(
             /* Enumerate the A elements */
             for (i = 0; i < size; i++)
             {
-                li = filelist_entry_parse(in, (xmlElementPtr)nodes->nodeTab[i]);
-
-                listing_list_set_item(*lis, i, li);
+                filelist_entry_parse((xmlElementPtr)nodes->nodeTab[i], entry_cb, entry_ctxt);
             }
         }
 
