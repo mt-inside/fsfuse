@@ -22,7 +22,6 @@
 
 void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-    int rc;
     direntry_t *de = (direntry_t *)fi->fh;
     struct stat stats;
 
@@ -37,17 +36,10 @@ void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
     method_trace_dedent();
 
 
-    if (rc)
-    {
-        assert(!fuse_reply_err(req, rc));
-    }
-    else
-    {
-        /* TODO: timeout value below. The fuse example takes its struct stat off
-         * the stack and passes it into reply_attr, so it must get copied during
-         * the call.
-         * The timeout, I assume, therefore indicates how long to trust those
-         * stats for before requesting them again. */
-        assert(!fuse_reply_attr(req, &stats, 1.0));
-    }
+    /* TODO: timeout value below. The fuse example takes its struct stat off
+     * the stack and passes it into reply_attr, so it must get copied during
+     * the call.
+     * The timeout, I assume, therefore indicates how long to trust those
+     * stats for before requesting them again. */
+    assert(!fuse_reply_attr(req, &stats, 1.0));
 }
