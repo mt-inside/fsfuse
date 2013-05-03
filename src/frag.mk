@@ -20,7 +20,6 @@ SRC_OBJECTS :=                         \
                fs2_constants.o         \
                localei.o               \
                locks.o                 \
-               parser.o                \
                peerstats.o             \
                ref_count.o             \
                string_buffer.o         \

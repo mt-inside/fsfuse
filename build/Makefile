@@ -78,6 +78,7 @@ include $(SRC_ROOT)/config/frag.mk
 include $(SRC_ROOT)/fuse_methods/frag.mk
 include $(SRC_ROOT)/indexnodes/frag.mk
 include $(SRC_ROOT)/nativefs/frag.mk
+include $(SRC_ROOT)/parser/frag.mk
 
 
 # == Dependencies ==

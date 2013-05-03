@@ -12,6 +12,7 @@ TEST_OBJS :=                        \
              config_test.o          \
              indexnode_test.o       \
              indexnodes_list_test.o \
+             parser_xml_test.o      \
              proto_indexnode_test.o \
              ref_count_test.o       \
              string_buffer_test.o   \
