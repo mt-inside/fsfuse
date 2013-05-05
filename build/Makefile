@@ -75,6 +75,7 @@ OBJECTS += $(MAIN_OBJECT)
 
 include $(SRC_ROOT)/frag.mk
 include $(SRC_ROOT)/config/frag.mk
+include $(SRC_ROOT)/downloader/frag.mk
 include $(SRC_ROOT)/fuse_methods/frag.mk
 include $(SRC_ROOT)/indexnodes/frag.mk
 include $(SRC_ROOT)/nativefs/frag.mk
