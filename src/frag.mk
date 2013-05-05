@@ -15,7 +15,6 @@ vpath %.xsl $(SRC_HERE)
 SRC_OBJECTS :=                         \
                alarm_simple.o          \
                download_thread.o       \
-               download_thread_pool.o  \
                fetcher.o               \
                fs2_constants.o         \
                localei.o               \

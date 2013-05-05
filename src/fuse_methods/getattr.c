@@ -22,7 +22,7 @@
 
 void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-    direntry_t *de = (direntry_t *)fi->fh;
+    open_file_ctxt_t *ctxt = (open_file_ctxt_t *)fi->fh;
     struct stat stats;
 
 
@@ -30,8 +30,8 @@ void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
     method_trace_indent();
 
     memset(&stats, 0, sizeof(stats));
-    direntry_de2stat(de, &stats);
-    direntry_delete(CALLER_INFO de);
+    direntry_de2stat(ctxt->de, &stats);
+    direntry_delete(CALLER_INFO ctxt->de);
 
     method_trace_dedent();
 

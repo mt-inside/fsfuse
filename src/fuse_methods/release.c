@@ -13,6 +13,7 @@
 #include "common.h"
 
 #include <errno.h>
+#include <stdlib.h>
 
 #include "direntry.h"
 #include "fuse_methods.h"
@@ -32,15 +33,19 @@
  *   threads. */
 void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-    direntry_t *de = (direntry_t *)fi->fh;
+    open_file_ctxt_t *ctxt = (open_file_ctxt_t *)fi->fh;
 
 
     method_trace("fsfuse_release(ino %lu)\n", ino);
     method_trace_indent();
 
     /* Delete our copy, and the one taken by open() */
-    direntry_delete(CALLER_INFO de);
-    direntry_delete(CALLER_INFO de);
+    direntry_delete(CALLER_INFO ctxt->de);
+    direntry_delete(CALLER_INFO ctxt->de);
+
+    //downloader_delete( ctxt->downloader ); TODO when this is public
+
+    free(ctxt);
 
     method_trace_dedent();
 

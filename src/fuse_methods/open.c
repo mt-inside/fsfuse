@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner.
+ * Copyright (C) 2008-2013 Matthew Turner.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -7,12 +7,13 @@
  * (at your option) any later version.
  *
  *
- * Implementations for misc. filesystem operations.
+ * open()
  */
 
 #include "common.h"
 
 #include <errno.h>
+#include <stdlib.h>
 
 #include "fuse_methods.h"
 #include "trace.h"
@@ -37,7 +38,13 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
         if ((fi->flags & 3) != O_RDONLY)                rc = EROFS;
         if (direntry_get_type(de) != listing_type_FILE) rc = EISDIR;
 
-        fi->fh = (typeof(fi->fh))de;
+        if (!rc)
+        {
+            open_file_ctxt_t *ctxt = malloc( sizeof(*ctxt) );
+            ctxt->de = de;
+            ctxt->downloader = download_thread_new( de );
+            fi->fh = (typeof(fi->fh))ctxt;
+        }
     }
 
     method_trace_dedent();

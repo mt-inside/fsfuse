@@ -11,7 +11,6 @@
 
 #include "common.h"
 #include "direntry.h"
-#include "download_thread_pool.h"
 
 
 TRACE_DECLARE(dl_thr)
@@ -22,11 +21,10 @@ TRACE_DECLARE(dl_thr)
 
 typedef struct _thread_t thread_t;
 
-typedef void (*thread_end_cb_t)(thread_t *thread);
+typedef void (*chunk_done_cb_t)(void *ctxt, int rc, size_t size);
 
 
-extern thread_t *download_thread_new (direntry_t *de, thread_end_cb_t end_cb);
-extern int download_thread_is_for (thread_t *thread, direntry_t *de);
+extern thread_t *download_thread_new (direntry_t *de);
 extern void download_thread_chunk_add (thread_t *thread,
                                        off_t start,
                                        off_t end,

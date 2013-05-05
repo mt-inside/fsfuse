@@ -19,7 +19,7 @@
 #include "locks.h"
 #include "fuse_methods.h"
 #include "direntry.h"
-#include "download_thread_pool.h"
+#include "download_thread.h"
 
 
 TRACE_DEFINE(read)
@@ -74,7 +74,7 @@ void fsfuse_read (fuse_req_t req,
                   off_t off,
                   struct fuse_file_info *fi)
 {
-    direntry_t *de = (direntry_t *)fi->fh;
+    open_file_ctxt_t *ctxt = (open_file_ctxt_t *)fi->fh;
     read_context_t *read_ctxt = (read_context_t *)calloc(sizeof(read_context_t), 1);
     void *buf;
 
@@ -88,23 +88,23 @@ void fsfuse_read (fuse_req_t req,
      *   start > length: return 0 bytes
      *   end   > length: return length - start bytes.
      */
-    if (off >= direntry_get_size(de))
+    if (off >= direntry_get_size(ctxt->de))
     {
         size = 0;
     }
-    else if ((unsigned)(off + size) >= direntry_get_size(de))
+    else if ((unsigned)(off + size) >= direntry_get_size(ctxt->de))
     {
-        size = direntry_get_size(de) - off;
+        size = direntry_get_size(ctxt->de) - off;
     }
 
     buf = malloc(size);
 
     read_ctxt->req  = req;
-    read_ctxt->de   = de;
+    read_ctxt->de   = ctxt->de;
     read_ctxt->size = size;
     read_ctxt->buf  = buf;
 
-    download_thread_pool_chunk_add(de, off, off + size, buf, &chunk_done, (void *)read_ctxt);
+    download_thread_chunk_add(ctxt->downloader, off, off + size, buf, &chunk_done, (void *)read_ctxt);
 
     method_trace_dedent();
 }

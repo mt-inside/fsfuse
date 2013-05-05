@@ -19,6 +19,12 @@
  * meaning we still have to lock stuff.
  * This could one day become an actor so that it doesn't lock. Or rather it
  * would have a chunk list actor that it could ask questions of.
+ *
+ * TODO: I should be an actor!
+ * TODO: I should be called downloader
+ * TODO: Currently the thread finishes at some random point (maybe when the
+ * file's been read to the end?). It should live for the open duration of the
+ * file; release should call downloader_delete()
  */
 
 #include "common.h"
@@ -67,7 +73,6 @@ typedef struct
 struct _thread_t
 {
     direntry_t *de; /* TODO: should this be a listing_t */
-    thread_end_cb_t end_cb;
     /* TODO: singly linked list is wrong. expected case is that new items go on the
      * end, giving O(n^2) running time. Need a doubly-linked list and an end
      * pointer */
@@ -102,7 +107,7 @@ static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
 
 /* Create a new thread to download <hash> (and start the download process). */
-thread_t *download_thread_new (direntry_t *de, thread_end_cb_t end_cb)
+thread_t *download_thread_new (direntry_t *de)
 {
     thread_t *t = (thread_t *)calloc(1, sizeof(thread_t));
     pthread_attr_t attr;
@@ -119,7 +124,6 @@ thread_t *download_thread_new (direntry_t *de, thread_end_cb_t end_cb)
 
     /* fill in the thread's details */
     t->de = direntry_post(CALLER_INFO de);
-    t->end_cb = end_cb;
     TAILQ_INIT(&t->chunk_list);
     pthread_cond_init(&(t->chunk_list_cond), NULL);
     pthread_mutex_init(&(t->chunk_list_mutex), NULL);
@@ -142,18 +146,11 @@ static void thread_delete (thread_t *t)
     assert(!t->current_chunk);
     assert(TAILQ_EMPTY(&t->chunk_list));
 
-    t->end_cb(t);
-
     direntry_delete(CALLER_INFO t->de);
     pthread_cond_destroy(&t->chunk_list_cond);
     pthread_mutex_destroy(&t->chunk_list_mutex);
 
     free(t);
-}
-
-int download_thread_is_for (thread_t *thread, direntry_t *de)
-{
-    return direntry_equal(thread->de, de);
 }
 
 /* Add a chunk to the chunk list for an individual thread.

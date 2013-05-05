@@ -11,6 +11,8 @@
 
 #include <fuse/fuse_lowlevel.h>
 
+#include "direntry.h"
+#include "download_thread.h"
 #include "indexnodes.h"
 #include "trace.h"
 
@@ -30,6 +32,12 @@ typedef struct _fsfuse_ctxt_t
 {
     indexnodes_t *indexnodes;
 } fsfuse_ctxt_t;
+
+typedef struct
+{
+    direntry_t *de;
+    thread_t *downloader;
+} open_file_ctxt_t;
 
 
 /* fsfuse fuse methods vtable */

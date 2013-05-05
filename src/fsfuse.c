@@ -32,7 +32,6 @@
 #include "config_manager.h"
 #include "config_reader.h"
 #include "direntry.h"
-#include "download_thread_pool.h"
 #include "fetcher.h"
 #include "indexnodes.h"
 #include "localei.h"
@@ -153,8 +152,7 @@ int main(int argc, char *argv[])
         utils_init()                ||
         locale_init()               ||
         fetcher_init()              ||
-        direntry_init()             ||
-        download_thread_pool_init()    )
+        direntry_init()               )
     {
         trace_error("initialisation failed\n");
         goto pre_init_bail;
@@ -165,7 +163,6 @@ int main(int argc, char *argv[])
 
 
     /* finalisations */
-    download_thread_pool_finalise();
     direntry_finalise();
     fetcher_finalise();
     locale_finalise();
@@ -327,7 +324,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
 #endif
 
                 TRACE_ARG(direntry)
-                TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)
                 TRACE_ARG(peerstats)
