@@ -60,7 +60,7 @@ indexnode_t *indexnodes_list_find (CALLER_DECL indexnodes_list_t *ins, const cha
     {
         if (indexnode_equals(item->in, id))
         {
-            in = indexnode_post( CALLER_PASS item->in );
+            in = indexnode_copy( CALLER_PASS item->in );
             found = 1;
         }
         if (found) break;
@@ -78,7 +78,7 @@ indexnodes_list_t *indexnodes_list_copy (CALLER_DECL indexnodes_list_t *orig)
 
     TAILQ_FOREACH(item, &orig->list, next)
     {
-        indexnodes_list_add(ret, indexnode_post(CALLER_PASS item->in));
+        indexnodes_list_add(ret, indexnode_copy(CALLER_PASS item->in));
     }
 
 
@@ -95,7 +95,7 @@ indexnodes_list_t *indexnodes_list_remove_expired (CALLER_DECL indexnodes_list_t
     {
         if (indexnode_still_valid(item->in))
         {
-            indexnodes_list_add(ret, indexnode_post(CALLER_PASS item->in));
+            indexnodes_list_add(ret, indexnode_copy(CALLER_PASS item->in));
         }
         else
         {

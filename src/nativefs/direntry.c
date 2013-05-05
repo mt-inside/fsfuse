@@ -150,7 +150,7 @@ int direntry_ensure_children (
         ctxt->i = 0;
 
         /* skip the leading '/' from the path that fuse gives us */
-        if (indexnode_tryget_listing(indexnode_post(CALLER_INFO BASE_CLASS(de)->in), path + 1, &entry_found, ctxt))
+        if (indexnode_tryget_listing(indexnode_copy(CALLER_INFO BASE_CLASS(de)->in), path + 1, &entry_found, ctxt))
         {
             dirents = direntries_from_listing_list (ctxt->lis, de);
             rc = 0;
@@ -244,7 +244,7 @@ direntry_t *direntry_new_root (CALLER_DECL_ONLY)
     return de;
 }
 
-direntry_t *direntry_post (CALLER_DECL direntry_t *de)
+direntry_t *direntry_copy (CALLER_DECL direntry_t *de)
 {
     unsigned refc = ref_count_inc( BASE_CLASS(de)->ref_count );
 
@@ -304,17 +304,17 @@ int direntry_equal (direntry_t *de, direntry_t *other)
 
 direntry_t *direntry_get_parent       (direntry_t *de)
 {
-    return de->parent ? direntry_post(CALLER_INFO de->parent) : NULL;
+    return de->parent ? direntry_copy(CALLER_INFO de->parent) : NULL;
 }
 
 direntry_t *direntry_get_first_child  (direntry_t *de)
 {
-    return de->children ? direntry_post(CALLER_INFO de->children) : NULL;
+    return de->children ? direntry_copy(CALLER_INFO de->children) : NULL;
 }
 
 direntry_t *direntry_get_next_sibling (direntry_t *de)
 {
-    return de->next ? direntry_post(CALLER_INFO de->next) : NULL;
+    return de->next ? direntry_copy(CALLER_INFO de->next) : NULL;
 }
 
 

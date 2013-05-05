@@ -38,7 +38,7 @@ void inode_map_add (ino_t inode, direntry_t *de)
             s_inode_map_size * sizeof(direntry_t *));
     }
 
-    s_inode_map[inode] = direntry_post(CALLER_INFO de);
+    s_inode_map[inode] = direntry_copy(CALLER_INFO de);
 
     s_inode_map_used = inode + 1; /* TODO: assumption */
 }
@@ -50,7 +50,7 @@ direntry_t *inode_map_get (ino_t inode)
 
     if (inode < s_inode_map_used)
     {
-        de = direntry_post(CALLER_INFO s_inode_map[inode]);
+        de = direntry_copy(CALLER_INFO s_inode_map[inode]);
     }
     else
     {

@@ -27,7 +27,7 @@ typedef struct _direntry_t direntry_t;
 extern int direntry_init (void);
 extern void direntry_finalise (void);
 
-extern direntry_t *direntry_post      (CALLER_DECL direntry_t *de);
+extern direntry_t *direntry_copy (CALLER_DECL direntry_t *de);
 extern void direntry_delete      (CALLER_DECL direntry_t *de);
 
 extern int direntry_equal (direntry_t *de, direntry_t *other);

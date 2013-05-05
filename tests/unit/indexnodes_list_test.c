@@ -47,7 +47,7 @@ START_TEST( indexnodes_list_can_have_a_member )
     indexnodes_list_t *ins = indexnodes_list_new( );
 
     /* Action */
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in ) );
 
     /* Assert */
     fail_unless( ins != NULL, "list should be non-null" );
@@ -66,8 +66,8 @@ START_TEST( indexnodes_list_can_have_several_members )
     indexnodes_list_t *ins = indexnodes_list_new( );
 
     /* Action */
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in1 ) );
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in2 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in1 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in2 ) );
 
     /* Assert */
     fail_unless( ins != NULL, "list should be non-null" );
@@ -87,8 +87,8 @@ START_TEST( indexnodes_list_holds_right_number_of_items )
     indexnode_t *in_out;
 
     indexnodes_list_t *ins = indexnodes_list_new( );
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in1 ) );
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in2 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in_in1 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in_in2 ) );
 
     indexnodes_iterator_t *iter;
     unsigned count = 0;
@@ -124,8 +124,8 @@ START_TEST( indexnodes_list_returns_what_is_put_in )
     indexnode_t *in_out;
 
     indexnodes_list_t *ins = indexnodes_list_new( );
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in1 ) );
-    indexnodes_list_add( ins, indexnode_post( CALLER_INFO in_in2 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in_in1 ) );
+    indexnodes_list_add( ins, indexnode_copy( CALLER_INFO in_in2 ) );
 
     indexnodes_iterator_t *iter;
 

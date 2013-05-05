@@ -103,7 +103,7 @@ indexnode_t *indexnode_new(
 
 }
 
-indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in )
+indexnode_t *indexnode_copy( CALLER_DECL indexnode_t *in )
 {
     unsigned refc = ref_count_inc( in->ref_count );
 

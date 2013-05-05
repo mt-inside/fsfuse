@@ -121,7 +121,7 @@ downloader_t *downloader_new (direntry_t *de)
 
 
     /* fill in the thread's details */
-    t->de = direntry_post(CALLER_INFO de);
+    t->de = direntry_copy(CALLER_INFO de);
     TAILQ_INIT(&t->chunk_list);
     pthread_cond_init(&(t->chunk_list_cond), NULL);
     pthread_mutex_init(&(t->chunk_list_mutex), NULL);

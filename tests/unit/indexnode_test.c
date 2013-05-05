@@ -60,7 +60,7 @@ START_TEST( indexnode_can_be_copied_and_copy_outlives_original )
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
-    indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
+    indexnode_t *in2 = indexnode_copy( CALLER_INFO in1 );
     indexnode_delete( CALLER_INFO in1 );
 
     /* Assert */
@@ -77,7 +77,7 @@ START_TEST( indexnode_can_be_copied_and_has_right_data )
     indexnode_t *in1 = get_indexnode_stub( CALLER_INFO_ONLY );
 
     /* Action */
-    indexnode_t *in2 = indexnode_post( CALLER_INFO in1 );
+    indexnode_t *in2 = indexnode_copy( CALLER_INFO in1 );
 
     /* Assert */
     fail_unless( indexnode_equals_stub( in1 ), "original indexnode should be sane" );

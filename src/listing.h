@@ -32,7 +32,20 @@ typedef enum
 } listing_type_t;
 
 
-extern listing_t *listing_post (CALLER_DECL listing_t *li);
+#include "indexnode.h"
+
+extern listing_t *listing_new (
+    CALLER_DECL
+    indexnode_t *in,
+    const char *hash,
+    const char *name,
+    const char *type,
+    off_t size,
+    unsigned long link_count,
+    const char *href,
+    const char *client
+);
+extern listing_t *listing_copy (CALLER_DECL listing_t *li);
 extern void listing_delete (CALLER_DECL listing_t *li);
 
 extern int listing_equal (listing_t *li, listing_t *other);

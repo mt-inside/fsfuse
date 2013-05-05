@@ -29,7 +29,7 @@ extern indexnode_t *indexnode_new(
     const char *id
 );
 
-extern indexnode_t *indexnode_post( CALLER_DECL indexnode_t *in);
+extern indexnode_t *indexnode_copy( CALLER_DECL indexnode_t *in);
 extern void indexnode_delete( CALLER_DECL indexnode_t *in );
 
 extern int indexnode_equals( indexnode_t *in, const char *id );

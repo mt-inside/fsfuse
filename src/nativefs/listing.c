@@ -93,7 +93,7 @@ listing_t *listing_new (
     return li;
 }
 
-listing_t *listing_post (CALLER_DECL listing_t *li)
+listing_t *listing_copy (CALLER_DECL listing_t *li)
 {
     unsigned refc = ref_count_inc( li->ref_count );
 
@@ -240,7 +240,7 @@ static void entry_found(
     listing_t *li;
 
 
-    li = listing_new( CALLER_INFO indexnode_post( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
+    li = listing_new( CALLER_INFO indexnode_copy( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
     listing_list_resize( ctxt->lis, ctxt->i + 1 ); //FIXME!
     listing_list_set_item( ctxt->lis, ctxt->i++, li );
 }
@@ -251,12 +251,12 @@ int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_bes
     int rc;
 
 
-    ctxt->in = indexnode_post( CALLER_INFO li_reference->in );
+    ctxt->in = indexnode_copy( CALLER_INFO li_reference->in );
     ctxt->lis = listing_list_new( 0 );
     ctxt->i = 0;
 
     rc = indexnode_tryget_alternatives(
-        indexnode_post( CALLER_INFO li_reference->in ),
+        indexnode_copy( CALLER_INFO li_reference->in ),
         listing_get_hash( li_reference ),
         entry_found,
         ctxt
@@ -267,5 +267,12 @@ int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_bes
     listing_list_delete( CALLER_INFO ctxt->lis );
 
 
-    return rc;
+void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
+{
+    lis->items[item] = listing_copy(CALLER_INFO li);
+}
+
+listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
+{
+    return listing_copy(CALLER_INFO lis->items[item]);
 }
