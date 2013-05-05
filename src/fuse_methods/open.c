@@ -42,7 +42,7 @@ void fsfuse_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
         {
             open_file_ctxt_t *ctxt = malloc( sizeof(*ctxt) );
             ctxt->de = de;
-            ctxt->downloader = download_thread_new( de );
+            ctxt->downloader = downloader_new( de );
             fi->fh = (typeof(fi->fh))ctxt;
         }
     }

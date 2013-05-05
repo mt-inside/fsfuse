@@ -12,7 +12,7 @@
 #include <fuse/fuse_lowlevel.h>
 
 #include "direntry.h"
-#include "download_thread.h"
+#include "downloader.h"
 #include "indexnodes.h"
 #include "trace.h"
 
@@ -36,7 +36,7 @@ typedef struct _fsfuse_ctxt_t
 typedef struct
 {
     direntry_t *de;
-    thread_t *downloader;
+    downloader_t *downloader;
 } open_file_ctxt_t;
 
 

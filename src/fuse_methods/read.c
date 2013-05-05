@@ -19,7 +19,7 @@
 #include "locks.h"
 #include "fuse_methods.h"
 #include "direntry.h"
-#include "download_thread.h"
+#include "downloader.h"
 
 
 TRACE_DEFINE(read)
@@ -104,7 +104,7 @@ void fsfuse_read (fuse_req_t req,
     read_ctxt->size = size;
     read_ctxt->buf  = buf;
 
-    download_thread_chunk_add(ctxt->downloader, off, off + size, buf, &chunk_done, (void *)read_ctxt);
+    downloader_chunk_add(ctxt->downloader, off, off + size, buf, &chunk_done, (void *)read_ctxt);
 
     method_trace_dedent();
 }

@@ -21,7 +21,6 @@
  * would have a chunk list actor that it could ask questions of.
  *
  * TODO: I should be an actor!
- * TODO: I should be called downloader
  * TODO: Currently the thread finishes at some random point (maybe when the
  * file's been read to the end?). It should live for the open duration of the
  * file; release should call downloader_delete()
@@ -37,7 +36,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "download_thread.h"
+#include "downloader.h"
 
 #include "config_manager.h"
 #include "config_reader.h"
@@ -48,7 +47,7 @@
 #include "string_buffer.h"
 
 
-TRACE_DEFINE(dl_thr)
+TRACE_DEFINE(downloader)
 
 
 typedef struct _chunk_t
@@ -70,7 +69,7 @@ typedef struct
     char *buf;
 } buf_t;
 
-struct _thread_t
+struct _downloader_t
 {
     direntry_t *de; /* TODO: should this be a listing_t */
     /* TODO: singly linked list is wrong. expected case is that new items go on the
@@ -89,7 +88,7 @@ struct _thread_t
 };
 
 
-static void thread_delete (thread_t *t);
+static void thread_delete (downloader_t *t);
 
 static chunk_t *chunk_new (
     off_t start,
@@ -98,18 +97,18 @@ static chunk_t *chunk_new (
     chunk_done_cb_t rc,
     void *ctxt
 );
-static chunk_t *chunk_get_next (thread_t *thread);
+static chunk_t *chunk_get_next (downloader_t *thread);
 
-static void *downloader_thread_main (void *arg);
-static void chunk_list_empty (thread_t *thread, int rc);
+static void *downloaderead_main (void *arg);
+static void chunk_list_empty (downloader_t *thread, int rc);
 static int thread_pool_consumer (void *ctxt, void *data, size_t len);
 static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
 
 /* Create a new thread to download <hash> (and start the download process). */
-thread_t *download_thread_new (direntry_t *de)
+downloader_t *downloader_new (direntry_t *de)
 {
-    thread_t *t = (thread_t *)calloc(1, sizeof(thread_t));
+    downloader_t *t = (downloader_t *)calloc(1, sizeof(downloader_t));
     pthread_attr_t attr;
 
 
@@ -133,7 +132,7 @@ thread_t *download_thread_new (direntry_t *de)
     /* is this safe? presumably the new thread could read pthread_id before
      * it's been written by this thread. Do we, in fact, care what it's id is
      * at all? */
-    assert(!pthread_create(&(t->pthread_id), &attr, &downloader_thread_main, (void *)t));
+    assert(!pthread_create(&(t->pthread_id), &attr, &downloaderead_main, (void *)t));
 
     pthread_attr_destroy(&attr);
 
@@ -141,7 +140,7 @@ thread_t *download_thread_new (direntry_t *de)
     return t;
 }
 
-static void thread_delete (thread_t *t)
+static void thread_delete (downloader_t *t)
 {
     assert(!t->current_chunk);
     assert(TAILQ_EMPTY(&t->chunk_list));
@@ -156,7 +155,7 @@ static void thread_delete (thread_t *t)
 /* Add a chunk to the chunk list for an individual thread.
  * These go in in order - start of file to end of file */
 /* Note that start and end can be the same value indicating a 0 byte range */
-void download_thread_chunk_add (thread_t *thread,
+void downloader_chunk_add (downloader_t *thread,
                                 off_t start, /* inclusive */
                                 off_t end,   /* exclusive */
                                 char *buf,
@@ -236,7 +235,7 @@ static void chunk_delete (chunk_t *chunk)
     free(chunk);
 }
 
-static chunk_t *chunk_get_next (thread_t *thread)
+static chunk_t *chunk_get_next (downloader_t *thread)
 {
     chunk_t *chunk;
     int rc = 0;
@@ -246,9 +245,9 @@ static chunk_t *chunk_get_next (thread_t *thread)
 
 
     /* wait for a chunk on the list */
-    dl_thr_trace("chunk_get_next() waiting %u seconds for new chunk...\n",
+    downloader_trace("chunk_get_next() waiting %u seconds for new chunk...\n",
               config_timeout_chunk(config));
-    dl_thr_trace_indent();
+    downloader_trace_indent();
 
 
     gettimeofday(&tv, NULL);
@@ -269,11 +268,11 @@ static chunk_t *chunk_get_next (thread_t *thread)
     {
         /* timed out, abort */
         chunk = NULL;
-        dl_thr_trace("timed out\n");
+        downloader_trace("timed out\n");
     }
     else if (rc == 0)
     {
-        dl_thr_trace("Downloader thread for %s woken up! "
+        downloader_trace("Downloader thread for %s woken up! "
                   "Chunks remaining: %d\n",
                   direntry_get_name(thread->de),
                   thread->chunk_list_count);
@@ -293,24 +292,24 @@ static chunk_t *chunk_get_next (thread_t *thread)
     }
     else
     {
-        dl_thr_trace("pthread_cond_timedwait(): error\n");
+        downloader_trace("pthread_cond_timedwait(): error\n");
         assert(0);
     }
 
     config_reader_delete(config);
 
-    dl_thr_trace_dedent();
+    downloader_trace_dedent();
 
 
     return chunk;
 }
 
 /* This is the entry point for new downloader threads. */
-/* EXECUTES IN THREAD: downloader_thread_main().
+/* EXECUTES IN THREAD: downloaderead_main().
  * Accesses a thread - ?no mutex needed */
-static void *downloader_thread_main (void *arg)
+static void *downloaderead_main (void *arg)
 {
-    thread_t *thread = (thread_t *)arg;
+    downloader_t *thread = (downloader_t *)arg;
     string_buffer_t *range_buffer;
     listing_t *li;
     char *range_str;
@@ -318,9 +317,9 @@ static void *downloader_thread_main (void *arg)
     int first_time = 1;
 
 
-    dl_thr_trace("downloader_thread_main(file==%s): New downloader thread!\n",
+    downloader_trace("downloaderead_main(file==%s): New downloader thread!\n",
               direntry_get_name(thread->de) );
-    dl_thr_trace_indent();
+    downloader_trace_indent();
 
     /* We never try to guess when we're done with a file completely and call
      * fall straight out of this loop (e.g. when we think we've served the whole
@@ -386,7 +385,7 @@ static void *downloader_thread_main (void *arg)
         }
         range_str = string_buffer_commit(range_buffer);
         thread->download_offset = thread->current_chunk->start;
-        dl_thr_trace("fetching range \"%s\"\n", range_str);
+        downloader_trace("fetching range \"%s\"\n", range_str);
 
         /* Find alternatives */
         /* TODO: BASE_CLASS() should be universal */
@@ -443,14 +442,14 @@ static void *downloader_thread_main (void *arg)
     /* Delete the data structures */
     thread_delete(thread); /* Is this safe here? */
 
-    dl_thr_trace("download_thread_main() returning\n");
-    dl_thr_trace_dedent();
+    downloader_trace("downloader_main() returning\n");
+    downloader_trace_dedent();
 
 
     pthread_exit(NULL);
 }
 
-static void chunk_list_empty (thread_t *thread, int rc)
+static void chunk_list_empty (downloader_t *thread, int rc)
 {
     chunk_t *c;
 
@@ -464,11 +463,11 @@ static void chunk_list_empty (thread_t *thread, int rc)
 }
 
 
-/* EXECUTES IN THREAD: downloader_thread_main(). */
+/* EXECUTES IN THREAD: downloaderead_main(). */
 static int thread_pool_consumer (void *ctxt, void *data, size_t len)
 {
     buf_t *buf = (buf_t *)malloc(sizeof(buf_t));
-    thread_t *thread = (thread_t *)ctxt;
+    downloader_t *thread = (downloader_t *)ctxt;
     chunk_t *chunk;
     int rc = 1;
     size_t copy_len;
@@ -489,18 +488,18 @@ static int thread_pool_consumer (void *ctxt, void *data, size_t len)
 
     while (1)
     {
-        dl_thr_trace("buf: %#x-%#x; chunk: %#x-%#x\n", buf->start, buf->end, chunk->start, chunk->end);
+        downloader_trace("buf: %#x-%#x; chunk: %#x-%#x\n", buf->start, buf->end, chunk->start, chunk->end);
 
         if (chunk->start == buf->start)
         {
-            dl_thr_trace("chunk ok - continuing stream\n");
+            downloader_trace("chunk ok - continuing stream\n");
 
             /* How much to copy? */
             copy_len = MIN((buf->end - buf->start), (chunk->end - chunk->start));
-            dl_thr_trace("copy_len == %#x\n", copy_len);
+            downloader_trace("copy_len == %#x\n", copy_len);
 
             /* DO IT */
-            dl_thr_trace("doing it: absolute start == %#x, absolute end == %#x\n",
+            downloader_trace("doing it: absolute start == %#x, absolute end == %#x\n",
                       buf->start, buf->start + copy_len);
             memcpy(chunk->buf, buf->buf, copy_len);
 
@@ -508,15 +507,15 @@ static int thread_pool_consumer (void *ctxt, void *data, size_t len)
 
             buf->start += copy_len;
             buf->buf   += copy_len;
-            dl_thr_trace("buf->start now == %#x\n", buf->start);
+            downloader_trace("buf->start now == %#x\n", buf->start);
             chunk->start += copy_len;
             chunk->buf   += copy_len;
-            dl_thr_trace("chunk->start now == %#x\n", buf->start);
+            downloader_trace("chunk->start now == %#x\n", buf->start);
 
 
             if (buf->start == buf->end && chunk->start == chunk->end)
             {
-                dl_thr_trace("End of buf && chunk\n");
+                downloader_trace("End of buf && chunk\n");
 
                 /* End of chunk stuff
                  * (but don't get a new one because end of buf might mean end
@@ -538,13 +537,13 @@ static int thread_pool_consumer (void *ctxt, void *data, size_t len)
 
             if (buf->start == buf->end)
             {
-                dl_thr_trace("End of buf\n");
+                downloader_trace("End of buf\n");
                 break;
             }
 
             if (chunk->start == chunk->end)
             {
-                dl_thr_trace("End of chunk\n");
+                downloader_trace("End of chunk\n");
 
                 /* we've reached the end of this chunk's buffer. signal its
                  * semaphore so that its read() thread can wake and return */
@@ -565,25 +564,25 @@ static int thread_pool_consumer (void *ctxt, void *data, size_t len)
         }
         else
         {
-            dl_thr_trace("chunk not ok - bailing out to seek\n");
+            downloader_trace("chunk not ok - bailing out to seek\n");
 
             /* haven't consumed the whole buf, so curl will bail out with an
-             * error and we end up back in downloader_thread_main() */
+             * error and we end up back in downloaderead_main() */
             thread->seek = 1;
             goto bail;
         }
     }
-    dl_thr_trace("buf->start caught buf->end - finished buf processing loop\n");
+    downloader_trace("buf->start caught buf->end - finished buf processing loop\n");
 
     thread->download_offset = buf->end;
-    dl_thr_trace("offset now == %#x\n\n", thread->download_offset);
+    downloader_trace("offset now == %#x\n\n", thread->download_offset);
     rc = 0;
 
 
 bail:
     free(buf);
 
-    dl_thr_trace_dedent();
+    downloader_trace_dedent();
 
 
     return rc;
@@ -591,7 +590,7 @@ bail:
 
 static void signal_read_thread (chunk_t *chunk, int rc, size_t size)
 {
-    dl_thr_trace("signalling read() thread - err %d, %zu bytes\n", rc, size);
+    downloader_trace("signalling read() thread - err %d, %zu bytes\n", rc, size);
 
     chunk->cb(chunk->ctxt, rc, size);
 }
@@ -603,7 +602,7 @@ void dump_chunk (chunk_t *chunk)
     trace_np("%#x -> %#x -> %#x", chunk->start, chunk->bytes_used, chunk->end);
 }
 
-void dump_chunk_list (thread_t *thread)
+void dump_chunk_list (downloader_t *thread)
 {
     chunk_t *curr;
     unsigned i = 0;
