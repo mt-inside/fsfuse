@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2012 Matthew Turner.
+ * Copyright (C) 2008-2013 Matthew Turner.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -7,18 +7,17 @@
  * (at your option) any later version.
  *
  *
- * Download Thread "Class" - a thread for downloading a file.
- */
-
-/* A thread for downloading a file.
- * There is currently one thread per path, so multiple open()s will use the one
- * thread.
- * TODO: have one thread per open()ed file, so if a file is opened > 1 time it
- * will have multiple threads steaming it at different points.
- * Even with one thread per open(), userspace can dup() or spawn threads,
- * meaning we still have to lock stuff.
- * This could one day become an actor so that it doesn't lock. Or rather it
- * would have a chunk list actor that it could ask questions of.
+ * Downloader class.
+ * Downloaders download files.
+ * A downloader currently has a thread for doing the downloading (though it's
+ * proposed that the thread comes from fetcher in future).
+ * These is one thread per open()ed file handle. The idea is that if you've
+ * open()ed the file twice you're probably going to read() from different points
+ * so all the streaming optimisations go out of the window. It also makes the
+ * usage pattern more transparent to the indexndoe, for whatever that's worth.
+ * NB that userspace can still use a filehandle from multiple threads, or dup()
+ * it or fork(), so we could still get parallel requests to the downloader hence
+ * it still needs to be threadsafe.
  *
  * TODO: I should be an actor!
  * TODO: Currently the thread finishes at some random point (maybe when the
