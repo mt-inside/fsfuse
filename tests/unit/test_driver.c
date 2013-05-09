@@ -33,6 +33,7 @@ int main (int argc, char **argv)
     srunner_add_suite( r, config_tests( ) );
     srunner_add_suite( r, indexnode_tests( ) );
     srunner_add_suite( r, indexnodes_list_tests( ) );
+    srunner_add_suite( r, parser_tests( ) );
     srunner_add_suite( r, parser_xml_tests( ) );
     srunner_add_suite( r, proto_indexnode_tests( ) );
     srunner_add_suite( r, ref_count_tests( ) );

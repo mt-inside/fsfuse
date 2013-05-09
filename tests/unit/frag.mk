@@ -13,6 +13,8 @@ TEST_OBJS :=                        \
              indexnode_test.o       \
              indexnodes_list_test.o \
              parser_xml_test.o      \
+             parser_test.o          \
+             parser_stubs.o         \
              proto_indexnode_test.o \
              ref_count_test.o       \
              string_buffer_test.o   \

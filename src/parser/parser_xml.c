@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "common.h"
 
 #include <stdlib.h>
@@ -48,16 +50,54 @@ static void on_start_element_ns(
 )
 {
     parser_xml_t *xml = (parser_xml_t *)ctxt;
+    char *id = NULL;
+    int i;
 
-    xml->cb( xml->cb_ctxt, parser_xml_event_TAG_START, strdup( (char *)localname ) );
+
+    /* Search for id attr. Ideally would only loop this array once */
+    for( i = 0; i < nb_attributes; i++ )
+    {
+        const char *localname = (char *)attributes[ 5*i + 0 ];
+        const char *start     = (char *)attributes[ 5*i + 3 ];
+        const char *end       = (char *)attributes[ 5*i + 4 ];
+        size_t len = end - start;
+
+        if( !strcmp( localname, "id" ) )
+        {
+           id = strndup(start, len );
+        }
+    }
+
+    /* Raise event for the element node */
+    xml->cb( xml->cb_ctxt, parser_xml_event_TAG_START, strdup( (char *)localname ), id );
+
+    /* Raise events for the attribute nodes */
+    for( i = 0; i < nb_attributes; i++ )
+    {
+        /* Format:
+         * 5i + 0: attr localname (NUL-term copy)
+         * 5i + 1: attr prefix    (NUL-term copy)
+         * 5i + 2: attr uri       (NUL-term copy)
+         * 5i + 3: value start    (pointer to buffer)
+         * 5i + 4: value end      (pointer to buffer)
+         */
+        const char *localname = (char *)attributes[ 5*i + 0 ];
+        const char *start     = (char *)attributes[ 5*i + 3 ];
+        const char *end       = (char *)attributes[ 5*i + 4 ];
+        size_t len = end - start;
+
+        /* Don't raise id attr again */
+        if( strcmp( localname, "id" ) )
+        {
+            xml->cb( xml->cb_ctxt, parser_xml_event_ATTRIBUTE, strdup( localname ), strndup( start, len ) );
+        }
+    }
 
     NOT_USED( prefix );
     NOT_USED( URI );
     NOT_USED( nb_namespaces );
     NOT_USED( namespaces );
-    NOT_USED( nb_attributes );
     NOT_USED( nb_defaulted );
-    NOT_USED( attributes );
 }
 
 static void on_end_element_ns(
@@ -69,7 +109,7 @@ static void on_end_element_ns(
 {
     parser_xml_t *xml = (parser_xml_t *)ctxt;
 
-    xml->cb( xml->cb_ctxt, parser_xml_event_TAG_END, strdup( (char *)localname ) );
+    xml->cb( xml->cb_ctxt, parser_xml_event_TAG_END, strdup( (char *)localname ), NULL );
 
     NOT_USED( prefix );
     NOT_USED( URI );
@@ -94,7 +134,7 @@ static void on_characters(
         strncpy( chars, (char *)ch, len );
         chars[ len ] = '\0';
 
-        xml->cb( xml->cb_ctxt, parser_xml_event_TEXT, chars );
+        xml->cb( xml->cb_ctxt, parser_xml_event_TEXT, chars, NULL );
     }
 }
 

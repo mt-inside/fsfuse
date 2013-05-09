@@ -21,19 +21,15 @@
 
 #include <check.h>
 #include "tests.h"
+#include "parser_stubs.h"
 
 #include "parser/parser_xml.h"
 
+/* TODO: don't use startns, just start */
 
 typedef struct
 {
-    parser_xml_event_t event;
-    const char *text;
-} test_expectation_t;
-
-typedef struct
-{
-    test_expectation_t *expected_results;
+    parser_test_expectation_t *expected_results;
     size_t i;
 } test_ctxt_t;
 
@@ -52,29 +48,19 @@ static void feed_file( const char *name, parser_xml_t *xml )
     close( fd );
 }
 
-static void test_cb( void *ctxt, parser_xml_event_t event, char *text )
+static void test_cb( void *ctxt, parser_xml_event_t event, char *text, char *id )
 {
     test_ctxt_t *test_ctxt = (test_ctxt_t *)ctxt;
 
     ck_assert_int_eq( event, test_ctxt->expected_results[ test_ctxt->i ].event );
     ck_assert_str_eq( text,  test_ctxt->expected_results[ test_ctxt->i ].text  );
+    if( test_ctxt->expected_results[ test_ctxt->i ].id )
+    {
+        ck_assert_str_eq( id, test_ctxt->expected_results[ test_ctxt->i ].id );
+    }
     (test_ctxt->i)++;
 }
 
-test_expectation_t stats_expected_results[] =
-{
-    { parser_xml_event_TAG_START, "html" },
-    { parser_xml_event_TAG_START, "body" },
-    { parser_xml_event_TAG_START, "div" },
-    { parser_xml_event_TAG_START, "span" },
-    { parser_xml_event_TEXT,      "Wed May 01 17:08:21 BST 2013" },
-    { parser_xml_event_TAG_END,   "span" },
-    { parser_xml_event_TAG_START, "br" },
-    { parser_xml_event_TAG_END,   "br" },
-    { parser_xml_event_TAG_END,   "div" },
-    { parser_xml_event_TAG_END,   "body" },
-    { parser_xml_event_TAG_END,   "html" }
-};
 START_TEST( can_parse_stats_page )
 {
     /* Setup */
@@ -92,42 +78,6 @@ START_TEST( can_parse_stats_page )
 }
 END_TEST
 
-test_expectation_t filelist_expected_results[] =
-{
-    { parser_xml_event_TAG_START, "html" },
-    { parser_xml_event_TAG_START, "body" },
-    { parser_xml_event_TAG_START, "div" },
-    { parser_xml_event_TAG_START, "div" },
-
-    { parser_xml_event_TAG_START, "b" },
-    { parser_xml_event_TEXT,      "(1)" },
-    { parser_xml_event_TAG_END,   "b" },
-    { parser_xml_event_TAG_START, "a" },
-    { parser_xml_event_TEXT,      "docbook-xsl-1.78.0.tar.bz2" },
-    { parser_xml_event_TAG_END,   "a" },
-    { parser_xml_event_TAG_START, "span" },
-    { parser_xml_event_TEXT,      "(4.8 MiB)" },
-    { parser_xml_event_TAG_END,   "span" },
-    { parser_xml_event_TAG_START, "br" },
-    { parser_xml_event_TAG_END,   "br" },
-
-    { parser_xml_event_TAG_START, "b" },
-    { parser_xml_event_TEXT,      "(1)" },
-    { parser_xml_event_TAG_END,   "b" },
-    { parser_xml_event_TAG_START, "a" },
-    { parser_xml_event_TEXT,      "Test-Pod-Coverage-1.08.tar.gz" },
-    { parser_xml_event_TAG_END,   "a" },
-    { parser_xml_event_TAG_START, "span" },
-    { parser_xml_event_TEXT,      "(6.3 KiB)" },
-    { parser_xml_event_TAG_END,   "span" },
-    { parser_xml_event_TAG_START, "br" },
-    { parser_xml_event_TAG_END,   "br" },
-
-    { parser_xml_event_TAG_END,   "div" },
-    { parser_xml_event_TAG_END,   "div" },
-    { parser_xml_event_TAG_END,   "body" },
-    { parser_xml_event_TAG_END,   "html" }
-};
 START_TEST( can_parse_filelist_page )
 {
     /* Setup */

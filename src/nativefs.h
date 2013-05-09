@@ -8,6 +8,8 @@
 #define _INCLUDED_NATIVEFS_H
 
 #include "common.h"
+
+#include <sys/types.h>
 /* Example session:
  * getattr( 1 )
  * stat( 1 )

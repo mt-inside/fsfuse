@@ -10,6 +10,7 @@
 extern Suite *config_tests( void );
 extern Suite *indexnode_tests( void );
 extern Suite *indexnodes_list_tests( void );
+extern Suite *parser_tests( void );
 extern Suite *parser_xml_tests( void );
 extern Suite *proto_indexnode_tests( void );
 extern Suite *ref_count_tests( void );
