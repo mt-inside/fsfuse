@@ -4,7 +4,7 @@
 const char * const fs2_alternativescount_attribute_key = "fs2-alternativescount";
 const char * const fs2_clientalias_attribute_key = "fs2-clientalias";
 const char * const fs2_hash_attribute_key = "fs2-hash";
-const char * const fs2_href_attribute_key = "fs2-hash";
+const char * const fs2_href_attribute_key = "href";
 const char * const fs2_linkcount_attribute_key = "fs2-linkcount";
 const char * const fs2_name_attribute_key = "fs2-name";
 const char * const fs2_path_attribute_key = "fs2-path";
