@@ -24,6 +24,7 @@ struct _parser_stats_t
     void *cb_ctxt;
     parser_xml_t *xml;
     state_t state;
+
     unsigned long files;
     unsigned long bytes;
 };
