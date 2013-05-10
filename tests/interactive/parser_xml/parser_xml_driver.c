@@ -23,20 +23,23 @@
 #include "parser/parser_xml.h"
 
 
-static void print_cb( void *ctxt, parser_xml_event_t event, char *text )
+static void print_cb( void *ctxt, parser_xml_event_t event, char *name, char *value )
 {
     NOT_USED(ctxt);
 
     switch( event )
     {
         case parser_xml_event_TAG_START:
-            printf( "<%s>\n", text );
+            printf( "<%s id=\"%s\">\n", name, value );
             break;
         case parser_xml_event_TEXT:
-            printf( "\"%s\"\n", text );
+            printf( "\"%s\"\n", name );
+            break;
+        case parser_xml_event_ATTRIBUTE:
+            printf( "#attr name:\"%s\", value:\"%s\"\n", name, value );
             break;
         case parser_xml_event_TAG_END:
-            printf( "</%s>\n", text );
+            printf( "</%s>\n", name );
             break;
         default:
             assert( 0 );
@@ -63,10 +66,12 @@ int main( int argc, char **argv )
     NOT_USED(argc);
     NOT_USED(argv);
 
+    assert( argc == 2 );
+
 
     parser_xml_t *xml = parser_xml_new( &print_cb, NULL );
 
-    feed_file( strdup( "stats.xml" ), xml );
+    feed_file( strdup( argv[1] ), xml );
 
     parser_xml_delete( xml );
 

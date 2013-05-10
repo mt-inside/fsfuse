@@ -18,6 +18,8 @@ struct _parser_xml_t
 };
 
 
+#if 0
+AM I REALLY NECESSARY?
 int parser_xml_init( void )
 {
     LIBXML_TEST_VERSION
@@ -36,6 +38,7 @@ void parser_xml_finalise( void )
 {
     xmlCleanupParser();
 }
+#endif
 
 static void on_start_element_ns(
     void *ctxt,

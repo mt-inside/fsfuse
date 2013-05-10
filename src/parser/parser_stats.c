@@ -20,7 +20,7 @@ typedef enum
 
 struct _parser_stats_t
 {
-    parser_stats_cb_t cb;
+    indexnode_stats_cb_t cb;
     void *cb_ctxt;
     parser_xml_t *xml;
     state_t state;
@@ -33,7 +33,7 @@ struct _parser_stats_t
 void stats_xml_cb( void *ctxt, parser_xml_event_t event, char *text, char *id );
 
 
-parser_stats_t *parser_stats_new( parser_stats_cb_t cb, void *ctxt )
+parser_stats_t *parser_stats_new( indexnode_stats_cb_t cb, void *ctxt )
 {
     parser_stats_t *parser = calloc( 1, sizeof(*parser) );
 

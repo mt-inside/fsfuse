@@ -29,7 +29,8 @@
 #include "config_reader.h"
 #include "fetcher.h"
 #include "listing_list.h"
-#include "parser.h"
+#include "parser_filelist.h"
+#include "parser_stats.h"
 #include "ref_count.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -186,25 +187,20 @@ int indexnode_tryget_listing( indexnode_t *in, const char *path, nativefs_entry_
 {
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "browse" ), path );
     fetcher_t *fetcher = fetcher_new( url );
-    parser_t *parser = parser_new( );
+    parser_filelist_t *parser = parser_filelist_new( entry_cb, entry_ctxt );
     int rc;
 
 
     rc = fetcher_fetch_body(
         fetcher,
-        (fetcher_body_cb_t)&parser_consumer,
+        (fetcher_body_cb_t)&parser_filelist_consume,
         (void *)parser,
         NULL
     );
 
-    if (!rc)
-    {
-        rc = parser_tryget_listing( parser, entry_cb, entry_ctxt );
-    }
 
-    parser_delete( parser );
+    parser_filelist_delete( parser );
     fetcher_delete( fetcher );
-
 
     return rc;
 }
@@ -213,52 +209,42 @@ int indexnode_tryget_alternatives( indexnode_t *in, char *hash, nativefs_entry_f
 {
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "alternatives" ), hash );
     fetcher_t *fetcher = fetcher_new( url );
-    parser_t *parser = parser_new( );
+    parser_filelist_t *parser = parser_filelist_new( entry_cb, entry_ctxt );
     int rc;
 
 
     rc = fetcher_fetch_body(
         fetcher,
-        (fetcher_body_cb_t)&parser_consumer,
+        (fetcher_body_cb_t)&parser_filelist_consume,
         (void *)parser,
         NULL
     );
 
-    if (!rc)
-    {
-        rc = parser_tryget_listing( parser, entry_cb, entry_ctxt );
-    }
 
-    parser_delete(parser);
-    fetcher_delete(fetcher);
-
+    parser_filelist_delete( parser );
+    fetcher_delete( fetcher );
 
     return rc;
 }
 
-int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes )
+int indexnode_tryget_stats( indexnode_t *in, indexnode_stats_cb_t stats_cb, void *stats_ctxt )
 {
     const char *url = proto_indexnode_make_url( BASE_CLASS(in), strdup( "stats" ), strdup( "" ) );
     fetcher_t *fetcher = fetcher_new( url );
-    parser_t *parser = parser_new( );
+    parser_stats_t *parser = parser_stats_new( stats_cb, stats_ctxt );
     int rc;
 
 
     rc = fetcher_fetch_body(
         fetcher,
-        (fetcher_body_cb_t)&parser_consumer,
+        (fetcher_body_cb_t)&parser_stats_consume,
         (void *)parser,
         NULL
     );
 
-    if (!rc)
-    {
-        rc = parser_tryget_stats(parser, files, bytes);
-    }
 
-    parser_delete(parser);
-    fetcher_delete(fetcher);
-
+    parser_stats_delete( parser );
+    fetcher_delete( fetcher );
 
     return rc;
 }

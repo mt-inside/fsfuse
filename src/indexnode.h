@@ -18,6 +18,8 @@ TRACE_DECLARE(indexnode)
 
 typedef struct _indexnode_t indexnode_t;
 
+typedef void (*indexnode_stats_cb_t)( void *ctxt, unsigned long files, unsigned long bytes );
+
 
 extern indexnode_t *indexnode_new(
     CALLER_DECL
@@ -36,6 +38,6 @@ extern char *indexnode_tostring( indexnode_t *in );
 
 extern int indexnode_tryget_listing( indexnode_t *in, const char *path, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt );
 extern int indexnode_tryget_alternatives( indexnode_t *in, char *hash, nativefs_entry_found_cb_t entry_cb, void *entry_ctxt );
-extern int indexnode_tryget_stats( indexnode_t *in, unsigned long *files, unsigned long *bytes );
+extern int indexnode_tryget_stats( indexnode_t *in, indexnode_stats_cb_t stats_cb, void *stats_ctxt );
 
 #endif /* _INCLUDED_INDEXNODE_H */

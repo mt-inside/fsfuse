@@ -15,8 +15,6 @@
 
 typedef struct _parser_filelist_t parser_filelist_t;
 
-typedef void (*parser_filelist_cb_t)( void *ctxt, unsigned long files, unsigned long bytes );
-
 
 extern parser_filelist_t *parser_filelist_new( nativefs_entry_found_cb_t cb, void *ctxt );
 extern void parser_filelist_delete( parser_filelist_t *parser );

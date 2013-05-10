@@ -9,15 +9,14 @@
 
 #include "common.h"
 
+#include "indexnode.h"
 #include "parser/parser_xml.h" //TODO: I can go when xml_cb is internal */
 
 
 typedef struct _parser_stats_t parser_stats_t;
 
-typedef void (*parser_stats_cb_t)( void *ctxt, unsigned long files, unsigned long bytes );
 
-
-extern parser_stats_t *parser_stats_new( parser_stats_cb_t cb, void *ctxt );
+extern parser_stats_t *parser_stats_new( indexnode_stats_cb_t cb, void *ctxt );
 extern void parser_stats_delete( parser_stats_t *parser );
 extern int parser_stats_consume( parser_stats_t *parser, void *data, size_t len );
 

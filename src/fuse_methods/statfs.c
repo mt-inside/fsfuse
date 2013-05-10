@@ -21,15 +21,41 @@
 
 #include "fetcher.h"
 #include "indexnodes.h"
-#include "parser.h"
 
+
+typedef struct
+{
+    fuse_req_t req;
+    struct statvfs stvfs;
+    unsigned long bytes_total;
+    unsigned cbs_remaining;
+} stats_ctxt_t;
+
+
+static void stats_cb( void *ctxt, unsigned long files, unsigned long bytes )
+{
+    stats_ctxt_t *stats = (stats_ctxt_t *)ctxt;
+
+
+    stats->stvfs.f_files += files;
+    stats->bytes_total += bytes;
+    stats->cbs_remaining--;
+
+
+    if( stats->cbs_remaining == 0 )
+    {
+        stats->stvfs.f_blocks = stats->bytes_total / stats->stvfs.f_bsize;
+
+        assert( !fuse_reply_statfs( stats->req, &stats->stvfs ) );
+
+        free( ctxt );
+    }
+}
 
 void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
 {
     indexnodes_t *ins = ((fsfuse_ctxt_t *)fuse_req_userdata(req))->indexnodes;
-    unsigned long files, bytes, bytes_total = 0;
-    struct statvfs stvfs;
-    int rc = 1;
+    stats_ctxt_t *ctxt = calloc( 1, sizeof(*ctxt) );
     indexnodes_list_t *list;
     indexnodes_iterator_t *iter;
     indexnode_t *in;
@@ -40,11 +66,12 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
     method_trace("fsfuse_statfs(ino %lu)\n", ino);
     method_trace_indent();
 
-    memset(&stvfs, 0, sizeof(struct statvfs));
-    stvfs.f_bsize   = FSFUSE_BLKSIZE;
-    stvfs.f_frsize  = FSFUSE_BLKSIZE;        /* Ignored by fuse */
-    stvfs.f_flag    = ST_RDONLY | ST_NOSUID; /* Ignored by fuse */
-    stvfs.f_namemax = ULONG_MAX;
+    ctxt->req = req;
+
+    ctxt->stvfs.f_bsize   = FSFUSE_BLKSIZE;
+    ctxt->stvfs.f_frsize  = FSFUSE_BLKSIZE;        /* Ignored by fuse */
+    ctxt->stvfs.f_flag    = ST_RDONLY | ST_NOSUID; /* Ignored by fuse */
+    ctxt->stvfs.f_namemax = ULONG_MAX;
 
     /* TODO: these should happen in parallel. Some kind of fetcher_thread_pool?
      * Or, make fetching async. THIS IS GOOD IDEA
@@ -71,36 +98,35 @@ void fsfuse_statfs (fuse_req_t req, fuse_ino_t ino)
      *   downloader/dt.
      *   */
     list = indexnodes_get(CALLER_INFO ins);
+
+    /* TODO: double-looping is yuk, but there's no way to get list size atm.
+     * However that data structure's gonna change to a hash thingy anyway */
     for (iter = indexnodes_iterator_begin(list);
          !indexnodes_iterator_end(iter);
          iter = indexnodes_iterator_next(iter))
     {
         in = indexnodes_iterator_current(iter);
 
-        if (!indexnode_tryget_stats(in, &files, &bytes))
-        {
-            stvfs.f_files += files;
-            bytes_total += bytes;
-
-            rc = 0;
-        }
+        ctxt->cbs_remaining++;
 
         indexnode_delete(CALLER_INFO in);
     }
-    stvfs.f_blocks = bytes_total / stvfs.f_bsize;
     indexnodes_iterator_delete(iter);
+
+    for (iter = indexnodes_iterator_begin(list);
+         !indexnodes_iterator_end(iter);
+         iter = indexnodes_iterator_next(iter))
+    {
+        in = indexnodes_iterator_current(iter);
+
+        indexnode_tryget_stats(in, stats_cb, ctxt);
+
+        indexnode_delete(CALLER_INFO in);
+    }
+    indexnodes_iterator_delete(iter);
+
     indexnodes_list_delete(list);
 
 
     method_trace_dedent();
-
-
-    if (!rc)
-    {
-        assert(!fuse_reply_statfs(req, &stvfs));
-    }
-    else
-    {
-        assert(!fuse_reply_err(req, rc));
-    }
 }

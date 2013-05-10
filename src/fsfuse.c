@@ -36,7 +36,6 @@
 #include "fetcher.h"
 #include "indexnodes.h"
 #include "localei.h"
-#include "parser.h"
 #include "peerstats.h"
 #include "string_buffer.h"
 #include "utils.h"
@@ -93,7 +92,6 @@ int main(int argc, char *argv[])
     }
 
 
-    parser_init();
     /* These stack; later files over-ride earlier ones. */
     config_manager_add_from_file( strdup( "/etc/fsfuserc" ) );
     config_manager_add_from_file( strdup( "~/.fsfuserc" ) );
@@ -176,7 +174,6 @@ int main(int argc, char *argv[])
 
 pre_init_bail:
     config_singleton_delete( );
-    parser_finalise();
     if (mountpoint.real) free(mountpoint.real);
     if (mountpoint.error) free(mountpoint.error);
 
@@ -333,7 +330,6 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
                 TRACE_ARG(dtp)
                 TRACE_ARG(fetcher)
                 TRACE_ARG(method)
-                TRACE_ARG(parser)
                 TRACE_ARG(peerstats)
                 TRACE_ARG(read)
                 TRACE_ARG(locale)
