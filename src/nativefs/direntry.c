@@ -124,7 +124,7 @@ static void entry_found(
     listing_t *li;
 
 
-    li = listing_new( CALLER_INFO indexnode_post( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
+    li = listing_new( CALLER_INFO indexnode_copy( CALLER_INFO ctxt->in ), hash, name, type, size, link_count, href, client );
     listing_list_resize( ctxt->lis, ctxt->i + 1 ); //FIXME!
     listing_list_set_item( ctxt->lis, ctxt->i++, li );
 }
@@ -250,7 +250,7 @@ direntry_t *direntry_copy (CALLER_DECL direntry_t *de)
 
 
     NOT_USED(refc);
-    direntry_trace("[direntry %p inode %lu] post (" CALLER_FORMAT ") ref %u\n",
+    direntry_trace("[direntry %p inode %lu] copy (" CALLER_FORMAT ") ref %u\n",
                    de, de->inode, CALLER_PASS refc);
 
 

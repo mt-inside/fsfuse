@@ -79,10 +79,10 @@ unsigned listing_list_get_count (listing_list_t *lis)
 
 void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
 {
-    lis->items[item] = listing_post(CALLER_INFO li);
+    lis->items[item] = listing_copy(CALLER_INFO li);
 }
 
 listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
 {
-    return listing_post(CALLER_INFO lis->items[item]);
+    return listing_copy(CALLER_INFO lis->items[item]);
 }

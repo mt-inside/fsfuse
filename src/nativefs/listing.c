@@ -267,12 +267,5 @@ int listing_tryget_best_alternative( listing_t *li_reference, listing_t **li_bes
     listing_list_delete( CALLER_INFO ctxt->lis );
 
 
-void listing_list_set_item (listing_list_t *lis, unsigned item, listing_t *li)
-{
-    lis->items[item] = listing_copy(CALLER_INFO li);
-}
-
-listing_t *listing_list_get_item (listing_list_t *lis, unsigned item)
-{
-    return listing_copy(CALLER_INFO lis->items[item]);
+    return rc;
 }
