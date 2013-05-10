@@ -132,4 +132,4 @@ clean:
 	rm -f fsfuse $(DEPENDS) $(OBJECTS) $(AUTO_SOURCES) build_revision.c build_revision.o testdata_path.c testdata_path.o gmon.out
 
 count:
-	find . \( -name "$(SRC_ROOT)/*.c" -o -name "$(SRC_ROOT)/*.h" \) -exec cat {} + | wc -l
+	find $(SRC_ROOT) \( -name "*.c" -o -name "*.h" \) -exec cat {} + | wc -l
