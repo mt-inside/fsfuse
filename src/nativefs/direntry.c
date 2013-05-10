@@ -26,7 +26,6 @@
 #include "fetcher.h"
 #include "fs2_constants.h"
 #include "inode_map.h"
-#include "parser.h"
 #include "ref_count.h"
 #include "string_buffer.h"
 

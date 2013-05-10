@@ -38,7 +38,6 @@
 #include "direntry.h"
 #include "fetcher.h"
 #include "locks.h"
-#include "parser.h"
 #include "queue.h"
 #include "string_buffer.h"
 

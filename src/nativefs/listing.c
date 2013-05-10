@@ -25,7 +25,6 @@
 #include "config_reader.h"
 #include "fs2_constants.h"
 #include "indexnode.h"
-#include "parser.h"
 #include "peerstats.h"
 #include "ref_count.h"
 #include "utils.h"
