@@ -71,9 +71,9 @@ typedef struct
 struct _downloader_t
 {
     direntry_t *de; /* TODO: should this be a listing_t */
-    /* TODO: singly linked list is wrong. expected case is that new items go on the
-     * end, giving O(n^2) running time. Need a doubly-linked list and an end
-     * pointer */
+    /* TODO: linked list is wrong. Things have to go in in order, so priq?
+     * However we expect them to go on the end, so can we get something that's
+     * O(1) when that's the case? */
     TAILQ_HEAD(, _chunk_t) chunk_list;
     unsigned chunk_list_count;
     pthread_cond_t chunk_list_cond;

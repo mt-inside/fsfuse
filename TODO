@@ -1,14 +1,27 @@
+TODO
+data structure fun - indexnodes should be in something I can't remember, chunk lists should be a priq
+add a common key-value pair type. re-write hash table, priq, etc in terms of kvp_t
+finish parsing
+fix nativefs
+nativefs cache
+singleton access / service provider / something
+kill config_config.xml
+audit - memory semantics
+
+fsfuse_ctxt? indexnodes is a singleton and it basically lives for the lifetime of the programme. I don't like how this is managed by init/delete/fuse_ctxt though.
+- Need a service locator or something for: indexnodes, config_manager, and other
+  singletons. Maybe it could fo in fsfuse_ctxt, but that seems a bit pointless.
+
 constants should have functions like config so that strings can be dup'd
 Listing doens't need any of its getters
-de's should own download threads. NO! open() / close() sessions should own download threads (or downloaders as they're to become). They stuff the downloader in the user handle and read() gets it and adds chunks to the list.
-What does the pool do? Pool is now redundant because fetch() is going to spawn threads.
+Listing list shoulnd't have an index, indeed they should be more IEnum<> than IList<>
+fetchers to be async (see comments in statfs). downloaders can then lose their threads
 
 TODO:
 DONE               config.o                \
 DONE               config_define.o         \
                direntry.o              \
                download_thread.o       \
-               download_thread_pool.o  \
 DONE               fetcher.o               \
                inode_map.o             \
                listing.o               \
@@ -21,8 +34,6 @@ DONE               string_buffer.o         \
                trace.o                 \
                utils.o
 DO FIRST to drive API of everything else               fsfuse_methods/*
-- you can stash de's etc away in some functions and get them in others. There's
-  a lot of fuse API semantics to take advantage of
 
 Testing strategy:
 - run tests in output-dumping mode to make baselines
@@ -38,9 +49,7 @@ Testing strategy:
   - either product needs new behavoiur (and thus new tests) or indexnode is
     broken
 
-listing, direntry, their lists, cache etc should go into a "nativefs" module
 statfs:
-indexnodes_get - indexnode_get_size - fetcher_doc_from_indexnode(host,port,prefix,resource, new stats_parser), return stats_parser_szie
 finishe indexnodes
 - make internal_seen and _still_valid internal
 - do all the other TODOs in the indexnodes code
@@ -163,15 +172,8 @@ System tests!
 - Various readdir() patterns (straight in at the bottom, etc)
 - Mock indexnode that goes away at *all* stages of all fetches
 
-split dtp into downloader_thread and a pool
-- except, pool currently just spwans ad infinitum, but still have callers go
-  through it
-- thread wil need ::reset() to clear all state and let it go back in the pool
-- creating threads isn't expensive, we're just worried about DoSing, so thread
-  pool doesn't need a pool, just a max count.
 reduce memcpy()s - either point libcurl into fuse's buffers, or more likely hold lubcurl's buffers around and make an iovec response to read().
-Factor indexnode hackery into an object as the first step to supporting multiple indexnodes.
-This then allows securemode, with some thinking.
+securemode
 proper handling of remote queueing / async io etc
 Change the cache to be an instance of the composite pattern - same interface as the fetcher, and conditionally compiled. Prob use a vtable.
-Change the whole direntry system /cache to be an active object. This means you just message-pass to some instance of the direntry interface, be it cache or not. This should also eliminate all the bloody locking problems.
+Change the whole direntry system /cache to be an actor. This means you just message-pass to some instance of the direntry interface, be it cache or not. This should also eliminate all the bloody locking problems.
