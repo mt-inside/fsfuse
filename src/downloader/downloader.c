@@ -100,7 +100,7 @@ static chunk_t *chunk_get_next (downloader_t *thread);
 
 static void *downloaderead_main (void *arg);
 static void chunk_list_empty (downloader_t *thread, int rc);
-static int thread_pool_consumer (void *ctxt, void *data, size_t len);
+static int buf_consumer (void *ctxt, void *data, size_t len);
 static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
 
@@ -395,7 +395,7 @@ static void *downloaderead_main (void *arg)
             /* Get the file */
             rc = fetcher_fetch_body(
                 fetcher,
-                (fetcher_body_cb_t)&thread_pool_consumer,
+                (fetcher_body_cb_t)&buf_consumer,
                 (void *)thread,
                 (thread->current_chunk->start) ? range_str : NULL
             );
@@ -463,7 +463,7 @@ static void chunk_list_empty (downloader_t *thread, int rc)
 
 
 /* EXECUTES IN THREAD: downloaderead_main(). */
-static int thread_pool_consumer (void *ctxt, void *data, size_t len)
+static int buf_consumer (void *ctxt, void *data, size_t len)
 {
     buf_t *buf = (buf_t *)malloc(sizeof(buf_t));
     downloader_t *thread = (downloader_t *)ctxt;
