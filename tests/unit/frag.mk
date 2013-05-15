@@ -9,6 +9,7 @@ TEST_HERE := $(ROOT)/tests/unit
 vpath %.c $(TEST_HERE)
 
 TEST_OBJS :=                        \
+             binary_heap_test.o     \
              config_test.o          \
              indexnode_test.o       \
              indexnodes_list_test.o \

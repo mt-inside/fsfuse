@@ -7,6 +7,7 @@
 #include <check.h>
 
 
+extern Suite *binary_heap_tests( void );
 extern Suite *config_tests( void );
 extern Suite *indexnode_tests( void );
 extern Suite *indexnodes_list_tests( void );

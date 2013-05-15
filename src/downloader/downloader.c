@@ -71,9 +71,11 @@ typedef struct
 struct _downloader_t
 {
     direntry_t *de; /* TODO: should this be a listing_t */
-    /* TODO: linked list is wrong. Things have to go in in order, so priq?
-     * However we expect them to go on the end, so can we get something that's
-     * O(1) when that's the case? */
+    /* linked list is wrong. priq is ideal because it is O(1) to remove
+     * the min one and O(1) to add if the new key is max, which we expect it to
+     * be.
+     * TODO: USE PRIQ
+     */
     TAILQ_HEAD(, _chunk_t) chunk_list;
     unsigned chunk_list_count;
     pthread_cond_t chunk_list_cond;

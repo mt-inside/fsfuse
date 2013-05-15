@@ -30,6 +30,7 @@ int main (int argc, char **argv)
     trace_init( );
 
     SRunner *r = srunner_create( NULL );
+    srunner_add_suite( r, binary_heap_tests( ) );
     srunner_add_suite( r, config_tests( ) );
     srunner_add_suite( r, indexnode_tests( ) );
     srunner_add_suite( r, indexnodes_list_tests( ) );

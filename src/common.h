@@ -29,10 +29,11 @@
 #define PROTO_MINIMUM "0.5"
 #define PROTO_MAXIMUM "0.13"
 
-#define NOT_USED(x) (void)x
+#define NOT_USED(x) (void)(x)
 #define DO_NOTHING NOT_USED(0)
 #define MAX(x,y) (((x) > (y)) ? (x) : (y))
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
+#define SWAP(x,y) { typeof(y) tMP = (y); (y) = (x); (x) = (tMP); }
 
 #define free_const(x) free((void *)(x))
 
