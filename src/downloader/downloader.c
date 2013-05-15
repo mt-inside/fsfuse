@@ -37,6 +37,7 @@
 
 #include "downloader.h"
 
+#include "binary_heap.h"
 #include "config_manager.h"
 #include "config_reader.h"
 #include "direntry.h"
@@ -49,7 +50,7 @@
 TRACE_DEFINE(downloader)
 
 
-typedef struct _chunk_t
+typedef struct
 {
     off_t start; /* inclusive */
     off_t end;   /* exclusive */
@@ -57,8 +58,6 @@ typedef struct _chunk_t
     char *buf;
     chunk_done_cb_t cb;
     void *ctxt;
-
-    TAILQ_ENTRY(_chunk_t) entries;
 } chunk_t;
 
 typedef struct
@@ -71,15 +70,9 @@ typedef struct
 struct _downloader_t
 {
     direntry_t *de; /* TODO: should this be a listing_t */
-    /* linked list is wrong. priq is ideal because it is O(1) to remove
-     * the min one and O(1) to add if the new key is max, which we expect it to
-     * be.
-     * TODO: USE PRIQ
-     */
-    TAILQ_HEAD(, _chunk_t) chunk_list;
-    unsigned chunk_list_count;
-    pthread_cond_t chunk_list_cond;
-    pthread_mutex_t chunk_list_mutex;
+    binary_heap_t *chunks;
+    pthread_cond_t chunks_cond;
+    pthread_mutex_t chunks_mutex;
     off_t download_offset;
     pthread_t pthread_id;
     chunk_t *current_chunk; /* needs to be kept separate because it may not be
@@ -101,7 +94,7 @@ static chunk_t *chunk_new (
 static chunk_t *chunk_get_next (downloader_t *thread);
 
 static void *downloaderead_main (void *arg);
-static void chunk_list_empty (downloader_t *thread, int rc);
+static void chunks_empty (downloader_t *thread, int rc);
 static int buf_consumer (void *ctxt, void *data, size_t len);
 static void signal_read_thread (chunk_t *chunk, int rc, size_t size);
 
@@ -124,9 +117,9 @@ downloader_t *downloader_new (direntry_t *de)
 
     /* fill in the thread's details */
     t->de = direntry_copy(CALLER_INFO de);
-    TAILQ_INIT(&t->chunk_list);
-    pthread_cond_init(&(t->chunk_list_cond), NULL);
-    pthread_mutex_init(&(t->chunk_list_mutex), NULL);
+    t->chunks = binary_heap_new();
+    pthread_cond_init(&(t->chunks_cond), NULL);
+    pthread_mutex_init(&(t->chunks_mutex), NULL);
 
 
     /* make the thread */
@@ -144,11 +137,11 @@ downloader_t *downloader_new (direntry_t *de)
 static void thread_delete (downloader_t *t)
 {
     assert(!t->current_chunk);
-    assert(TAILQ_EMPTY(&t->chunk_list));
 
     direntry_delete(CALLER_INFO t->de);
-    pthread_cond_destroy(&t->chunk_list_cond);
-    pthread_mutex_destroy(&t->chunk_list_mutex);
+    pthread_cond_destroy(&t->chunks_cond);
+    pthread_mutex_destroy(&t->chunks_mutex);
+    binary_heap_delete(t->chunks);
 
     free(t);
 }
@@ -163,7 +156,7 @@ void downloader_chunk_add (downloader_t *thread,
                                 chunk_done_cb_t cb,
                                 void *ctxt          )
 {
-    chunk_t *c = NULL, *curr;
+    chunk_t *c;
 
 
     assert(start <= end);
@@ -173,38 +166,19 @@ void downloader_chunk_add (downloader_t *thread,
     c = chunk_new(start, end, buf, cb, ctxt);
 
 
-    pthread_mutex_lock(&(thread->chunk_list_mutex));
+    pthread_mutex_lock(&(thread->chunks_mutex));
 
-    /* this new chunk needs to go into the list in order. Chunks cannot be
-     * aggregated because they all get passed off to separate buffers, but
-     * having them in order optimises the sequential read case. */
-    /* overlapping chunks are a bit of an odd request, but should
-     * just cause a seek and work OK */
-    if (TAILQ_EMPTY(&thread->chunk_list) || c->start <= TAILQ_FIRST(&thread->chunk_list)->start)
-    {
-        TAILQ_INSERT_HEAD(&thread->chunk_list, c, entries);
-    }
-    else
-    {
-        TAILQ_FOREACH(curr, &thread->chunk_list, entries)
-        {
-            if (c->start <= curr->start)
-            {
-                TAILQ_INSERT_BEFORE(curr, c, entries);
-                break;
-            }
-        }
-        if (!curr)
-        {
-            TAILQ_INSERT_TAIL(&thread->chunk_list, c, entries);
-        }
-    }
+    /* Add chunk to the priq, keyed on its start so that they come out in that
+     * order. Overlapping or even co-incident chunks are a bit of an odd
+     * request, but should just cause a seek and work OK. */
+    /* Chunks cannot be aggregated because they all get passed off to separate
+     * buffers, but having them in order optimises the sequential read case. */
+    binary_heap_add(thread->chunks, c->start, c);
 
-    /* increment the chunk list count */
-    thread->chunk_list_count++;
-    pthread_cond_signal(&thread->chunk_list_cond);
+    /* Signal that there is a new chunk, should anything be waiting. */
+    pthread_cond_signal(&thread->chunks_cond);
 
-    pthread_mutex_unlock(&(thread->chunk_list_mutex));
+    pthread_mutex_unlock(&(thread->chunks_mutex));
 }
 
 static chunk_t *chunk_new (
@@ -239,6 +213,7 @@ static void chunk_delete (chunk_t *chunk)
 static chunk_t *chunk_get_next (downloader_t *thread)
 {
     chunk_t *chunk;
+    int start;
     int rc = 0;
     struct timeval tv;
     struct timespec ts;
@@ -255,15 +230,14 @@ static chunk_t *chunk_get_next (downloader_t *thread)
     ts.tv_sec = tv.tv_sec + config_timeout_chunk(config);
     ts.tv_nsec = (tv.tv_usec + 1) * 1000;
 
-    pthread_mutex_lock(&thread->chunk_list_mutex);
-    while (!thread->chunk_list_count && rc == 0)
+    pthread_mutex_lock(&thread->chunks_mutex);
+    while (!binary_heap_trypop( thread->chunks, &start, (void **)&chunk ) && rc == 0)
     {
-        rc = pthread_cond_timedwait(&thread->chunk_list_cond,
-                                    &thread->chunk_list_mutex,
+        rc = pthread_cond_timedwait(&thread->chunks_cond,
+                                    &thread->chunks_mutex,
                                     &ts);
     }
-    if (rc == 0) thread->chunk_list_count--;
-    pthread_mutex_unlock(&thread->chunk_list_mutex);
+    pthread_mutex_unlock(&thread->chunks_mutex);
 
     if (rc == ETIMEDOUT)
     {
@@ -273,23 +247,8 @@ static chunk_t *chunk_get_next (downloader_t *thread)
     }
     else if (rc == 0)
     {
-        downloader_trace("Downloader thread for %s woken up! "
-                  "Chunks remaining: %d\n",
-                  direntry_get_name(thread->de),
-                  thread->chunk_list_count);
-
-
-        pthread_mutex_lock(&(thread->chunk_list_mutex));
-
-        chunk = TAILQ_FIRST(&thread->chunk_list);
-        /* there must be a chunk, because we just came out of the semaphore */
-        assert(chunk);
-
-
-        /* remove the chunk from the list */
-        TAILQ_REMOVE(&thread->chunk_list, chunk, entries);
-
-        pthread_mutex_unlock(&(thread->chunk_list_mutex));
+        downloader_trace("Downloader thread for %s woken up! ",
+                  direntry_get_name(thread->de));
     }
     else
     {
@@ -416,28 +375,35 @@ static void *downloaderead_main (void *arg)
     } while (rc == 0);
 
 
-    pthread_mutex_lock(&(thread->chunk_list_mutex));
+    pthread_mutex_lock(&(thread->chunks_mutex));
 
     if (rc == 0)
     {
+        int key; void *value;
         /* OK */
         /* There should be no more chunks, either in-hand or on the list */
         assert(!thread->current_chunk);
-        assert(TAILQ_EMPTY(&thread->chunk_list));
+        assert(!binary_heap_trypop(thread->chunks, &key, &value));
     }
     else
     {
+        /* TODO: what is this branch for? I think it's for an abnormal exit, in
+         * which case shouldn't we be signaling read thread the whole time
+         * (because we need it to pass the err to user-space)? Shouldn't we use
+         * NULL in place of current_chunk? It's a shame we have to empty the
+         * chunk list too.
+         */
         if (thread->current_chunk)
         {
             signal_read_thread(thread->current_chunk, rc, 0);
             chunk_delete(thread->current_chunk);
             thread->current_chunk = NULL;
 
-            chunk_list_empty(thread, rc);
+            chunks_empty(thread, rc);
         }
     }
 
-    pthread_mutex_unlock(&(thread->chunk_list_mutex));
+    pthread_mutex_unlock(&(thread->chunks_mutex));
 
 
     /* Delete the data structures */
@@ -450,15 +416,15 @@ static void *downloaderead_main (void *arg)
     pthread_exit(NULL);
 }
 
-static void chunk_list_empty (downloader_t *thread, int rc)
+static void chunks_empty (downloader_t *thread, int rc)
 {
     chunk_t *c;
+    int start;
 
 
-    while ((c = TAILQ_FIRST(&thread->chunk_list)))
+    while (binary_heap_trypop( thread->chunks, &start, (void **)&c ))
     {
         signal_read_thread(c, rc, 0);
-        TAILQ_REMOVE(&thread->chunk_list, TAILQ_FIRST(&thread->chunk_list), entries);
         chunk_delete(c);
     }
 }
@@ -603,24 +569,17 @@ void dump_chunk (chunk_t *chunk)
     trace_np("%#x -> %#x -> %#x", chunk->start, chunk->bytes_used, chunk->end);
 }
 
-void dump_chunk_list (downloader_t *thread)
+void dump_chunks (downloader_t *thread)
 {
-    chunk_t *curr;
+    chunk_t *chunk;
+    int start;
     unsigned i = 0;
 
 
-    if (TAILQ_EMPTY(&thread->chunk_list))
+    while (binary_heap_trypop(thread->chunks, &start, (void **)&chunk))
     {
-        trace_np("  <empty>\n");
-    }
-    else
-    {
-        TAILQ_FOREACH(curr, &thread->chunk_list, entries)
-        {
-            trace_np("  [%u] ", i++);
-            dump_chunk(curr);
-        }
-        trace_np("\n");
+        trace_np("  [%u] ", i++);
+        dump_chunk(chunk);
     }
 }
 #endif /* DEBUG */
