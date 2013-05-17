@@ -51,8 +51,8 @@ START_TEST( config_defaults_are_sane )
 
     /* empty array */
     hosts = config_indexnode_hosts( config );
-    fail_unless( hosts != NULL );
-    fail_unless( hosts[0] == NULL );
+    fail_unless( hosts != NULL, "hosts array should be non-null" );
+    fail_unless( hosts[0] == NULL, "hosts array should be non-empty" );
 
     /* Teardown */
     config_reader_delete( config );
@@ -116,8 +116,8 @@ START_TEST( config_can_override_from_file )
 
     /* empty array */
     hosts = config_indexnode_hosts( config );
-    fail_unless( hosts != NULL );
-    fail_unless( hosts[0] == NULL );
+    fail_unless( hosts != NULL, "hosts array should be non-null" );
+    fail_unless( hosts[0] == NULL, "hosts array should be non-empty" );
 
     config_reader_delete( config );
 
@@ -138,10 +138,10 @@ START_TEST( config_can_override_from_file )
     ck_assert_int_eq( config_indexnode_advert_port( config ), 55555 );
 
     hosts = config_indexnode_hosts( config );
-    fail_unless( hosts != NULL );
+    fail_unless( hosts != NULL, "hosts array should be non-null" );
     ck_assert_str_eq( hosts[0], "test host 1" );
     ck_assert_str_eq( hosts[1], "test host 2" );
-    fail_unless(      hosts[2] == NULL );
+    fail_unless(      hosts[2] == NULL, "hosts array should be exactly 2 items" );
 
     config_reader_delete( config );
 
@@ -169,8 +169,8 @@ START_TEST( config_can_override_from_several )
 
     /* empty array */
     hosts = config_indexnode_hosts( config );
-    fail_unless( hosts != NULL );
-    fail_unless( hosts[0] == NULL );
+    fail_unless( hosts != NULL, "hosts array should be non-null" );
+    fail_unless( hosts[0] == NULL, "hosts array should be non-empty" );
 
     config_reader_delete( config );
 
@@ -204,9 +204,9 @@ START_TEST( config_can_override_from_several )
     ck_assert_int_eq( config_proc_debug( config ), 1 );
 
     hosts = config_indexnode_hosts( config );
-    fail_unless( hosts != NULL );
+    fail_unless( hosts != NULL, "hosts array should be non-null" );
     ck_assert_str_eq( hosts[0], "test host 21" );
-    fail_unless(      hosts[1] == NULL );
+    fail_unless(      hosts[1] == NULL, "hosts array should be exactly one item" );
 
     config_reader_delete( config );
 
