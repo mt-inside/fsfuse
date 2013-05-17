@@ -250,9 +250,9 @@ static int process_curl_response( fetcher_t *fetcher, int curl_rc )
     {
         case CURLE_OK:
         case CURLE_HTTP_RETURNED_ERROR:
-            rc = http2errno(http_code);
             curl_easy_getinfo(fetcher->eh, CURLINFO_RESPONSE_CODE, &http_code);
             fetcher_trace("http code %d\n", http_code);
+            rc = http2errno(http_code);
             break;
 
         case CURLE_WRITE_ERROR:
