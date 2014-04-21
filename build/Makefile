@@ -35,10 +35,11 @@ ifeq ($(OS),Darwin) # it would be nice to do this all the time, but fuse is usua
 else
     CFLAGS += -D_FILE_OFFSET_BITS=64
 endif
-ifneq ($(OS),Darwin)
+ifeq ($(OS),Linux)
     # Linux needs both of these and acts sanely; BSD is needed for strdup(), POSIX
     #   for getaddrinfo(), etc.
     # MacOSX doesn't seem to need these, and in fact POSIX breaks the build on Mac
+    # POSIX also breaks the build on recent (9+ ?) FreeBSD (causes missing types in pthread.h)
     CFLAGS += -D_POSIX_SOURCE -D_BSD_SOURCE
 endif
 
