@@ -24,10 +24,14 @@
  * without a subsequent opendir() - there could be other open fds also
  * referring to the directory in question.
  */
-void fsfuse_releasedir (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+void fsfuse_releasedir (fuse_req_t req,
+                        fuse_ino_t ino,
+                        struct fuse_file_info *fi)
 {
     direntry_t *de = (direntry_t *)fi->fh;
 
+
+    NOT_USED(ino);
 
     method_trace("fsfuse_releasedir(ino %lu)\n", ino);
     method_trace_indent();

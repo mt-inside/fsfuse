@@ -79,6 +79,8 @@ void fsfuse_read (fuse_req_t req,
     void *buf;
 
 
+    NOT_USED(ino);
+
     method_trace("fsfuse_read(ino %lu, size %zd, off %ju)\n", ino, size, off);
     method_trace_indent();
 

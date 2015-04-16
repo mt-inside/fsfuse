@@ -20,11 +20,15 @@
 #include "direntry.h"
 
 
-void fsfuse_getattr (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+void fsfuse_getattr (fuse_req_t req,
+                     fuse_ino_t ino,
+                     struct fuse_file_info *fi)
 {
     open_file_ctxt_t *ctxt = (open_file_ctxt_t *)fi->fh;
     struct stat stats;
 
+
+    NOT_USED(ino);
 
     method_trace("fsfuse_getattr(ino %ld)\n", ino);
     method_trace_indent();

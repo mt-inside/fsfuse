@@ -59,13 +59,18 @@ static void dirbuf_add (
  * directories, so there's no need to check for the existence / type of the
  * direntry at path
  */
-void fsfuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+void fsfuse_readdir (fuse_req_t req,
+                     fuse_ino_t ino,
+                     size_t size,
+                     off_t off,
+                     struct fuse_file_info *fi)
 {
     direntry_t *de = (direntry_t *)fi->fh,
                *parent, *child, *old_child;
     char *buf = NULL; size_t bufsize = 0;
 
 
+    NOT_USED(ino);
     NOT_USED(size);
     NOT_USED(off);
 

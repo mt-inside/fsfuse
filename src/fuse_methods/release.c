@@ -31,10 +31,14 @@
  * - need to make the decision whether de's own download threads (in which case
  *   the open() count will ref-count them) or whether open()s own download
  *   threads. */
-void fsfuse_release (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
+void fsfuse_release (fuse_req_t req,
+                     fuse_ino_t ino,
+                     struct fuse_file_info *fi)
 {
     open_file_ctxt_t *ctxt = (open_file_ctxt_t *)fi->fh;
 
+
+    NOT_USED(ino);
 
     method_trace("fsfuse_release(ino %lu)\n", ino);
     method_trace_indent();
