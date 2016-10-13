@@ -63,7 +63,10 @@ else
     LDFLAGS += $(CFLAGS_OPTIM)
 endif
 ifeq ($(OS),FreeBSD)
-    LDFLAGS += -L/usr/local/lib -liconv -pthread
+    LDFLAGS += -L/usr/local/lib -liconv
+endif
+ifneq ($(OS),Darwin)
+    LDFLAGS += -pthread
 endif
 
 
