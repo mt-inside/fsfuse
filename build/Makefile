@@ -42,7 +42,7 @@ ifeq ($(OS),Linux)
     #   for getaddrinfo(), etc.
     # MacOSX doesn't seem to need these, and in fact POSIX breaks the build on Mac
     # POSIX also breaks the build on recent (9+ ?) FreeBSD (causes missing types in pthread.h)
-    CFLAGS += -D_POSIX_SOURCE -D_BSD_SOURCE
+    CFLAGS += -D_POSIX_SOURCE -D_DEFAULT_SOURCE
 endif
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
