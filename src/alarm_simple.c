@@ -44,7 +44,7 @@ alarm_t *alarm_new(
     alarm_t *alarm = malloc( sizeof(*alarm) );
 
 
-    pipe( pipe_fds );
+    assert( !pipe( pipe_fds ) );
     alarm->interval = interval;
     alarm->cb = cb;
     alarm->cb_data = cb_data;

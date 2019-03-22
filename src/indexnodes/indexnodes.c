@@ -156,11 +156,19 @@ static void new_indexnode_event (
 
                 rw_lock_wunlock(ins->lock);
             }
+            else
+            {
+                free_const(version);
+            }
         }
+    }
+    else
+    {
+        free_const(fs2protocol);
     }
 
     if (!new_in)
     {
-        free_const(host); free_const(port); free_const(version); free_const(id);
+        free_const(host); free_const(port); free_const(id);
     }
 }

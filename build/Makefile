@@ -30,6 +30,8 @@ INCLUDES = -I. -I$(SRC_ROOT) -isystem $(SRC_ROOT)/3rdparty
 
 CFLAGS = -std=c99 -Wall -Wextra -pedantic -Werror $(INCLUDES) -D_REENTRANT -DDEBUG=$(DEBUG) $(FEATURES)
 CFLAGS += `curl-config --cflags` `xml2-config --cflags`
+CFLAGS_OPTIM := -O2
+CFLAGS_DEBUG := -O0 -g3
 ifeq ($(OS),Darwin) # it would be nice to do this all the time, but fuse is usually installed from git on linux dev boxen.
     CFLAGS += `pkg-config --cflags fuse` -mmacosx-version-min=10.5
 else
@@ -46,9 +48,6 @@ ifeq ($(OS),Linux)
     #   getaddrinfo(), etc.
     CFLAGS += -D_DEFAULT_SOURCE
 endif
-
-CFLAGS_OPTIM := -O2
-CFLAGS_DEBUG := -O0 -g3
 ifeq ($(DEBUG),1)
     CFLAGS += $(CFLAGS_DEBUG)
 else
@@ -61,13 +60,16 @@ ifeq ($(OS),Darwin)
 else
     LDFLAGS += -lfuse
 endif
+ifeq ($(OS),FreeBSD)
+    LDFLAGS += -L/usr/local/lib -liconv
+endif
+ifneq ($(OS),Darwin)
+    LDFLAGS += -pthread
+endif
 ifeq ($(DEBUG),1)
     LDFLAGS += $(CFLAGS_DEBUG)
 else
     LDFLAGS += $(CFLAGS_OPTIM)
-endif
-ifeq ($(OS),FreeBSD)
-    LDFLAGS += -L/usr/local/lib -liconv -pthread
 endif
 
 
