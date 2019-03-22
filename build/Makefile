@@ -35,12 +35,16 @@ ifeq ($(OS),Darwin) # it would be nice to do this all the time, but fuse is usua
 else
     CFLAGS += -D_FILE_OFFSET_BITS=64
 endif
+# _POSIX_SOURCE breaks the build on Darwin
+# _POSIX_SOURCE also breaks the build on recent (9+ ?) FreeBSD (causes missing types in pthread.h)
+ifeq ($(OS),FreeBSD)
+    CFLAGS += -D_BSD_SOURCE
+endif
 ifeq ($(OS),Linux)
-    # Linux needs both of these and acts sanely; BSD is needed for strdup(), POSIX
-    #   for getaddrinfo(), etc.
-    # MacOSX doesn't seem to need these, and in fact POSIX breaks the build on Mac
-    # POSIX also breaks the build on recent (9+ ?) FreeBSD (causes missing types in pthread.h)
-    CFLAGS += -D_POSIX_SOURCE -D_BSD_SOURCE
+    # Seems to be equivalent to _POSIX_SOURCE and _BSD_SOURCE on newer systems
+    # Both of these are needed; BSD is needed for strdup(), POSIX for
+    #   getaddrinfo(), etc.
+    CFLAGS += -D_DEFAULT_SOURCE
 endif
 
 CFLAGS_OPTIM := -O2
@@ -51,7 +55,7 @@ else
     CFLAGS += $(CFLAGS_OPTIM)
 endif
 
-LDFLAGS = `curl-config --libs` `xml2-config --libs` -lcheck
+LDFLAGS = `curl-config --libs` `xml2-config --libs` -lcheck -pthread
 ifeq ($(OS),Darwin)
     LDFLAGS += `pkg-config --libs fuse`
 else

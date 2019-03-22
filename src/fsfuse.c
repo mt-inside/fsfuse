@@ -300,7 +300,8 @@ static start_action_t settings_parse_command_line (int argc, char *argv[])
             case 'd': /* debug */
                 proc_debug = 1;
                 proc_debug_set = 1;
-                /* fall through; d => f */
+                /* d => f */
+                /* fall through */
 
             case 'f': /* foreground */
                 proc_fg = 1;
